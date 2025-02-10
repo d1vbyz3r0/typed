@@ -17,6 +17,7 @@ import (
 var specBuilderTemplate string
 
 type TemplateArgs struct {
+	ApiPrefix          *string
 	Types              map[string]string
 	Imports            []string
 	Title              string
@@ -120,6 +121,7 @@ func (g *Generator) Generate() error {
 	defer f.Close()
 
 	return tmpl.Execute(f, TemplateArgs{
+		ApiPrefix:          g.cfg.Input.ApiPrefix,
 		Title:              g.cfg.Input.Title,
 		Version:            g.cfg.Input.Version,
 		ServerUrl:          g.cfg.Input.ServerUrl,

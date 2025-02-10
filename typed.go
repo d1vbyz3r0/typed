@@ -1,6 +1,7 @@
 package typed
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed/generator"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
@@ -181,4 +182,31 @@ func AddResponses(
 
 		op.AddResponse(status, response)
 	}
+}
+
+func TagOperation(op *openapi3.Operation, path string, apiPrefix string) error {
+	tag, err := extractOpTag(path, apiPrefix)
+	if err != nil {
+		return fmt.Errorf("extract operation tag: %w", err)
+	}
+
+	op.Tags = append(op.Tags, tag)
+	return nil
+}
+
+func extractOpTag(path string, prefix string) (string, error) {
+	// /api/v1/tasks -> tasks
+	path, found := strings.CutPrefix(path, prefix)
+	if !found {
+		return "", fmt.Errorf("bad api prefix '%s' for path: '%s'", prefix, path)
+	}
+
+	path, _ = strings.CutPrefix(path, "/")
+
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 {
+		return "", fmt.Errorf("bad path or prefix provided, nothing to extract after prefix cutoff: %s", parts)
+	}
+
+	return parts[0], nil
 }

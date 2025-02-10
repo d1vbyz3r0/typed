@@ -20,6 +20,13 @@ import (
 
 const (
 	bearerAuthScheme = "bearerAuth"
+    {{- if ne .ApiPrefix nil }}
+    apiPrefix = "{{ .ApiPrefix }}"
+	useTags = true
+	{{- else }}
+    apiPrefix = ""
+    useTags = false
+	{{- end }}
 )
 
 var (
@@ -147,6 +154,13 @@ func main() {
 
 			if isProtected(route.Path) {
                 operation.Security = jwtSecurityRequirement
+            }
+
+			if useTags {
+				err := typed.TagOperation(operation, route.Path, apiPrefix)
+				if err != nil {
+					log.Printf("[ERROR] failed to tag operation: %v", err)
+                }
             }
 
 			spec.AddOperation(route.Path, route.Method, operation)

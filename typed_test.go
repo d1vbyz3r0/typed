@@ -31,7 +31,7 @@ func TestTagOperation(t *testing.T) {
 		},
 	}
 
-	expected := []string{"tasks"}
+	expected := []string{"Tasks"}
 
 	for i, tc := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {

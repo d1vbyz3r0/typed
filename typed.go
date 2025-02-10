@@ -202,6 +202,7 @@ func extractOpTag(path string, prefix string) (string, error) {
 	}
 
 	path, _ = strings.CutPrefix(path, "/")
+	path = strings.Title(path)
 
 	parts := strings.Split(path, "/")
 	if len(parts) == 0 {

@@ -3,7 +3,7 @@ module github.com/d1vbyz3r0/typed
 go 1.22.12
 
 require (
-	github.com/getkin/kin-openapi v0.129.0
+	github.com/getkin/kin-openapi v0.129.1-0.20250210111315-050a93091266
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/oasdiff/yaml3 v0.0.0-20241210130736-a94c01f36349
 	github.com/sirupsen/logrus v1.9.3

@@ -17,15 +17,15 @@ import (
 var specBuilderTemplate string
 
 type TemplateArgs struct {
-	Types        map[string]string
-	Imports      []string
-	Title        string
-	Version      string
-	ServerUrl    string
-	HandlersPkgs []HandlersConfig
-	ServerInit   string
-	ServerPkg    string
-	SpecPath     string
+	Types              map[string]string
+	Imports            []string
+	Title              string
+	Version            string
+	ServerUrl          string
+	HandlersPkgs       []HandlersConfig
+	RoutesProviderCtor string
+	RoutesProviderPkg  string
+	SpecPath           string
 }
 
 // SearchPatterns is map, where key is packages pattern and val is regex search pattern
@@ -120,15 +120,15 @@ func (g *Generator) Generate() error {
 	defer f.Close()
 
 	return tmpl.Execute(f, TemplateArgs{
-		Title:        g.cfg.Input.Title,
-		Version:      g.cfg.Input.Version,
-		ServerUrl:    g.cfg.Input.ServerUrl,
-		Types:        _types,
-		Imports:      validImports,
-		HandlersPkgs: g.cfg.Input.Handlers,
-		ServerInit:   g.buildCtorCall(),
-		ServerPkg:    g.cfg.Input.RoutesProviderPkg,
-		SpecPath:     g.cfg.Output.SpecPath,
+		Title:              g.cfg.Input.Title,
+		Version:            g.cfg.Input.Version,
+		ServerUrl:          g.cfg.Input.ServerUrl,
+		Types:              _types,
+		Imports:            validImports,
+		HandlersPkgs:       g.cfg.Input.Handlers,
+		RoutesProviderCtor: g.buildCtorCall(),
+		RoutesProviderPkg:  g.cfg.Input.RoutesProviderPkg,
+		SpecPath:           g.cfg.Output.SpecPath,
 	})
 }
 

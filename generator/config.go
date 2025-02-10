@@ -45,7 +45,7 @@ func (c *Config) Validate() error {
 }
 
 type InputConfig struct {
-	ApiPrefix          *string          `yaml:"api_prefix,omitempty"`
+	ApiPrefix          *string          `yaml:"api-prefix,omitempty"`
 	Title              string           `yaml:"title"`
 	Version            string           `yaml:"version"`
 	ServerUrl          string           `yaml:"server-url"`

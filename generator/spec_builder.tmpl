@@ -146,8 +146,6 @@ func main() {
 
     for _, route := range ra.Routes() {
         if route.Handler != nil {
-			route.Path = typed.NormalizePathParams(route.Path)
-
 			operation := openapi3.NewOperation()
             typed.AddPathParams(operation, route)
             typed.AddRequestBody(operation, route, openapiGen, registry)
@@ -165,6 +163,7 @@ func main() {
                 }
             }
 
+            route.Path = typed.NormalizePathParams(route.Path)
 			spec.AddOperation(route.Path, route.Method, operation)
         }
     }

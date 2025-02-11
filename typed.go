@@ -11,6 +11,17 @@ import (
 	"strings"
 )
 
+func NormalizePathParams(path string) string {
+	segments := strings.Split(path, "/")
+	for i, segment := range segments {
+		if strings.HasPrefix(segment, ":") {
+			trimmed := strings.TrimPrefix(segment, ":")
+			segments[i] = "{" + trimmed + "}"
+		}
+	}
+	return strings.Join(segments, "/")
+}
+
 func IsJwtMiddleware(mw echo.MiddlewareFunc) bool {
 	funcName := runtime.FuncForPC(reflect.ValueOf(mw).Pointer()).Name()
 	return strings.Contains(funcName, "github.com/labstack/echo-jwt")

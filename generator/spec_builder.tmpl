@@ -151,6 +151,7 @@ func main() {
             typed.AddRequestBody(operation, route, openapiGen, registry)
             typed.AddResponses(operation, route, openapiGen, registry)
             typed.AddQueryParams(operation, route)
+            typed.AddOperationId(operation, route)
 
 			if isProtected(route.Path) {
                 operation.Security = jwtSecurityRequirement

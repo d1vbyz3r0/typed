@@ -246,6 +246,12 @@ func TagOperation(op *openapi3.Operation, path string, apiPrefix string) error {
 	return nil
 }
 
+func AddOperationId(op *openapi3.Operation, r *generator.RouteInfo) {
+	if op != nil {
+		op.OperationID = r.Handler.Name
+	}
+}
+
 func extractOpTag(path string, prefix string) (string, error) {
 	// /api/v1/tasks -> tasks
 	path, found := strings.CutPrefix(path, prefix)

@@ -1,15 +1,71 @@
 package typed
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/d1vbyz3r0/typed/generator"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
+	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 )
+
+type SpecFormat string
+
+const (
+	UndefinedFormat = SpecFormat("")
+	YamlFormat      = SpecFormat("yaml")
+	JsonFormat      = SpecFormat("json")
+)
+
+func getSpecFormat(path string) SpecFormat {
+	ext := filepath.Ext(path)
+	switch ext {
+	case ".yaml", ".yml":
+		return YamlFormat
+
+	case ".json":
+		return JsonFormat
+
+	default:
+		return UndefinedFormat
+	}
+}
+
+func SaveSpec(spec *openapi3.T, outPath string) error {
+	f, err := os.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+
+	format := getSpecFormat(outPath)
+	switch format {
+	case YamlFormat:
+		err := yaml.NewEncoder(f).Encode(spec)
+		if err != nil {
+			return fmt.Errorf("encode spec: %w", err)
+		}
+
+	case JsonFormat:
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		err := enc.Encode(spec)
+		if err != nil {
+			return fmt.Errorf("encode spec: %w", err)
+		}
+
+	case UndefinedFormat:
+		return fmt.Errorf("can't define spec format basing on path, check extension: %s", outPath)
+	}
+
+	return nil
+}
 
 func NormalizePathParams(path string) string {
 	segments := strings.Split(path, "/")
@@ -35,6 +91,12 @@ func AddPathParams(op *openapi3.Operation, r *generator.RouteInfo) {
 
 		param := openapi3.NewPathParameter(p.Name)
 		param.Required = p.Required
+		param.Schema = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type:     &openapi3.Types{toOpenApiType(p.Type)},
+				Nullable: false,
+			},
+		}
 		op.AddParameter(param)
 	}
 }
@@ -45,32 +107,11 @@ func AddQueryParams(op *openapi3.Operation, r *generator.RouteInfo) {
 			continue
 		}
 
-		var ptype string
-		switch p.Type {
-		case "string":
-			ptype = openapi3.TypeString
-
-		case "array":
-			ptype = openapi3.TypeArray
-
-		case "int", "int32", "int64", "uint", "uint32", "uint16", "uint64":
-			ptype = openapi3.TypeInteger
-
-		case "float32", "float64":
-			ptype = openapi3.TypeNumber
-
-		case "bool":
-			ptype = openapi3.TypeBoolean
-
-		default:
-			ptype = openapi3.TypeString
-		}
-
 		param := openapi3.NewQueryParameter(p.Name)
 		param.Required = p.Required
 		param.Schema = &openapi3.SchemaRef{
 			Value: &openapi3.Schema{
-				Type:     &openapi3.Types{ptype},
+				Type:     &openapi3.Types{toOpenApiType(p.Type)},
 				Nullable: !p.Required,
 			},
 		}
@@ -221,4 +262,29 @@ func extractOpTag(path string, prefix string) (string, error) {
 	}
 
 	return parts[0], nil
+}
+
+func toOpenApiType(t string) string {
+	var ptype string
+	switch t {
+	case "string":
+		ptype = openapi3.TypeString
+
+	case "array":
+		ptype = openapi3.TypeArray
+
+	case "int", "int32", "int64", "uint", "uint32", "uint16", "uint64":
+		ptype = openapi3.TypeInteger
+
+	case "float32", "float64":
+		ptype = openapi3.TypeNumber
+
+	case "bool":
+		ptype = openapi3.TypeBoolean
+
+	default:
+		ptype = openapi3.TypeString
+	}
+
+	return ptype
 }

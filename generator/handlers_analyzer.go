@@ -2,7 +2,6 @@ package generator
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"go/ast"
 	"go/types"
 	"golang.org/x/tools/go/packages"
@@ -91,9 +90,11 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
+	logger.Debug("Loaded %d packages using patterns: %v", len(pkgs), patterns)
+
 	// Process each package under the base handlers directory
 	for _, pkg := range pkgs {
-		log.Debugf("Analyzing package: %s", pkg.Types.Path())
+		logger.Debug("Analyzing package: %s", pkg.Types.Path())
 		err := ha.analyzePackage(pkg)
 		if err != nil {
 			return fmt.Errorf("analyze package: %w", err)
@@ -109,7 +110,7 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		}
 	}
 
-	log.Infof("Found %d handlers total", len(ha.handlers))
+	logger.Info("Found %d handlers total", len(ha.handlers))
 
 	return nil
 }
@@ -125,16 +126,16 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 				// Check if function returns echo.HandlerFunc or is echo.HandlerFunc
 				if ha.isHandlerFunction(funcDecl, pkg.TypesInfo) {
 					responses := ha.analyzeResponses(funcDecl, pkg.TypesInfo)
-					log.WithField("responses", responses).Debug("Found responses")
+					logger.Debug("Found responses: %+v", responses)
 
 					requestDTO := ha.analyzeRequestDTO(funcDecl, pkg.TypesInfo)
 					if requestDTO != nil {
-						log.WithField("dto", *requestDTO).Debug("Found request dto")
+						logger.Debug("Found request dto: %+v", requestDTO)
 					}
 
 					queryParams := ha.analyzeQueryParams(funcDecl, pkg.TypesInfo)
 					if len(queryParams) > 0 {
-						log.WithField("queryParams", queryParams).Debug("Found query params")
+						logger.Debug("Found query params: %+v", queryParams)
 					}
 
 					doc := ha.extractDocumentation(funcDecl)
@@ -154,7 +155,8 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 					// Use package path + name as key
 					key := pkg.Types.Name() + "." + handlerInfo.Name
 					ha.handlers[key] = handlerInfo
-					log.WithField("info", *handlerInfo).Debugf("Found handler: %s", key)
+
+					logger.Debug("Found handler: %s. Info: %+v", key, *handlerInfo)
 				}
 			}
 			return true
@@ -246,6 +248,8 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 						respInfo.TypeName = ha.extractTypeName(responseType)
 						respInfo.Package = ha.extractPackage(responseType)
 						responses[statusCode] = respInfo
+
+						logger.Debug("Found response with status code: %d. Info: %+v", statusCode, *respInfo)
 					}
 				} else if _func == "NoContent" {
 					if len(call.Args) == 1 {
@@ -256,6 +260,8 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 							ContentType: "text/plain",
 						}
 						responses[statusCode] = respInfo
+
+						logger.Debug("Found response with status code: %d. Info: %+v", statusCode, *respInfo)
 					}
 				}
 			}
@@ -391,10 +397,11 @@ func (ha *HandlerAnalyzer) analyzeQueryParams(funcDecl *ast.FuncDecl, info *type
 					if len(call.Args) > 0 {
 						// Extract param name from first argument
 						if lit, ok := call.Args[0].(*ast.BasicLit); ok {
+							name := strings.Trim(lit.Value, "\"")
 							params = append(params, &QueryParam{
-								Name:     strings.Trim(lit.Value, "\""),
+								Name:     name,
 								Required: false,
-								Type:     "string", // Default type for QueryParam
+								Type:     paramTypeFromContext(funcDecl, name),
 							})
 						}
 					}

@@ -80,7 +80,7 @@ func addJwtAuthSchema() {
     spec.Components.SecuritySchemes[bearerAuthScheme] = &openapi3.SecuritySchemeRef{
         Value: &openapi3.SecurityScheme{
             Type: "http",
-            Scheme: "Bearer",
+            Scheme: "bearer",
             BearerFormat: "JWT",
         },
     }

@@ -3,9 +3,8 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
-
-	yaml "github.com/oasdiff/yaml3"
 )
 
 func LoadConfig(path string) (*Config, error) {

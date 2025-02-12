@@ -1,7 +1,6 @@
 package generator
 
 import (
-	log "github.com/sirupsen/logrus"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -21,7 +20,7 @@ func newStatusCodeResolver() *statusCodeResolver {
 
 	pkgs, err := packages.Load(cfg, "net/http")
 	if err != nil {
-		log.Warnf("Failed to load http package: %v", err)
+		logger.Warn("Failed to load http package: %v", err)
 		return &statusCodeResolver{}
 	}
 

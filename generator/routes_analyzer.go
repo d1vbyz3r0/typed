@@ -2,7 +2,6 @@ package generator
 
 import (
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -70,10 +69,10 @@ func classifyHandler(name string) HandlerType {
 }
 
 func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
-	log.Infof("Matching %d routes with handlers", len(ra.routes))
+	logger.Info("Matching %d routes with handlers", len(ra.routes))
 
 	for _, route := range ra.routes {
-		log.Debugf("Processing route: %s %s [%s]", route.Method, route.Path, route.HandlerName)
+		logger.Debug("Processing route: %s %s [%s]", route.Method, route.Path, route.HandlerName)
 		// Example route name: "xxx/internal/api.(*Server).mapUsers.LoginUserHandler.func1"
 		parts := strings.Split(route.HandlerName, ".")
 
@@ -89,17 +88,21 @@ func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
 			if strings.HasSuffix(key, handlerName) {
 				route.Handler = handler
 				route.HandlerType = getHandlerType(handler)
-				log.Debugf("Matched handler: %s", key)
+				for _, param := range route.PathParams {
+					param.Type = paramTypeFromContext(handler.Node, param.Name)
+				}
+
+				logger.Debug("Matched handler: %s", key)
 				break
 			}
 		}
 
 		if route.Handler == nil {
-			log.Warnf("No handler found for route: %s %s", route.Method, route.Path)
+			logger.Warn("No handler found for route: %s %s", route.Method, route.Path)
 		}
 	}
 
-	log.Infof("Handler matching completed")
+	logger.Info("Handler matching completed")
 }
 
 func getHandlerType(handler *HandlerInfo) HandlerType {

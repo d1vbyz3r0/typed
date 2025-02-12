@@ -69,10 +69,10 @@ func classifyHandler(name string) HandlerType {
 }
 
 func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
-	logger.Info("Matching %d routes with handlers", len(ra.routes))
+	logger.Info("Matching routes with handlers", "count", len(ra.routes))
 
 	for _, route := range ra.routes {
-		logger.Debug("Processing route: %s %s [%s]", route.Method, route.Path, route.HandlerName)
+		logger.Debug("Processing route", "method", route.Method, "path", route.Path, "handler_name", route.HandlerName)
 		// Example route name: "xxx/internal/api.(*Server).mapUsers.LoginUserHandler.func1"
 		parts := strings.Split(route.HandlerName, ".")
 
@@ -92,13 +92,13 @@ func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
 					param.Type = paramTypeFromContext(handler.Node, param.Name)
 				}
 
-				logger.Debug("Matched handler: %s", key)
+				logger.Debug("Matched handler", "key", key)
 				break
 			}
 		}
 
 		if route.Handler == nil {
-			logger.Warn("No handler found for route: %s %s", route.Method, route.Path)
+			logger.Warn("No handler found for route", "method", route.Method, "path", route.Path)
 		}
 	}
 

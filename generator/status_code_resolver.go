@@ -20,7 +20,7 @@ func newStatusCodeResolver() *statusCodeResolver {
 
 	pkgs, err := packages.Load(cfg, "net/http")
 	if err != nil {
-		logger.Warn("Failed to load http package: %v", err)
+		logger.Warn("Failed to load http package", err)
 		return &statusCodeResolver{}
 	}
 

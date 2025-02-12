@@ -90,11 +90,11 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
-	logger.Debug("Loaded %d packages using patterns: %v", len(pkgs), patterns)
+	logger.Debug("Loaded packages", "count", len(pkgs), "patterns", patterns)
 
 	// Process each package under the base handlers directory
 	for _, pkg := range pkgs {
-		logger.Debug("Analyzing package: %s", pkg.Types.Path())
+		logger.Debug("Analyzing package", "path", pkg.Types.Path())
 		err := ha.analyzePackage(pkg)
 		if err != nil {
 			return fmt.Errorf("analyze package: %w", err)
@@ -110,7 +110,7 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		}
 	}
 
-	logger.Info("Found %d handlers total", len(ha.handlers))
+	logger.Info("Discovering finished", "handlers_count", len(ha.handlers))
 
 	return nil
 }
@@ -126,16 +126,16 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 				// Check if function returns echo.HandlerFunc or is echo.HandlerFunc
 				if ha.isHandlerFunction(funcDecl, pkg.TypesInfo) {
 					responses := ha.analyzeResponses(funcDecl, pkg.TypesInfo)
-					logger.Debug("Found responses: %+v", responses)
+					logger.Debug("Found responses", "responses", responses)
 
 					requestDTO := ha.analyzeRequestDTO(funcDecl, pkg.TypesInfo)
 					if requestDTO != nil {
-						logger.Debug("Found request dto: %+v", requestDTO)
+						logger.Debug("Found request dto", "dto", requestDTO)
 					}
 
 					queryParams := ha.analyzeQueryParams(funcDecl, pkg.TypesInfo)
 					if len(queryParams) > 0 {
-						logger.Debug("Found query params: %+v", queryParams)
+						logger.Debug("Found query params", "params", queryParams)
 					}
 
 					doc := ha.extractDocumentation(funcDecl)
@@ -156,7 +156,7 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 					key := pkg.Types.Name() + "." + handlerInfo.Name
 					ha.handlers[key] = handlerInfo
 
-					logger.Debug("Found handler: %s. Info: %+v", key, *handlerInfo)
+					logger.Debug("Found handler", "key", key, "info", *handlerInfo)
 				}
 			}
 			return true
@@ -249,7 +249,7 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 						respInfo.Package = ha.extractPackage(responseType)
 						responses[statusCode] = respInfo
 
-						logger.Debug("Found response with status code: %d. Info: %+v", statusCode, *respInfo)
+						logger.Debug("Found response", "status_code", statusCode, "info", *respInfo)
 					}
 				} else if _func == "NoContent" {
 					if len(call.Args) == 1 {
@@ -261,7 +261,7 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 						}
 						responses[statusCode] = respInfo
 
-						logger.Debug("Found response with status code: %d. Info: %+v", statusCode, *respInfo)
+						logger.Debug("Found response", "status_code", statusCode, "info", *respInfo)
 					}
 				}
 			}

@@ -47,7 +47,9 @@ func SaveSpec(spec *openapi3.T, outPath string) error {
 	format := getSpecFormat(outPath)
 	switch format {
 	case YamlFormat:
-		err := yaml.NewEncoder(f).Encode(spec)
+		enc := yaml.NewEncoder(f)
+		enc.SetIndent(2)
+		err := enc.Encode(spec)
 		if err != nil {
 			return fmt.Errorf("encode spec: %w", err)
 		}

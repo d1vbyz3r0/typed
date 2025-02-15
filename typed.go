@@ -23,6 +23,8 @@ const (
 	JsonFormat      = SpecFormat("json")
 )
 
+var NoContent = "No content"
+
 func getSpecFormat(path string) SpecFormat {
 	ext := filepath.Ext(path)
 	switch ext {
@@ -227,7 +229,7 @@ func AddResponses(
 			if resp.NoContent {
 				response = &openapi3.Response{
 					Content:     map[string]*openapi3.MediaType{},
-					Description: nil,
+					Description: &NoContent,
 				}
 			} else {
 				response = &openapi3.Response{

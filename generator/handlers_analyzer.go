@@ -54,6 +54,7 @@ type ResponseInfo struct {
 	IsArray     bool
 	Package     string
 	ContentType string
+	NoContent   bool
 }
 
 type HandlerAnalyzer struct {
@@ -255,9 +256,8 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 					if len(call.Args) == 1 {
 						statusCode := ha.codeResolver.resolve(call.Args[0], info)
 						respInfo := &ResponseInfo{
-							TypeName:    "string",
-							StatusCode:  statusCode,
-							ContentType: "text/plain",
+							StatusCode: statusCode,
+							NoContent:  true,
 						}
 						responses[statusCode] = respInfo
 

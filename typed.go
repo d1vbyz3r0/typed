@@ -224,13 +224,20 @@ func AddResponses(
 			}
 
 		} else {
-			response = &openapi3.Response{
-				Content: map[string]*openapi3.MediaType{
-					resp.ContentType: {
-						Schema: schemaRef,
+			if resp.NoContent {
+				response = &openapi3.Response{
+					Content:     map[string]*openapi3.MediaType{},
+					Description: nil,
+				}
+			} else {
+				response = &openapi3.Response{
+					Content: map[string]*openapi3.MediaType{
+						resp.ContentType: {
+							Schema: schemaRef,
+						},
 					},
-				},
-				Description: &resp.TypeName,
+					Description: &resp.TypeName,
+				}
 			}
 		}
 

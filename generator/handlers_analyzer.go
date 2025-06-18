@@ -96,8 +96,6 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 
 	logger.Debug("Loaded packages", "count", len(pkgs), "patterns", patterns)
 
-	fmt.Println("hui!")
-
 	// Process each package under the base handlers directory
 	for _, pkg := range pkgs {
 		logger.Debug("Analyzing package", "path", pkg.Types.Path())
@@ -143,6 +141,8 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 					if len(queryParams) > 0 {
 						logger.Debug("Found query params", "params", queryParams)
 					}
+
+					fmt.Println(queryParams)
 
 					logger.Debug("extracted query params", "params", queryParams)
 

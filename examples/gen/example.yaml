@@ -1,0 +1,148 @@
+components:
+  schemas:
+    Error:
+      properties:
+        message:
+          type: string
+      type: object
+    User:
+      properties:
+        email:
+          type: string
+        id:
+          type: integer
+        name:
+          type: string
+        role:
+          enum:
+            - user
+            - admin
+          type: string
+      type: object
+    UsersFilter:
+      properties:
+        Limit:
+          maximum: 1.8446744073709552e+19
+          minimum: 0
+          type: integer
+        Offset:
+          maximum: 1.8446744073709552e+19
+          minimum: 0
+          type: integer
+        Search:
+          nullable: true
+          type: string
+      type: object
+info:
+  title: Example api
+  version: 0.0.1
+openapi: 3.0.0
+paths:
+  /api/v1/users/:
+    get:
+      operationId: GetUsers
+      parameters:
+        - in: query
+          name: search
+          schema:
+            nullable: true
+            type: string
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/User'
+                type: array
+          description: dto.User
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        default:
+          description: ""
+      tags:
+        - Users
+    post:
+      operationId: CreateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: dto.User
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        default:
+          description: ""
+      tags:
+        - Users
+  /api/v1/users/{userId}:
+    get:
+      operationId: GetUser
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: dto.User
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: dto.Error
+        default:
+          description: ""
+      tags:
+        - Users
+servers:
+  - url: http://localhost:8080

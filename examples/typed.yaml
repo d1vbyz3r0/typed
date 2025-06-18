@@ -1,0 +1,18 @@
+input:
+  title: "Example api"
+  version: "0.0.1"
+  server-url: http://localhost:8080
+  routes-provider-ctor: NewServerBuilder
+  routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
+  api-prefix: /api/v1
+  handlers:
+    - path: ./handlers # Relative to generation package path
+      recursive: true
+
+  models:
+    - path: ./dto
+      recursive: false
+
+output:
+  path: ../gen/spec_gen.go
+  spec-path: ../gen/example.yaml

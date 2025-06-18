@@ -144,7 +144,7 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 					}
 
 					p, _ := json.Marshal(queryParams)
-					fmt.Println(p)
+					fmt.Println(string(p))
 
 					logger.Debug("extracted query params", "params", queryParams)
 

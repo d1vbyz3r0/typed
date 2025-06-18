@@ -96,6 +96,8 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 
 	logger.Debug("Loaded packages", "count", len(pkgs), "patterns", patterns)
 
+	fmt.Println("hui!")
+
 	// Process each package under the base handlers directory
 	for _, pkg := range pkgs {
 		logger.Debug("Analyzing package", "path", pkg.Types.Path())

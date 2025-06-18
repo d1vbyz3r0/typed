@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/types"
@@ -142,7 +143,8 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 						logger.Debug("Found query params", "params", queryParams)
 					}
 
-					fmt.Println(queryParams)
+					p, _ := json.Marshal(queryParams)
+					fmt.Println(p)
 
 					logger.Debug("extracted query params", "params", queryParams)
 

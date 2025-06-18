@@ -142,6 +142,8 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 						logger.Debug("Found query params", "params", queryParams)
 					}
 
+					logger.Debug("extracted query params", "params", queryParams)
+
 					doc := ha.extractDocumentation(funcDecl)
 
 					handlerInfo := &HandlerInfo{

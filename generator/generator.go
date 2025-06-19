@@ -49,9 +49,7 @@ type Generator struct {
 
 func New(cfg *Config) *Generator {
 	if cfg.Debug {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}))
+		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
 	return &Generator{
@@ -61,7 +59,7 @@ func New(cfg *Config) *Generator {
 
 func (g *Generator) Generate() error {
 	cfg := &packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedFiles,
+		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedFiles | packages.NeedName,
 	}
 
 	sp, err := g.buildPatterns()
@@ -80,10 +78,10 @@ func (g *Generator) Generate() error {
 	enumsExtractor := newEnumExtractor()
 
 	for _, pkg := range pkgs {
-		logger.Debug("go files", "files", pkg.GoFiles)
+		slog.Debug("go files", "files", pkg.GoFiles)
 		for _, f := range pkg.GoFiles {
-			logger.Debug("searching enums", "file", f)
-			err := enumsExtractor.extractFromFile(f)
+			slog.Debug("searching enums", "file", f)
+			err := enumsExtractor.extractFromFile(pkg.Name, f)
 			if err != nil {
 				return fmt.Errorf("extract enums from %s: %w", f, err)
 			}
@@ -136,7 +134,7 @@ func (g *Generator) Generate() error {
 		}
 	}
 
-	logger.Debug("generated enums ", "enums", enumsExtractor.Enums)
+	slog.Debug("generated enums ", "enums", enumsExtractor.Enums)
 
 	tmpl := template.Must(template.New("spec").Parse(specBuilderTemplate))
 	f, err := os.Create(g.cfg.Output.Path)

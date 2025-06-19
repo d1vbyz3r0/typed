@@ -18,4 +18,5 @@ func (s *server) mapHandlers() {
 	users.GET("/:userId", handlers.GetUser(nil))
 	users.GET("/", handlers.GetUsers(nil))
 	users.POST("/", handlers.CreateUser(nil))
+	users.GET("/map", handlers.ReturningMap)
 }

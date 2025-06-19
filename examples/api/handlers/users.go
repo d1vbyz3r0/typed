@@ -62,3 +62,7 @@ func CreateUser(srv UsersService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, user)
 	}
 }
+
+func ReturningMap(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string][]dto.User{})
+}

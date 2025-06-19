@@ -8,6 +8,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -105,7 +106,11 @@ func AddPathParams(op *openapi3.Operation, r *generator.RouteInfo) {
 	}
 }
 
-func AddQueryParams(op *openapi3.Operation, r *generator.RouteInfo) {
+func AddQueryParams(
+	op *openapi3.Operation,
+	r *generator.RouteInfo,
+	enums map[string][]any,
+) {
 	for _, p := range r.Handler.QueryParams {
 		if p == nil {
 			continue
@@ -113,12 +118,23 @@ func AddQueryParams(op *openapi3.Operation, r *generator.RouteInfo) {
 
 		param := openapi3.NewQueryParameter(p.Name)
 		param.Required = p.Required
-		param.Schema = &openapi3.SchemaRef{
-			Value: &openapi3.Schema{
-				Type:     &openapi3.Types{toOpenApiType(p.Type)},
-				Nullable: !p.Required,
-			},
+
+		if values, ok := enums[p.Type]; ok {
+			param.Schema = &openapi3.SchemaRef{
+				Value: &openapi3.Schema{
+					Enum:     values,
+					Nullable: !p.Required,
+				},
+			}
+		} else {
+			param.Schema = &openapi3.SchemaRef{
+				Value: &openapi3.Schema{
+					Type:     &openapi3.Types{toOpenApiType(p.Type)},
+					Nullable: !p.Required,
+				},
+			}
 		}
+
 		op.AddParameter(param)
 	}
 }
@@ -199,81 +215,59 @@ func AddResponses(
 	op *openapi3.Operation,
 	r *generator.RouteInfo,
 	openapiGen *openapi3gen.Generator,
+	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
+
 	for status, resp := range r.Handler.Responses {
 		if resp == nil {
 			continue
 		}
 
-		respType := reflect.TypeOf(registry[resp.TypeName])
-		schemaRef := openapiGen.Types[respType]
+		rk := resp.TypeName
+		if resp.IsMap {
+			rk = fmt.Sprintf("map[%s]%s", resp.KeyType, resp.ValueType)
+		}
 
-		var response *openapi3.Response
-		if resp.IsArray {
-			response = &openapi3.Response{
-				Content: map[string]*openapi3.MediaType{
-					resp.ContentType: {
-						Schema: &openapi3.SchemaRef{
-							Value: &openapi3.Schema{
-								Type:  &openapi3.Types{openapi3.TypeArray},
-								Items: schemaRef,
-							},
-						},
-					},
-				},
-				Description: &resp.TypeName,
+		var schemaRef *openapi3.SchemaRef
+		switch {
+		case resp.IsArray:
+			x := registry[rk]
+			ref, err := openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(x)))
+			if err != nil {
+				log.Println(err)
+				continue
 			}
 
-		} else if resp.IsMap {
-			var hasType *bool
-			if resp.ValueType == "any" {
-				hasType = new(bool)
-			} else {
-				hasType = new(bool)
-				*hasType = true
+			schemaRef = ref
+
+		case resp.IsMap:
+			x := registry[rk]
+			ref, err := openapiGen.NewSchemaRefForValue(x, schemas)
+			if err != nil {
+				continue
 			}
 
-			response = &openapi3.Response{
-				Content: map[string]*openapi3.MediaType{
-					resp.ContentType: {
-						Schema: &openapi3.SchemaRef{
-							Value: &openapi3.Schema{
-								Type: &openapi3.Types{openapi3.TypeObject},
-								AdditionalProperties: openapi3.AdditionalProperties{
-									Has: hasType,
-									Schema: &openapi3.SchemaRef{
-										Value: &openapi3.Schema{
-											Type:  &openapi3.Types{openapi3.TypeObject},
-											Items: schemaRef,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
+			schemaRef = ref
 
-		} else {
+		default:
 			if resp.NoContent {
-				response = &openapi3.Response{
+				op.AddResponse(status, &openapi3.Response{
 					Content:     map[string]*openapi3.MediaType{},
 					Description: &NoContent,
-				}
-			} else {
-				response = &openapi3.Response{
-					Content: map[string]*openapi3.MediaType{
-						resp.ContentType: {
-							Schema: schemaRef,
-						},
-					},
-					Description: &resp.TypeName,
-				}
+				})
+				continue
 			}
 		}
 
-		op.AddResponse(status, response)
+		op.AddResponse(status, &openapi3.Response{
+			Content: map[string]*openapi3.MediaType{
+				resp.ContentType: {
+					Schema: schemaRef,
+				},
+			},
+			Description: &resp.TypeName,
+		})
 	}
 }
 

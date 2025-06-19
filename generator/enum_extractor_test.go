@@ -33,13 +33,13 @@ const (
 	}
 
 	extractor := newEnumExtractor()
-	if err := extractor.extractFromFile(testFile); err != nil {
+	if err := extractor.extractFromFile("test", testFile); err != nil {
 		t.Fatalf("extractFromFile failed: %v", err)
 	}
 
 	cases := map[string][]any{
-		"Role":   {"admin", "user", "guest"},
-		"Status": {1, 2},
+		"test.Role":   {"admin", "user", "guest"},
+		"test.Status": {1, 2},
 	}
 
 	assert.Equal(t, extractor.Enums, cases)

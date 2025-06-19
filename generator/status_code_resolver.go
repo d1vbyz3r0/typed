@@ -5,6 +5,7 @@ import (
 	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
+	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -20,7 +21,7 @@ func newStatusCodeResolver() *statusCodeResolver {
 
 	pkgs, err := packages.Load(cfg, "net/http")
 	if err != nil {
-		logger.Warn("Failed to load http package", err)
+		slog.Warn("Failed to load http package", err)
 		return &statusCodeResolver{}
 	}
 

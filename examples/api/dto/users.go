@@ -8,7 +8,8 @@ type User struct {
 }
 
 type UsersFilter struct {
-	Search *string `query:"search"`
-	Limit  uint64  `query:"limit"`
-	Offset uint64  `query:"offset"`
+	Search *string   `query:"search"`
+	Limit  uint64    `query:"limit"`
+	Offset uint64    `query:"offset"`
+	Sort   SortOrder `query:"sort"`
 }

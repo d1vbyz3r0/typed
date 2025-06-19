@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/labstack/echo/v4"
+	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -68,10 +69,10 @@ func classifyHandler(name string) HandlerType {
 }
 
 func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
-	logger.Info("Matching routes with handlers", "count", len(ra.routes))
+	slog.Info("Matching routes with handlers", "count", len(ra.routes))
 
 	for _, route := range ra.routes {
-		logger.Debug("Processing route", "method", route.Method, "path", route.Path, "handler_name", route.HandlerName)
+		slog.Debug("Processing route", "method", route.Method, "path", route.Path, "handler_name", route.HandlerName)
 		// Example route name: "xxx/internal/api.(*Server).mapUsers.LoginUserHandler.func1"
 		parts := strings.Split(route.HandlerName, ".")
 
@@ -91,17 +92,17 @@ func (ra *RouteAnalyzer) MatchHandlers(handlers map[string]*HandlerInfo) {
 					param.Type = paramTypeFromContext(handler.Node, param.Name)
 				}
 
-				logger.Debug("Matched handler", "key", key)
+				slog.Debug("Matched handler", "key", key)
 				break
 			}
 		}
 
 		if route.Handler == nil {
-			logger.Warn("No handler found for route", "method", route.Method, "path", route.Path)
+			slog.Warn("No handler found for route", "method", route.Method, "path", route.Path)
 		}
 	}
 
-	logger.Info("Handler matching completed")
+	slog.Info("Handler matching completed")
 }
 
 func getHandlerType(handler *HandlerInfo) HandlerType {

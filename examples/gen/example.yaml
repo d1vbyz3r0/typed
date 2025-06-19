@@ -1,11 +1,11 @@
 components:
   schemas:
-    Error:
+    dto.Error:
       properties:
         message:
           type: string
       type: object
-    User:
+    dto.User:
       properties:
         email:
           type: string
@@ -19,7 +19,7 @@ components:
             - admin
           type: string
       type: object
-    UsersFilter:
+    dto.UsersFilter:
       properties:
         Limit:
           maximum: 1.8446744073709552e+19
@@ -31,6 +31,11 @@ components:
           type: integer
         Search:
           nullable: true
+          type: string
+        Sort:
+          enum:
+            - asc
+            - desc
           type: string
       type: object
 info:
@@ -57,26 +62,29 @@ paths:
           required: true
           schema:
             type: integer
+        - in: query
+          name: sort
+          required: true
+          schema:
+            enum:
+              - asc
+              - desc
       responses:
         "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/dto.User'
                 type: array
           description: dto.User
         "400":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+            application/json: {}
           description: dto.Error
         "500":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+            application/json: {}
           description: dto.Error
         default:
           description: ""
@@ -88,25 +96,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/dto.User'
       responses:
         "200":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
+            application/json: {}
           description: dto.User
         "400":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+            application/json: {}
           description: dto.Error
         "500":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+            application/json: {}
           description: dto.Error
         default:
           description: ""
@@ -124,22 +126,34 @@ paths:
       responses:
         "200":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
+            application/json: {}
           description: dto.User
         "400":
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+            application/json: {}
           description: dto.Error
         "500":
           content:
+            application/json: {}
+          description: dto.Error
+        default:
+          description: ""
+      tags:
+        - Users
+  /api/v1/users/map:
+    get:
+      operationId: ReturningMap
+      responses:
+        "200":
+          content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-          description: dto.Error
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/dto.User'
+                  type: array
+                type: object
+          description: map[string][]github.com/d1vbyz3r0/typed/examples/api/dto.User
         default:
           description: ""
       tags:

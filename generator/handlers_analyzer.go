@@ -1,11 +1,11 @@
 package generator
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/types"
 	"golang.org/x/tools/go/packages"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -95,11 +95,11 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
-	logger.Debug("Loaded packages", "count", len(pkgs), "patterns", patterns)
+	slog.Debug("Loaded packages", "count", len(pkgs), "patterns", patterns)
 
 	// Process each package under the base handlers directory
 	for _, pkg := range pkgs {
-		logger.Debug("Analyzing package", "path", pkg.Types.Path())
+		slog.Debug("Analyzing package", "path", pkg.Types.Path())
 		err := ha.analyzePackage(pkg)
 		if err != nil {
 			return fmt.Errorf("analyze package: %w", err)
@@ -115,7 +115,7 @@ func (ha *HandlerAnalyzer) DiscoverHandlers() error {
 		}
 	}
 
-	logger.Info("Discovering finished", "handlers_count", len(ha.handlers))
+	slog.Info("Discovering finished", "handlers_count", len(ha.handlers))
 
 	return nil
 }
@@ -131,22 +131,19 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 				// Check if function returns echo.HandlerFunc or is echo.HandlerFunc
 				if ha.isHandlerFunction(funcDecl, pkg.TypesInfo) {
 					responses := ha.analyzeResponses(funcDecl, pkg.TypesInfo)
-					logger.Debug("Found responses", "responses", responses)
+					slog.Debug("Found responses", "responses", responses)
 
 					requestDTO := ha.analyzeRequestDTO(funcDecl, pkg.TypesInfo)
 					if requestDTO != nil {
-						logger.Debug("Found request dto", "dto", requestDTO)
+						slog.Debug("Found request dto", "dto", requestDTO)
 					}
 
 					queryParams := ha.analyzeQueryParams(funcDecl, pkg.TypesInfo)
 					if len(queryParams) > 0 {
-						logger.Debug("Found query params", "params", queryParams)
+						slog.Debug("Found query params", "params", queryParams)
 					}
 
-					p, _ := json.Marshal(queryParams)
-					fmt.Println(string(p))
-
-					logger.Debug("extracted query params", "params", queryParams)
+					slog.Debug("extracted query params", "params", queryParams)
 
 					doc := ha.extractDocumentation(funcDecl)
 
@@ -166,7 +163,7 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 					key := pkg.Types.Name() + "." + handlerInfo.Name
 					ha.handlers[key] = handlerInfo
 
-					logger.Debug("Found handler", "key", key, "info", *handlerInfo)
+					slog.Debug("Found handler", "key", key, "info", *handlerInfo)
 				}
 			}
 			return true
@@ -284,7 +281,17 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 
 						case *types.Map:
 							respInfo.Type = rt
-							respInfo.TypeName = fmt.Sprintf("map[%s]%s", rt.Key().String(), rt.Elem().String())
+							kt := ha.extractTypeName(rt.Key())
+							if kt == "" {
+								kt = rt.Key().String()
+							}
+
+							et := ha.extractTypeName(rt.Elem())
+							if et == "" {
+								et = rt.Elem().String()
+							}
+
+							respInfo.TypeName = fmt.Sprintf("map[%s]%s", kt, et)
 							respInfo.Package = "builtin"
 							respInfo.IsMap = true
 							respInfo.KeyType = rt.Key().String()
@@ -304,7 +311,7 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 						}
 
 						responses[statusCode] = respInfo
-						logger.Debug("Found response", "status_code", statusCode, "info", *respInfo)
+						slog.Debug("Found response", "status_code", statusCode, "info", *respInfo)
 					}
 				} else if _func == "NoContent" {
 					if len(call.Args) == 1 {
@@ -315,7 +322,7 @@ func (ha *HandlerAnalyzer) analyzeResponses(funcDecl *ast.FuncDecl, info *types.
 						}
 						responses[statusCode] = respInfo
 
-						logger.Debug("Found response", "status_code", statusCode, "info", *respInfo)
+						slog.Debug("Found response", "status_code", statusCode, "info", *respInfo)
 					}
 				}
 			}
@@ -397,12 +404,17 @@ func (ha *HandlerAnalyzer) extractStructQueryParams(t types.Type) []*QueryParam 
 			ftype = ftype[1:] // remove "*"
 		}
 
+		tname := ha.extractTypeName(field.Type())
+		if tname == "" {
+			tname = ftype
+		}
+
 		// Check for query tag
 		if queryTag := reflect.StructTag(tag).Get("query"); queryTag != "" {
 			params = append(params, &QueryParam{
 				Name:     queryTag,
 				Required: !types.IsInterface(field.Type()) && !isPtr,
-				Type:     ftype,
+				Type:     tname,
 			})
 		}
 	}

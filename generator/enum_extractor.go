@@ -18,7 +18,7 @@ func newEnumExtractor() *enumExtractor {
 	}
 }
 
-func (e *enumExtractor) extractFromFile(filename string) error {
+func (e *enumExtractor) extractFromFile(pkgName string, filename string) error {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filename, nil, parser.AllErrors)
 	if err != nil {
@@ -59,7 +59,8 @@ func (e *enumExtractor) extractFromFile(filename string) error {
 								return err
 							}
 
-							e.Enums[ident.Name] = append(e.Enums[ident.Name], lit)
+							k := pkgName + "." + ident.Name
+							e.Enums[k] = append(e.Enums[k], lit)
 						}
 					}
 
@@ -71,7 +72,8 @@ func (e *enumExtractor) extractFromFile(filename string) error {
 								return err
 							}
 
-							e.Enums[funIdent.Name] = append(e.Enums[funIdent.Name], parsedLit)
+							k := pkgName + "." + funIdent.Name
+							e.Enums[k] = append(e.Enums[k], parsedLit)
 						}
 					}
 				}

@@ -13,6 +13,7 @@ import (
 	"log"
 	"mime/multipart"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -33,8 +34,8 @@ var (
 	}
 
 	enums = map[string][]any{
-		"SortOrder": {"asc", "desc"},
-		"UserRole":  {"user", "admin"},
+		"dto.SortOrder": {"asc", "desc"},
+		"dto.UserRole":  {"user", "admin"},
 	}
 
 	openapiGen = openapi3gen.NewGenerator(
@@ -45,6 +46,11 @@ var (
 			ExportGenerics:         false,
 		}),
 		openapi3gen.SchemaCustomizer(customizer),
+		openapi3gen.CreateTypeNameGenerator(func(t reflect.Type) string {
+			parts := strings.Split(t.String(), "/")
+			_ = parts
+			return t.String()
+		}),
 	)
 
 	spec = &openapi3.T{
@@ -103,7 +109,7 @@ func customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 		schema.Format = "binary"
 	}
 
-	if values, ok := enums[t.Name()]; ok {
+	if values, ok := enums[t.String()]; ok {
 		schema.Enum = make([]interface{}, len(values))
 		for i, v := range values {
 			schema.Enum[i] = v
@@ -149,17 +155,34 @@ func main() {
 		if route.Handler != nil {
 			for _, r := range route.Handler.Responses {
 				if r.IsMap {
-					// TODO: need to deal with types...
+					valT := typed.ExtractTypeName(r.ValueType)
+					if valT != "" {
+						r.ValueType = valT
+					}
+
 					mapKey := fmt.Sprintf("map[%s]%s", r.KeyType, r.ValueType)
-					registry[mapKey] = new(map[string]any)
+
+					valueType, ok := typed.ResolveReflectType(r.ValueType, registry)
+					if !ok {
+						log.Printf("[WARN] cannot resolve map value type: %s", r.ValueType)
+						registry[mapKey] = new(map[string]any)
+						continue
+					}
+
+					keyType := reflect.TypeOf("")
+					mapType := reflect.MapOf(keyType, valueType)
+					_map := reflect.MakeMapWithSize(mapType, 0)
+					_map.SetMapIndex(reflect.New(keyType).Elem(), reflect.New(valueType).Elem())
+
+					registry[mapKey] = _map.Interface()
 				}
 			}
 
 			operation := openapi3.NewOperation()
 			typed.AddPathParams(operation, route)
 			typed.AddRequestBody(operation, route, openapiGen, registry)
-			typed.AddResponses(operation, route, openapiGen, registry)
-			typed.AddQueryParams(operation, route)
+			typed.AddResponses(operation, route, openapiGen, spec.Components.Schemas, registry)
+			typed.AddQueryParams(operation, route, enums)
 			typed.AddOperationId(operation, route)
 
 			if isProtected(route.Path) {

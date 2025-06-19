@@ -229,26 +229,25 @@ func AddResponses(
 			rk = fmt.Sprintf("map[%s]%s", resp.KeyType, resp.ValueType)
 		}
 
-		var schemaRef *openapi3.SchemaRef
+		var (
+			ref *openapi3.SchemaRef
+			err error
+		)
+
 		switch {
 		case resp.IsArray:
-			x := registry[rk]
-			ref, err := openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(x)))
+			ref, err = openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(registry[rk])))
 			if err != nil {
-				log.Println(err)
+				log.Println("Failed to generate schema for array item", err)
 				continue
 			}
-
-			schemaRef = ref
 
 		case resp.IsMap:
-			x := registry[rk]
-			ref, err := openapiGen.NewSchemaRefForValue(x, schemas)
+			ref, err = openapiGen.NewSchemaRefForValue(registry[rk], schemas)
 			if err != nil {
+				log.Println("Failed to generate schema for map", err)
 				continue
 			}
-
-			schemaRef = ref
 
 		default:
 			if resp.NoContent {
@@ -258,12 +257,17 @@ func AddResponses(
 				})
 				continue
 			}
+
+			ref, err = openapiGen.NewSchemaRefForValue(registry[rk], schemas)
+			if err != nil {
+				log.Println("Failed to generate shema ref for value in registry", err)
+			}
 		}
 
 		op.AddResponse(status, &openapi3.Response{
 			Content: map[string]*openapi3.MediaType{
 				resp.ContentType: {
-					Schema: schemaRef,
+					Schema: ref,
 				},
 			},
 			Description: &resp.TypeName,

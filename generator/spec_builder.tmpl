@@ -11,7 +11,6 @@ import (
     "github.com/d1vbyz3r0/typed/generator"
 	"github.com/labstack/echo/v4"
 	"github.com/d1vbyz3r0/typed"
-    "strings"
     "{{ .RoutesProviderPkg }}"
     {{- range .Imports}}
     "{{.}}"
@@ -59,8 +58,6 @@ var (
         }),
         openapi3gen.SchemaCustomizer(customizer),
 		openapi3gen.CreateTypeNameGenerator(func(t reflect.Type) string {
-			parts := strings.Split(t.String(), "/")
-			_ = parts
             return t.String()
         }),
     )
@@ -194,6 +191,7 @@ func main() {
             }
 
 			operation := openapi3.NewOperation()
+			operation.Description = route.Handler.Doc
             typed.AddPathParams(operation, route)
             typed.AddRequestBody(operation, route, openapiGen, registry)
             typed.AddResponses(operation, route, openapiGen,  spec.Components.Schemas, registry)

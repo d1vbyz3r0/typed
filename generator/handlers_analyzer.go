@@ -145,7 +145,7 @@ func (ha *HandlerAnalyzer) analyzePackage(pkg *packages.Package) error {
 
 					slog.Debug("extracted query params", "params", queryParams)
 
-					doc := ha.extractDocumentation(funcDecl)
+					doc := ha.extractFuncDocumentation(funcDecl)
 
 					handlerInfo := &HandlerInfo{
 						Name:        funcDecl.Name.String(),
@@ -663,7 +663,7 @@ func isFileField(t types.Type) (isFile bool, isArray bool) {
 	return false, false
 }
 
-func (ha *HandlerAnalyzer) extractDocumentation(funcDecl *ast.FuncDecl) string {
+func (ha *HandlerAnalyzer) extractFuncDocumentation(funcDecl *ast.FuncDecl) string {
 	if funcDecl.Doc == nil {
 		return ""
 	}

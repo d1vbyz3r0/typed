@@ -13,7 +13,6 @@ import (
 	"log"
 	"mime/multipart"
 	"reflect"
-	"strings"
 )
 
 const (
@@ -47,8 +46,6 @@ var (
 		}),
 		openapi3gen.SchemaCustomizer(customizer),
 		openapi3gen.CreateTypeNameGenerator(func(t reflect.Type) string {
-			parts := strings.Split(t.String(), "/")
-			_ = parts
 			return t.String()
 		}),
 	)
@@ -179,6 +176,7 @@ func main() {
 			}
 
 			operation := openapi3.NewOperation()
+			operation.Description = route.Handler.Doc
 			typed.AddPathParams(operation, route)
 			typed.AddRequestBody(operation, route, openapiGen, registry)
 			typed.AddResponses(operation, route, openapiGen, spec.Components.Schemas, registry)

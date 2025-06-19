@@ -15,6 +15,7 @@ type UsersService interface {
 	CreateUser(ctx context.Context, user dto.User) (dto.User, error)
 }
 
+// GetUser will return user by id
 func GetUser(srv UsersService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userId, err := strconv.Atoi(c.Param("userId"))

@@ -80,11 +80,15 @@ paths:
           description: dto.User
         "400":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         "500":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         default:
           description: ""
@@ -100,15 +104,21 @@ paths:
       responses:
         "200":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.User'
           description: dto.User
         "400":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         "500":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         default:
           description: ""
@@ -116,6 +126,7 @@ paths:
         - Users
   /api/v1/users/{userId}:
     get:
+      description: GetUser will return user by id
       operationId: GetUser
       parameters:
         - in: path
@@ -126,15 +137,21 @@ paths:
       responses:
         "200":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.User'
           description: dto.User
         "400":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         "500":
           content:
-            application/json: {}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.Error'
           description: dto.Error
         default:
           description: ""

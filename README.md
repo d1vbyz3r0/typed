@@ -35,3 +35,26 @@ So you want something like that in your go:generate directives:
 //go:generate typed -config ../typed.yaml
 //go:generate go run ../gen/spec_gen.go
 ```
+
+Note, that you should always **write struct tags**, so typed can retrieve struct field usage context
+(refer to [echo docs](https://echo.labstack.com/docs/binding) on which one you can use). For now only json, query, forms and files are supported:
+```go
+package dto
+
+type User struct {
+	Id    int      `json:"id"`
+	Name  string   `json:"name"`
+	Email string   `json:"email"`
+}
+
+type UsersFilter struct {
+	Search *string   `query:"search"`
+	Limit  uint64    `query:"limit"`
+	Offset uint64    `query:"offset"`
+}
+
+type AuthForm struct {
+	Login    string `form:"login"`
+	Password string `form:"password"`
+}
+```

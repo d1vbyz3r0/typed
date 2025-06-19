@@ -6,10 +6,11 @@ import (
 	"log"
 )
 
+var (
+	configPath = flag.String("config", "", "path to config file")
+)
+
 func main() {
-	var (
-		configPath = flag.String("config", "", "path to config file")
-	)
 	flag.Parse()
 
 	if *configPath == "" {

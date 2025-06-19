@@ -197,7 +197,13 @@ func AddRequestBody(
 			}
 		}
 	} else {
-		bodyType := reflect.TypeOf(registry[dto.TypeName])
+		t, ok := registry[dto.TypeName]
+		if !ok {
+			log.Println("[WARN] can't find type in registry", dto.TypeName)
+			return
+		}
+
+		bodyType := reflect.TypeOf(t)
 		schemaRef := openapiGen.Types[bodyType]
 		body.Content = map[string]*openapi3.MediaType{
 			dto.ContentType: {
@@ -234,18 +240,24 @@ func AddResponses(
 			err error
 		)
 
+		t, ok := registry[rk]
+		if !ok {
+			log.Println("[WARN] can't find type in registry", rk)
+			continue
+		}
+
 		switch {
 		case resp.IsArray:
-			ref, err = openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(registry[rk])))
+			ref, err = openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(t)))
 			if err != nil {
-				log.Println("Failed to generate schema for array item", err)
+				log.Println("[ERR] Failed to generate schema for array item", err)
 				continue
 			}
 
 		case resp.IsMap:
-			ref, err = openapiGen.NewSchemaRefForValue(registry[rk], schemas)
+			ref, err = openapiGen.NewSchemaRefForValue(t, schemas)
 			if err != nil {
-				log.Println("Failed to generate schema for map", err)
+				log.Println("[ERR] Failed to generate schema for map", err)
 				continue
 			}
 
@@ -258,9 +270,10 @@ func AddResponses(
 				continue
 			}
 
-			ref, err = openapiGen.NewSchemaRefForValue(registry[rk], schemas)
+			ref, err = openapiGen.NewSchemaRefForValue(t, schemas)
 			if err != nil {
-				log.Println("Failed to generate shema ref for value in registry", err)
+				log.Printf("[ERR] Failed to generate shema ref for value in registry: %T: %v", t, err)
+				continue
 			}
 		}
 

@@ -146,12 +146,12 @@ func main() {
 
     err := ra.CollectRoutes(routes)
     if err != nil {
-        log.Fatal(err)
+        log.Fatalf("collect routes: %v", err)
     }
 
     err = ha.DiscoverHandlers()
     if err != nil {
-        log.Fatal(err)
+        log.Fatalf("discover handlers: %v", err)
     }
 
     ra.MatchHandlers(ha.Handlers())
@@ -159,7 +159,7 @@ func main() {
     for _, instance := range registry {
         _, err := openapiGen.NewSchemaRefForValue(instance, spec.Components.Schemas)
         if err != nil {
-            log.Fatal(err)
+            log.Fatalf("new schema ref for value: %v", err)
         }
     }
 

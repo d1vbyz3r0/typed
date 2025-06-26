@@ -241,7 +241,7 @@ func AddResponses(
 		)
 
 		t, ok := registry[rk]
-		if !ok {
+		if !ok && !resp.NoContent {
 			log.Printf("[WARN] can't find type in registry: %v", rk)
 			continue
 		}

@@ -98,11 +98,11 @@ func (g *Generator) Generate() error {
 			}
 
 			obj := scope.Lookup(name)
-			if _, ok := obj.Type().Underlying().(*types.Struct); ok {
-				if !obj.Exported() {
-					continue
-				}
+			if !obj.Exported() {
+				continue
+			}
 
+			if _, ok := obj.Type().Underlying().(*types.Struct); ok {
 				path := obj.Pkg().Path()
 				if _, ok := imports[path]; !ok {
 					imports[path] = struct{}{}

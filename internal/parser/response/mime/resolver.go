@@ -3,6 +3,7 @@ package mime
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
 	"strconv"
@@ -42,30 +43,43 @@ func NewResolver() (*Resolver, error) {
 	return &Resolver{contentTypes: contentTypes}, nil
 }
 
+// Resolve content type as string (ex: "text/plain") or as echo constant (ex: echo.MIMETextPlain)
 func (r *Resolver) Resolve(expr ast.Expr) (string, error) {
-	sel, ok := expr.(*ast.SelectorExpr)
-	if !ok {
-		return "", fmt.Errorf("expected selector expr, got %T", expr)
-	}
-
-	x, ok := sel.X.(*ast.Ident)
-	if !ok {
-		return "", fmt.Errorf("expected identifier, got %T", sel)
-	}
-
-	if x.Name != "echo" {
-		return "", fmt.Errorf("expected const from echo, got %s", x.Name)
-	}
-
-	ct, exists := r.contentTypes[sel.Sel.Name]
-	if exists {
-		res, err := strconv.Unquote(ct)
-		if err != nil {
-			return "", fmt.Errorf("unquote constant: %w", err)
+	switch e := expr.(type) {
+	case *ast.BasicLit:
+		if e.Kind != token.STRING {
+			return "", fmt.Errorf("expected string literal, got %s", e.Kind)
 		}
 
-		return res, nil
-	}
+		contentType, err := strconv.Unquote(e.Value)
+		if err != nil {
+			return "", fmt.Errorf("unquote: %w", err)
+		}
 
-	return "", fmt.Errorf("content type not found for %s", sel.Sel.Name)
+		return contentType, nil
+
+	case *ast.SelectorExpr:
+		x, ok := e.X.(*ast.Ident)
+		if !ok {
+			return "", fmt.Errorf("expected identifier, got %T", e.X)
+		}
+
+		if x.Name != "echo" {
+			return "", fmt.Errorf("expected const from echo, got %s", x.Name)
+		}
+
+		ct, exists := r.contentTypes[e.Sel.Name]
+		if exists {
+			res, err := strconv.Unquote(ct)
+			if err != nil {
+				return "", fmt.Errorf("unquote constant: %w", err)
+			}
+			return res, nil
+		}
+
+		return "", fmt.Errorf("no content type for %s", e.Sel.Name)
+
+	default:
+		return "", fmt.Errorf("unsupported expression type %T. Expected BasicLit or SelectorExpr", e)
+	}
 }

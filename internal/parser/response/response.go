@@ -41,6 +41,7 @@ func (m StatusCodeMapping) extractResponses(
 
 		resp, supported := newContextResponseType(call, cr, mr, typesInfo)
 		if !supported {
+			slog.Debug("skipping function call", "func_name", funcDecl.Name.Name)
 			return true
 		}
 

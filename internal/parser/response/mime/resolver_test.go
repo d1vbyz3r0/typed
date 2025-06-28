@@ -31,7 +31,8 @@ func Handler(c echo.Context) error {
 			return true
 		}
 
-		contentType := r.Resolve(call.Args[1])
+		contentType, err := r.Resolve(call.Args[1])
+		require.NoError(t, err)
 		require.Equal(t, echo.MIMETextPlain, contentType)
 		return true
 	})

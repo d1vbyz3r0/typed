@@ -45,6 +45,16 @@ func resolveTypeName(t types.Type) (string, error) {
 		name := fmt.Sprintf("[]%s", elem)
 		return name, nil
 
+	case *types.Alias:
+		obj := t.Obj()
+		pkg := obj.Pkg()
+		pkgName := ""
+		if pkg != nil {
+			pkgName = pkg.Name() + "."
+		}
+
+		return pkgName + obj.Name(), nil
+
 	case *types.Map:
 		k, err := resolveTypeName(t.Key())
 		if err != nil {

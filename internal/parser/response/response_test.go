@@ -17,10 +17,6 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 	mr, err := mime.NewResolver()
 	require.NoError(t, err)
 
-	t1 := "handlers.Example"
-	t2 := "map[string]any"
-	t3 := "[]map[int]handlers.Example"
-
 	tests := []struct {
 		name string
 		want StatusCodeMapping
@@ -31,17 +27,17 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 				http.StatusOK: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    &t1,
+						TypeName:    "handlers.Example",
 					},
 					{
 						ContentType: "application/xml",
-						TypeName:    &t2,
+						TypeName:    "map[string]any",
 					},
 				},
 				http.StatusBadRequest: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    &t3,
+						TypeName:    "[]map[int]handlers.Example",
 					},
 				},
 			},

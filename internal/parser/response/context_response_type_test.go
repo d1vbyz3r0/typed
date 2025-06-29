@@ -418,7 +418,6 @@ func Handler(c echo.Context) error {
 				if !ok {
 					return true
 				}
-
 				ct, supported := newContextResponseType(call, cr, mr, nil)
 				if !supported {
 					return true

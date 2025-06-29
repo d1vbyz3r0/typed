@@ -143,18 +143,18 @@ func (t ContextResponseType) getContentTypeFromArg(arg ast.Expr) (string, error)
 	}
 }
 
-func (t ContextResponseType) TypeName() (*string, error) {
+func (t ContextResponseType) TypeName() (string, error) {
 	rawBodyFuncs := []string{jsonBlobContextFunc, xmlBlobContextFunc, streamContextFunc}
 	noBodyFuncs := []string{redirectContextFunc, noContentContextFunc}
 
 	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
-		return nil, nil
+		return "", nil
 	}
 
 	name, err := meta.GetTypeName(t.types.TypeOf(t.call.Args[1]))
 	if err != nil {
-		return nil, fmt.Errorf("get type name for %s: %w", t.funcName, err)
+		return "", fmt.Errorf("get type name for %s: %w", t.funcName, err)
 	}
 
-	return &name, nil
+	return name, nil
 }

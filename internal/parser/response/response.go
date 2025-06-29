@@ -11,8 +11,11 @@ import (
 type StatusCodeMapping map[int][]Response
 
 type Response struct {
+	// ContentType is a content type retrieved from func usage context. It's empty for Redirect and NoContent
 	ContentType string
-	TypeName    *string
+	// TypeName is a type name like it's used in code, with package name as prefix (except for std types).
+	//Field is empty for responses with empty body
+	TypeName string
 }
 
 // NewStatusCodeMapping builds StatusCodeMapping from provided handler function declaration

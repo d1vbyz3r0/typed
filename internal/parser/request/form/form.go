@@ -81,7 +81,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 
 			fields = append(fields, reflect.StructField{
 				Name: strings.Title(paramName),
-				Type: reflect.PointerTo(paramType), // We make fields pointers, since we can't determine if it's really required, at least now...
+				Type: paramType, // We make fields required, since we can't determine if it's optional, at least now...
 				Tag:  reflect.StructTag(fmt.Sprintf(`form:"%s"`, paramName)),
 			})
 		}

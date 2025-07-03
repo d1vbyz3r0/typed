@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// TODO: add context func call arguments
 type Provider func(pkg string, funcName string) (reflect.Type, bool)
 
 var providers = []Provider{

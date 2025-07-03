@@ -6,11 +6,13 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log/slog"
 	"reflect"
 	"testing"
 )
 
 func Test_NewInlineQuery(t *testing.T) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	want := reflect.StructOf([]reflect.StructField{
 		{
 			Name:      "Q1",

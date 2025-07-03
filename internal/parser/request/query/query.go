@@ -75,6 +75,13 @@ func NewInlineQueryParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 			Tag:  reflect.StructTag(fmt.Sprintf(`query:"%s"`, paramName)),
 		})
 
+		slog.Debug(
+			"found inline query param usage",
+			"handler", funcDecl.Name.Name,
+			"param", paramName,
+			"type", paramType,
+		)
+
 		return true
 	})
 

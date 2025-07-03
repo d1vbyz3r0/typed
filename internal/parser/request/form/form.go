@@ -44,6 +44,12 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 			})
 			hasFiles = true
 
+			slog.Debug(
+				"found inline form file usage",
+				"handler", funcDecl.Name.Name,
+				"param", paramName,
+			)
+
 		case "FormValue":
 			lit, ok := call.Args[0].(*ast.BasicLit)
 			if !ok {
@@ -91,6 +97,13 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 				Type: paramType, // We make fields required, since we can't determine if it's optional, at least now...
 				Tag:  reflect.StructTag(fmt.Sprintf(`form:"%s"`, paramName)),
 			})
+
+			slog.Debug(
+				"found inline form param usage",
+				"handler", funcDecl.Name.Name,
+				"param", paramName,
+				"type", paramType,
+			)
 		}
 
 		return true

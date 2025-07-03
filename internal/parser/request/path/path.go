@@ -74,6 +74,13 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 			Tag:  reflect.StructTag(fmt.Sprintf(`path:"%s"`, paramName)),
 		})
 
+		slog.Debug(
+			"found inline path param usage",
+			"handler", funcDecl.Name.Name,
+			"param", paramName,
+			"type", paramType,
+		)
+
 		return true
 	})
 

@@ -2,7 +2,9 @@ package meta
 
 import (
 	"fmt"
+	"go/ast"
 	"go/types"
+	"strings"
 )
 
 const (
@@ -12,6 +14,7 @@ const (
 
 // GetTypeName returns type name in format pkg.TypeName.
 // For map it will return map[KeyType]ValueType, KeyType and ValueType will contain package name.
+// For slices it will return []ValueType, ValueType will contain package name.
 // For echo.Map it will return map[string]any
 func GetTypeName(t types.Type) (string, error) {
 	return resolveTypeName(t)
@@ -91,4 +94,41 @@ func GetPkgName(t types.Type) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported type: %T", t)
 	}
+}
+
+func GetFuncDocumentation(funcDecl *ast.FuncDecl) string {
+	if funcDecl.Doc == nil {
+		return ""
+	}
+
+	var doc strings.Builder
+	for _, comment := range funcDecl.Doc.List {
+		doc.WriteString(strings.TrimPrefix(comment.Text, "// "))
+		doc.WriteString("\n")
+	}
+
+	return strings.TrimSpace(doc.String())
+}
+
+func GetCalledFuncPkg(call *ast.CallExpr) (string, bool) {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return "", false
+	}
+
+	ident, ok := sel.X.(*ast.Ident)
+	if !ok {
+		return "", false
+	}
+
+	return ident.Name, true
+}
+
+func GetCalledFuncName(call *ast.CallExpr) (string, bool) {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return "", false
+	}
+
+	return sel.Sel.Name, true
 }

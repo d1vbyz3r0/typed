@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// NewInlineQuery builds reflect.Struct from inline query params usages and reports if any fields found
-func NewInlineQuery(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
+// NewInlineQueryParams builds reflect.Struct from inline query params usages and reports if any fields found
+func NewInlineQueryParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 	fields := make([]reflect.StructField, 0)
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)

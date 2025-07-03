@@ -71,7 +71,7 @@ func Handler(c echo.Context) error {
 			return true
 		}
 
-		got, ok := NewInlineQuery(decl)
+		got, ok := NewInlineQueryParams(decl)
 		require.True(t, ok)
 		for i := 0; i < want.NumField(); i++ {
 			wantField := want.Field(i)

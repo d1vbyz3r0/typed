@@ -14,8 +14,8 @@ import (
 
 var multipartType = reflect.TypeOf(new(multipart.FileHeader))
 
-// NewInlineForm builds reflect.Struct from inline form usages and reports if any form fields found
-func NewInlineForm(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
+// NewInlineForm builds reflect.Struct from inline form usages and reports if form contains files and any fields found
+func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, found bool) {
 	fields := make([]reflect.StructField, 0)
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -42,6 +42,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 				Type: multipartType,
 				Tag:  reflect.StructTag(fmt.Sprintf(`form:"%s"`, paramName)),
 			})
+			hasFiles = true
 
 		case "FormValue":
 			lit, ok := call.Args[0].(*ast.BasicLit)
@@ -95,5 +96,5 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 		return true
 	})
 
-	return reflect.StructOf(fields), len(fields) > 0
+	return reflect.StructOf(fields), hasFiles, len(fields) > 0
 }

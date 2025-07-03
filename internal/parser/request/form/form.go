@@ -72,12 +72,13 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 						return false
 					}
 
-					paramType, ok = typing.GetTypeFromUsageContext(pkgName, funcName)
+					t, ok := typing.GetTypeFromUsageContext(pkgName, funcName)
 					if !ok {
 						slog.Debug("failed to get func pkg", "param", paramName)
 						return false
 					}
 
+					paramType = t
 					return false
 				}
 

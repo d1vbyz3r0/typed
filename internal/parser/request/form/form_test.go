@@ -15,7 +15,7 @@ func Test_NewInlineForm(t *testing.T) {
 		{
 			Name:      "V1",
 			PkgPath:   "",
-			Type:      reflect.PointerTo(reflect.TypeOf("")),
+			Type:      reflect.TypeOf(""),
 			Tag:       `form:"v1"`,
 			Offset:    0,
 			Index:     nil,
@@ -24,7 +24,7 @@ func Test_NewInlineForm(t *testing.T) {
 		{
 			Name:      "V2",
 			PkgPath:   "",
-			Type:      reflect.PointerTo(reflect.TypeOf(0)),
+			Type:      reflect.TypeOf(0),
 			Tag:       `form:"v2"`,
 			Offset:    0,
 			Index:     nil,

@@ -2,13 +2,14 @@ package enums
 
 import (
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
+	"github.com/stretchr/testify/require"
+	"go/parser"
+	"go/token"
 	"testing"
 )
 
 func TestEnumExtractor_extractFromFile(t *testing.T) {
-	const src = `
+	src := `
 package test
 
 type Role string
@@ -26,21 +27,17 @@ const (
 )
 `
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test_enum.go")
-	if err := os.WriteFile(testFile, []byte(src), 0644); err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
-	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", src, 0)
+	require.NoError(t, err)
 
-	extractor := NewExtractor()
-	if err := extractor.ExtractFromFile("test", testFile); err != nil {
-		t.Fatalf("ExtractFromFile failed: %v", err)
-	}
+	res, err := Extract("test", file)
+	require.NoError(t, err)
 
 	cases := map[string][]any{
 		"test.Role":   {"admin", "user", "guest"},
 		"test.Status": {1, 2},
 	}
 
-	assert.Equal(t, extractor.Enums, cases)
+	assert.Equal(t, res, cases)
 }

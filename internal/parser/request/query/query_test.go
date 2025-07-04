@@ -13,44 +13,25 @@ import (
 
 func Test_NewInlineQuery(t *testing.T) {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
-	want := reflect.StructOf([]reflect.StructField{
+
+	want := []Param{
 		{
-			Name:      "Q1",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(""),
-			Tag:       `query:"q1"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "q1",
+			Type: reflect.TypeOf(""),
 		},
 		{
-			Name:      "Q2",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(int64(0)),
-			Tag:       `query:"q2"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "q2",
+			Type: reflect.TypeOf(int64(0)),
 		},
 		{
-			Name:      "Q3",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(uuid.UUID{}),
-			Tag:       `query:"q3"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "q3",
+			Type: reflect.TypeOf(uuid.UUID{}),
 		},
 		{
-			Name:      "Q4",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(false),
-			Tag:       `query:"q4"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "q4",
+			Type: reflect.TypeOf(false),
 		},
-	})
+	}
 
 	src := `
 package test
@@ -73,14 +54,8 @@ func Handler(c echo.Context) error {
 			return true
 		}
 
-		got, ok := NewInlineQueryParams(decl)
-		require.True(t, ok)
-		for i := 0; i < want.NumField(); i++ {
-			wantField := want.Field(i)
-			gotField := got.Field(i)
-			require.Equal(t, wantField, gotField)
-		}
-
+		got := NewInlineQueryParams(decl)
+		require.ElementsMatch(t, want, got)
 		return true
 	})
 }

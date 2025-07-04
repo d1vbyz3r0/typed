@@ -15,7 +15,7 @@ type Param struct {
 }
 
 func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
-	params := make([]Param, 0)
+	var params []Param
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {

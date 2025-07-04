@@ -13,35 +13,21 @@ import (
 
 func Test_NewInlinePathParams(t *testing.T) {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
-	want := reflect.StructOf([]reflect.StructField{
+
+	want := []Param{
 		{
-			Name:      "P1",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(""),
-			Tag:       `path:"p1"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "p1",
+			Type: reflect.TypeOf(""),
 		},
 		{
-			Name:      "P2",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(int64(0)),
-			Tag:       `path:"p2"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "p2",
+			Type: reflect.TypeOf(int64(0)),
 		},
 		{
-			Name:      "P3",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(uuid.UUID{}),
-			Tag:       `path:"p3"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "p3",
+			Type: reflect.TypeOf(uuid.UUID{}),
 		},
-	})
+	}
 
 	src := `
 package test
@@ -63,13 +49,8 @@ func Handler(c echo.Context) error {
 			return true
 		}
 
-		got, ok := NewInlinePathParams(decl)
-		require.True(t, ok)
-		for i := 0; i < want.NumField(); i++ {
-			wantField := want.Field(i)
-			gotField := got.Field(i)
-			require.Equal(t, wantField, gotField)
-		}
+		got := NewInlinePathParams(decl)
+		require.ElementsMatch(t, want, got)
 
 		return true
 	})

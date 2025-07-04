@@ -1,18 +1,21 @@
 package path
 
 import (
-	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/common/meta"
 	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"go/ast"
 	"log/slog"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
-func NewInlinePathParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
-	fields := make([]reflect.StructField, 0)
+type Param struct {
+	Name string
+	Type reflect.Type
+}
+
+func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
+	params := make([]Param, 0)
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {
@@ -68,10 +71,9 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 			return true
 		})
 
-		fields = append(fields, reflect.StructField{
-			Name: strings.Title(paramName),
-			Type: paramType, // We make fields required, since we can't determine if it's optional, at least now...
-			Tag:  reflect.StructTag(fmt.Sprintf(`path:"%s"`, paramName)),
+		params = append(params, Param{
+			Name: paramName,
+			Type: paramType,
 		})
 
 		slog.Debug(
@@ -84,5 +86,5 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) (reflect.Type, bool) {
 		return true
 	})
 
-	return reflect.StructOf(fields), len(fields) > 0
+	return params
 }

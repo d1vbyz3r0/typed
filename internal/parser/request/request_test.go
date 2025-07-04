@@ -36,7 +36,7 @@ func TestNewRequest_JSON(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -67,7 +67,7 @@ func TestNewRequest_XML(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -99,7 +99,7 @@ func TestNewRequest_EmptyTags(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -131,7 +131,7 @@ func TestNewRequest_FormTagsNoFiles(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -162,7 +162,7 @@ func TestNewRequest_FormWithFile(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -193,7 +193,7 @@ func TestNewRequest_FormWithFiles(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -222,7 +222,7 @@ func TestNewRequest_NoBody(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -251,7 +251,7 @@ func TestNewRequest_NoBinds(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -285,7 +285,7 @@ func TestNewRequest_MultipleTags(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -342,7 +342,7 @@ func TestNewRequest_InlineFormNoFiles(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want, req)
 		return false
 	})
@@ -396,7 +396,7 @@ func TestNewRequest_InlineFormWithFiles(t *testing.T) {
 			return true
 		}
 
-		req := New(decl, pkg.TypesInfo)
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
 		require.Equal(t, want.BindModel, req.BindModel)
 		got := req.ContentTypeMapping[echo.MIMEMultipartForm].Form
 		require.Equal(t, f, got)

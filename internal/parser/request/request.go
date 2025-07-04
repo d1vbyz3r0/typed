@@ -35,24 +35,39 @@ type Request struct {
 	QueryParams        []query.Param
 }
 
-func New(funcDecl *ast.FuncDecl, info *types.Info) *Request {
-	r := &Request{
-		ContentTypeMapping: make(ContentTypeMapping),
-		PathParams:         path.NewInlinePathParams(funcDecl),
-		QueryParams:        query.NewInlineQueryParams(funcDecl),
+func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
+	parseOpts := new(requestParseOpts)
+	for _, opt := range opts {
+		opt(parseOpts)
 	}
 
-	f, hasFiles, found := form.NewInlineForm(funcDecl)
-	if found {
-		if !hasFiles {
-			// if form doesn't contain files, content-type can be both application/x-www-form-urlencoded and multipart/form-data
-			r.ContentTypeMapping[echo.MIMEApplicationForm] = Body{
+	r := &Request{
+		ContentTypeMapping: make(ContentTypeMapping),
+		PathParams:         nil,
+		QueryParams:        nil,
+	}
+
+	if parseOpts.parseInlinePathParams {
+		r.PathParams = path.NewInlinePathParams(funcDecl)
+	}
+
+	if parseOpts.parseInlineQueryParams {
+		r.QueryParams = query.NewInlineQueryParams(funcDecl)
+	}
+
+	if parseOpts.parseInlineForms {
+		f, hasFiles, found := form.NewInlineForm(funcDecl)
+		if found {
+			if !hasFiles {
+				// if form doesn't contain files, content-type can be both application/x-www-form-urlencoded and multipart/form-data
+				r.ContentTypeMapping[echo.MIMEApplicationForm] = Body{
+					Form: f,
+				}
+			}
+
+			r.ContentTypeMapping[echo.MIMEMultipartForm] = Body{
 				Form: f,
 			}
-		}
-
-		r.ContentTypeMapping[echo.MIMEMultipartForm] = Body{
-			Form: f,
 		}
 	}
 

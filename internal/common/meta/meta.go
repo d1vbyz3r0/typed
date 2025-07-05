@@ -17,10 +17,6 @@ func GetTypeName(t types.Type) (string, error) {
 func resolveTypeName(t types.Type) (string, error) {
 	switch t := t.(type) {
 	case *types.Named:
-		//if t.Obj().Name() == echoMapName && t.Obj().Pkg().Path() == echoPkgPath {
-		//	return "map[string]any", nil
-		//}
-
 		obj := t.Obj()
 		return obj.Pkg().Name() + "." + obj.Name(), nil
 

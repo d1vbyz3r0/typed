@@ -157,13 +157,12 @@ func TestParser(t *testing.T) {
 			{
 				Doc:  "Handler 1",
 				Name: "Handler",
-				Pkg:  "c1",
+				Pkg:  "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 				Request: &request.Request{
-					BindModel: "c1.Form",
+					BindModel:    "c1.Form",
+					BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 					ContentTypeMapping: request.ContentTypeMapping{
-						echo.MIMEMultipartForm: request.Body{
-							Form: reflect.StructOf([]reflect.StructField{}),
-						},
+						echo.MIMEMultipartForm: request.Body{},
 					},
 					PathParams: []path.Param{
 						{
@@ -187,22 +186,26 @@ func TestParser(t *testing.T) {
 						{
 							ContentType: echo.MIMETextPlain,
 							TypeName:    "string",
+							TypePkgPath: "",
 						},
 					},
 					http.StatusBadRequest: []response.Response{
 						{
 							ContentType: echo.MIMEApplicationXML,
 							TypeName:    "c1.Error",
+							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 						},
 						{
 							ContentType: echo.MIMEApplicationJSON,
 							TypeName:    "c1.Error",
+							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 						},
 					},
 					http.StatusOK: []response.Response{
 						{
 							ContentType: echo.MIMEApplicationJSON,
 							TypeName:    "c1.Result",
+							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 						},
 					},
 				},
@@ -210,9 +213,10 @@ func TestParser(t *testing.T) {
 			{
 				Doc:  "Other handler is other handler",
 				Name: "OtherHandler",
-				Pkg:  "c1",
+				Pkg:  "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 				Request: &request.Request{
-					BindModel: "c1.User",
+					BindModel:    "c1.User",
+					BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 					ContentTypeMapping: request.ContentTypeMapping{
 						echo.MIMEMultipartForm:   request.Body{},
 						echo.MIMEApplicationForm: request.Body{},
@@ -224,11 +228,18 @@ func TestParser(t *testing.T) {
 				Responses: response.StatusCodeMapping{
 					http.StatusInternalServerError: []response.Response{
 						{
-							ContentType: echo.MIMETextPlain,
+							ContentType: echo.MIMEApplicationJSON,
 							TypeName:    "map[string]string",
+							TypePkgPath: "",
 						},
 					},
-					http.StatusNoContent: nil,
+					http.StatusOK: []response.Response{
+						{
+							ContentType: "",
+							TypeName:    "",
+							TypePkgPath: "",
+						},
+					},
 				},
 			},
 		},
@@ -236,13 +247,13 @@ func TestParser(t *testing.T) {
 
 	require.Equal(t, want.Enums, res.Enums)
 	for i, h := range res.Handlers {
-		require.Equal(t, h.Name, res.Handlers[i].Name)
-		require.Equal(t, h.Pkg, res.Handlers[i].Pkg)
-		require.Equal(t, h.Request.BindModel, res.Handlers[i].Request.BindModel)
-		require.ElementsMatch(t, h.Request.PathParams, res.Handlers[i].Request.PathParams)
-		require.ElementsMatch(t, h.Request.QueryParams, res.Handlers[i].Request.QueryParams)
-		require.Equal(t, h.Request.ContentTypeMapping, res.Handlers[i].Request.ContentTypeMapping)
-		require.Equal(t, h.Responses, res.Handlers[i].Responses)
+		require.Equal(t, want.Handlers[i].Name, h.Name)
+		require.Equal(t, want.Handlers[i].Pkg, h.Pkg)
+		require.Equal(t, want.Handlers[i].Request.BindModel, h.Request.BindModel)
+		require.ElementsMatch(t, want.Handlers[i].Request.PathParams, h.Request.PathParams)
+		require.ElementsMatch(t, want.Handlers[i].Request.QueryParams, h.Request.QueryParams)
+		require.Equal(t, want.Handlers[i].Request.ContentTypeMapping, h.Request.ContentTypeMapping)
+		require.Equal(t, want.Handlers[i].Responses, h.Responses)
 	}
 }
 

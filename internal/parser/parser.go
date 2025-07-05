@@ -175,7 +175,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 			h := Handler{
 				Doc:       meta.GetFuncDocumentation(decl),
 				Name:      decl.Name.Name,
-				Pkg:       pkg.Name,
+				Pkg:       pkg.PkgPath,
 				Request:   req,
 				Responses: responses,
 			}

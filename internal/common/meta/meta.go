@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	echoMapName = "Map"
-	echoPkgPath = "github.com/labstack/echo/v4"
-)
-
 // GetTypeName returns type name in format pkg.TypeName.
 // For map it will return map[KeyType]ValueType, KeyType and ValueType will contain package name.
 // For slices it will return []ValueType, ValueType will contain package name.

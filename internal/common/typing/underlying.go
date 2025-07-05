@@ -84,6 +84,9 @@ func GetUnderlyingElemType(t types.Type) (types.Type, bool) {
 	case *types.Named:
 		return t, true
 
+	case *types.Basic:
+		return t, true
+
 	case *types.Alias:
 		return GetUnderlyingElemType(t.Underlying())
 

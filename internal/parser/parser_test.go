@@ -137,7 +137,7 @@ func TestParser(t *testing.T) {
 	p, err := New()
 	require.NoError(t, err)
 
-	res, err := p.Parse(pkg)
+	res, err := p.Parse(pkg, ParseInlineForms(), ParseInlineQueryParams(), ParseInlinePathParams(), ParseEnums())
 	require.NoError(t, err)
 
 	want := Result{

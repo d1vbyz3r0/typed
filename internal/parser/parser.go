@@ -64,9 +64,17 @@ type Handler struct {
 	Responses response.StatusCodeMapping
 }
 
+type Model struct {
+	Name    string
+	PkgPath string
+}
+
 type Result struct {
 	Enums    map[string][]any
 	Handlers []Handler
+	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
+	//It can contain duplicates, it's up to you to deduplicate them
+	AdditionalModels []Model
 }
 
 type Parser struct {
@@ -102,18 +110,24 @@ func combineEnums(dst map[string][]any, src map[string][]any) {
 }
 
 // Parse parses package and returns all found enums and handlers
-func (p *Parser) Parse(pkg *packages.Package) (Result, error) {
+func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) {
+	parseOpts := new(parserOpts)
+	for _, opt := range opts {
+		opt(parseOpts)
+	}
+
 	result := Result{
 		Enums: make(map[string][]any),
 	}
 
 	for _, file := range pkg.Syntax {
-		foundEnums, err := enums.Extract(pkg.Name, file)
-		if err != nil {
-			return Result{}, fmt.Errorf("extract enums: %w", err)
+		if parseOpts.parseEnums {
+			foundEnums, err := enums.Extract(pkg.Name, file)
+			if err != nil {
+				return Result{}, fmt.Errorf("extract enums: %w", err)
+			}
+			combineEnums(result.Enums, foundEnums)
 		}
-
-		combineEnums(result.Enums, foundEnums)
 
 		ast.Inspect(file, func(n ast.Node) bool {
 			decl, ok := n.(*ast.FuncDecl)
@@ -125,19 +139,61 @@ func (p *Parser) Parse(pkg *packages.Package) (Result, error) {
 				return true
 			}
 
-			slog.Debug("found echo handler", "pkg", pkg, "file", file.Name.String(), "name", decl.Name.Name)
+			slog.Debug("found echo handler", "pkg", pkg, "file", file.Name, "name", decl.Name.Name)
+
+			req := request.New(decl, pkg.TypesInfo, parseOpts.RequestParseOpts()...)
+			responses := response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo)
+
+			if parseOpts.parseAllModels {
+				result.AdditionalModels = append(result.AdditionalModels, Model{
+					Name:    req.BindModel,
+					PkgPath: req.BindModelPkg,
+				})
+
+				for _, resp := range responses {
+					for _, r := range resp {
+						result.AdditionalModels = append(result.AdditionalModels, Model{
+							Name:    r.TypeName,
+							PkgPath: r.TypePkgPath,
+						})
+					}
+				}
+			}
 
 			h := Handler{
 				Doc:       meta.GetFuncDocumentation(decl),
 				Name:      decl.Name.Name,
 				Pkg:       pkg.Name,
-				Request:   request.New(decl, pkg.TypesInfo),
-				Responses: response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo),
+				Request:   req,
+				Responses: responses,
 			}
 
 			result.Handlers = append(result.Handlers, h)
 			return true
 		})
+
+		if parseOpts.parseAllModels {
+			scope := pkg.Types.Scope()
+			for _, name := range scope.Names() {
+				obj := scope.Lookup(name)
+				if obj == nil {
+					slog.Warn("object not found in scope", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
+				if !obj.Exported() {
+					slog.Debug("skipping non-exported object", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
+				pkgName := obj.Pkg().Name()
+				pkgPath := obj.Pkg().Path()
+				result.AdditionalModels = append(result.AdditionalModels, Model{
+					Name:    pkgName + "." + name,
+					PkgPath: pkgPath,
+				})
+			}
+		}
 	}
 
 	return result, nil

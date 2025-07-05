@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/common/meta"
 	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"go/ast"
@@ -87,4 +88,32 @@ func NewInlineQueryParams(funcDecl *ast.FuncDecl) []Param {
 	})
 
 	return params
+}
+
+func NewStructQueryParams(s reflect.Type) ([]Param, error) {
+	if s.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("expected struct, got %s", s.Kind())
+	}
+
+	params := make([]Param, 0, s.NumField())
+	for i := 0; i < s.NumField(); i++ {
+		field := s.Field(i)
+		tag, ok := field.Tag.Lookup("query")
+		if !ok || tag == "-" || tag == "" {
+			continue
+		}
+
+		params = append(params, Param{
+			Name: tag,
+			Type: field.Type,
+		})
+
+		slog.Debug(
+			"found struct query param",
+			"param", tag,
+			"type", field.Type,
+		)
+	}
+
+	return params, nil
 }

@@ -59,3 +59,28 @@ func Handler(c echo.Context) error {
 		return true
 	})
 }
+
+func Test_NewStructQueryParams(t *testing.T) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
+	type Struct struct {
+		Name string `query:"name"`
+		Age  int    `query:"age"`
+	}
+
+	got, err := NewStructQueryParams(reflect.TypeOf(Struct{}))
+	require.NoError(t, err)
+
+	want := []Param{
+		{
+			Name: "name",
+			Type: reflect.TypeOf(""),
+		},
+		{
+			Name: "age",
+			Type: reflect.TypeOf(int(0)),
+		},
+	}
+
+	require.ElementsMatch(t, want, got)
+}

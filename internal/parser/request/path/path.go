@@ -1,6 +1,7 @@
 package path
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/common/meta"
 	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"go/ast"
@@ -89,7 +90,11 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 	return params
 }
 
-func NewStructPathParams(s reflect.Type) []Param {
+func NewStructPathParams(s reflect.Type) ([]Param, error) {
+	if s.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("expected struct, got %s", s.Kind())
+	}
+
 	params := make([]Param, 0, s.NumField())
 	for i := 0; i < s.NumField(); i++ {
 		field := s.Field(i)
@@ -110,5 +115,5 @@ func NewStructPathParams(s reflect.Type) []Param {
 		)
 	}
 
-	return params
+	return params, nil
 }

@@ -15,7 +15,6 @@ const (
 // GetTypeName returns type name in format pkg.TypeName.
 // For map it will return map[KeyType]ValueType, KeyType and ValueType will contain package name.
 // For slices it will return []ValueType, ValueType will contain package name.
-// For echo.Map it will return map[string]any
 func GetTypeName(t types.Type) (string, error) {
 	return resolveTypeName(t)
 }
@@ -23,9 +22,9 @@ func GetTypeName(t types.Type) (string, error) {
 func resolveTypeName(t types.Type) (string, error) {
 	switch t := t.(type) {
 	case *types.Named:
-		if t.Obj().Name() == echoMapName && t.Obj().Pkg().Path() == echoPkgPath {
-			return "map[string]any", nil
-		}
+		//if t.Obj().Name() == echoMapName && t.Obj().Pkg().Path() == echoPkgPath {
+		//	return "map[string]any", nil
+		//}
 
 		obj := t.Obj()
 		return obj.Pkg().Name() + "." + obj.Name(), nil

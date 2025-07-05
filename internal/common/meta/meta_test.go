@@ -54,9 +54,9 @@ func TestGetTypeName(t *testing.T) {
 			expected: "map[int]mypkg.MyStruct",
 		},
 		{
-			name:     "Special case for echo.Map",
+			name:     "echo.Map",
 			input:    namedEchoMap,
-			expected: "map[string]any",
+			expected: "echo.Map",
 		},
 	}
 

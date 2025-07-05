@@ -116,3 +116,8 @@ func IsAnyType(t types.Type) bool {
 		return false
 	}
 }
+
+func IsBasicType(t types.Type) bool {
+	_, ok := t.(*types.Basic)
+	return ok
+}

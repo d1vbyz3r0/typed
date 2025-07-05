@@ -168,13 +168,25 @@ func (t ContextResponseType) TypePkgPath() (string, error) {
 	}
 
 	argType := t.types.TypeOf(t.call.Args[1])
+	if typing.IsAnyType(argType) {
+		return "", nil
+	}
+
+	if typing.IsBasicType(argType) {
+		return "", nil
+	}
+
 	if typing.IsMap(argType) || typing.IsSlice(argType) {
 		elemType, ok := typing.GetUnderlyingElemType(argType)
 		if !ok {
-			return "", fmt.Errorf("failed to get underlying named elem type for %s", argType)
+			return "", fmt.Errorf("failed to get underlying elem type for %s", argType)
 		}
 
 		if typing.IsAnyType(elemType) {
+			return "", nil
+		}
+
+		if typing.IsBasicType(elemType) {
 			return "", nil
 		}
 

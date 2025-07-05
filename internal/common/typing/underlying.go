@@ -124,3 +124,9 @@ func IsBasicType(t types.Type) bool {
 	_, ok := t.(*types.Basic)
 	return ok
 }
+
+func IsFunc(t types.Type) bool {
+	t = t.Underlying()
+	_, ok := t.(*types.Signature)
+	return ok
+}

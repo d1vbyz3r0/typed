@@ -16,6 +16,8 @@ type Response struct {
 	// TypeName is a type name like it's used in code, with package name as prefix (except for std types).
 	//Field is empty for responses with empty body
 	TypeName string
+	// TypePkgPath is a full pkg path for type. Field is empty for responses with empty body
+	TypePkgPath string
 }
 
 // NewStatusCodeMapping builds StatusCodeMapping from provided handler function declaration
@@ -66,9 +68,16 @@ func (m StatusCodeMapping) extractResponses(
 			return true
 		}
 
+		pkgPath, err := resp.TypePkgPath()
+		if err != nil {
+			slog.Error("failed to get type package path", "error", err)
+			return true
+		}
+
 		m[statusCode] = append(m[statusCode], Response{
 			ContentType: contentType,
 			TypeName:    typeName,
+			TypePkgPath: pkgPath,
 		})
 
 		return true

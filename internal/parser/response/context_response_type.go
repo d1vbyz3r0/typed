@@ -3,6 +3,7 @@ package response
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/common/meta"
+	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/labstack/echo/v4"
@@ -44,6 +45,11 @@ var supportedFunctions = []string{
 	noContentContextFunc,
 	streamContextFunc,
 }
+
+var (
+	rawBodyFuncs = []string{jsonBlobContextFunc, xmlBlobContextFunc, streamContextFunc}
+	noBodyFuncs  = []string{redirectContextFunc, noContentContextFunc}
+)
 
 func newContextResponseType(
 	call *ast.CallExpr,
@@ -144,9 +150,6 @@ func (t ContextResponseType) getContentTypeFromArg(arg ast.Expr) (string, error)
 }
 
 func (t ContextResponseType) TypeName() (string, error) {
-	rawBodyFuncs := []string{jsonBlobContextFunc, xmlBlobContextFunc, streamContextFunc}
-	noBodyFuncs := []string{redirectContextFunc, noContentContextFunc}
-
 	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
 		return "", nil
 	}
@@ -157,4 +160,36 @@ func (t ContextResponseType) TypeName() (string, error) {
 	}
 
 	return name, nil
+}
+
+func (t ContextResponseType) TypePkgPath() (string, error) {
+	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
+		return "", nil
+	}
+
+	argType := t.types.TypeOf(t.call.Args[1])
+	if typing.IsMap(argType) || typing.IsSlice(argType) {
+		elemType, ok := typing.GetUnderlyingElemType(argType)
+		if !ok {
+			return "", fmt.Errorf("failed to get underlying named elem type for %s", argType)
+		}
+
+		if typing.IsAnyType(elemType) {
+			return "", nil
+		}
+
+		path, err := meta.GetPkgPath(elemType)
+		if err != nil {
+			return "", fmt.Errorf("get package path for %s: %w", argType, err)
+		}
+
+		return path, nil
+	}
+
+	path, err := meta.GetPkgPath(argType)
+	if err != nil {
+		return "", fmt.Errorf("get pkg path for %s: %w", argType, err)
+	}
+
+	return path, nil
 }

@@ -28,16 +28,19 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 					{
 						ContentType: "application/json",
 						TypeName:    "handlers.Example",
+						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
 					},
 					{
 						ContentType: "application/xml",
 						TypeName:    "map[string]any",
+						TypePkgPath: "",
 					},
 				},
 				http.StatusBadRequest: []Response{
 					{
 						ContentType: "application/json",
 						TypeName:    "[]map[int]handlers.Example",
+						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
 					},
 				},
 			},

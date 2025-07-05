@@ -88,3 +88,27 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 
 	return params
 }
+
+func NewStructPathParams(s reflect.Type) []Param {
+	params := make([]Param, 0, s.NumField())
+	for i := 0; i < s.NumField(); i++ {
+		field := s.Field(i)
+		tag, ok := field.Tag.Lookup("param")
+		if !ok || tag == "-" || tag == "" {
+			continue
+		}
+
+		params = append(params, Param{
+			Name: tag,
+			Type: field.Type,
+		})
+
+		slog.Debug(
+			"found struct path param",
+			"param", tag,
+			"type", field.Type,
+		)
+	}
+
+	return params
+}

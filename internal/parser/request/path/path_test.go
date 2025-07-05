@@ -55,3 +55,26 @@ func Handler(c echo.Context) error {
 		return true
 	})
 }
+
+func Test_NewStructPathParams(t *testing.T) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
+	type Struct struct {
+		Name string `param:"name"`
+		Age  int    `param:"age"`
+	}
+
+	got := NewStructPathParams(reflect.TypeOf(Struct{}))
+	want := []Param{
+		{
+			Name: "name",
+			Type: reflect.TypeOf(""),
+		},
+		{
+			Name: "age",
+			Type: reflect.TypeOf(int(0)),
+		},
+	}
+
+	require.ElementsMatch(t, want, got)
+}

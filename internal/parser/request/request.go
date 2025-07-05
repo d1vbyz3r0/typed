@@ -28,7 +28,10 @@ type Body struct {
 }
 
 type Request struct {
+	// BindModel as it's used in code: pkg.TypeName
 	BindModel string
+	// Full path to BindModel package
+	BindModelPkg string
 	// ContentTypeMapping contains mapping of content-type to request body
 	ContentTypeMapping ContentTypeMapping
 	PathParams         []path.Param
@@ -105,7 +108,14 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 			return true
 		}
 
+		pkgPath, err := meta.GetPkgPath(named)
+		if err != nil {
+			slog.Error("failed to get package path", "type", named, "err", err)
+			return true
+		}
+
 		r.BindModel = typeName
+		r.BindModelPkg = pkgPath
 
 		if !binding.HasTags(s, echoBodyBindTags) {
 			// If no tags provided, echo will try to bind xml + json: https://echo.labstack.com/docs/binding

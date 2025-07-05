@@ -20,7 +20,8 @@ func TestNewRequest_JSON(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "jsontest.JsonDTO",
+		BindModel:    "jsontest.JsonDTO",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/jsontest",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 		},
@@ -51,7 +52,8 @@ func TestNewRequest_XML(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "xmltest.XMLDto",
+		BindModel:    "xmltest.XMLDto",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/xmltest",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationXML: Body{},
 		},
@@ -82,7 +84,8 @@ func TestNewRequest_EmptyTags(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "emptytest.NoTags",
+		BindModel:    "emptytest.NoTags",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/emptytest",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 			echo.MIMEApplicationXML:  Body{},
@@ -114,7 +117,8 @@ func TestNewRequest_FormTagsNoFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "nofile.Form",
+		BindModel:    "nofile.Form",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/nofile",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationForm: Body{},
 			echo.MIMEMultipartForm:   Body{},
@@ -146,7 +150,8 @@ func TestNewRequest_FormWithFile(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "file.Form",
+		BindModel:    "file.Form",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/file",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
@@ -177,7 +182,8 @@ func TestNewRequest_FormWithFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "files.Form",
+		BindModel:    "files.Form",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/files",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
@@ -266,7 +272,8 @@ func TestNewRequest_MultipleTags(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel: "multiple.Data",
+		BindModel:    "multiple.Data",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/multiple",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 			echo.MIMEMultipartForm:   Body{},

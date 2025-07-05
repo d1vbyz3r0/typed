@@ -10,9 +10,11 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"golang.org/x/exp/maps"
 	"golang.org/x/tools/go/packages"
 	"log/slog"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -122,7 +124,13 @@ func main() {
 }
 
 func TestParser(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: nil,
+	})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
@@ -236,4 +244,68 @@ func TestParser(t *testing.T) {
 		require.Equal(t, h.Request.ContentTypeMapping, res.Handlers[i].Request.ContentTypeMapping)
 		require.Equal(t, h.Responses, res.Handlers[i].Responses)
 	}
+}
+
+func TestParserAllModels(t *testing.T) {
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: nil,
+	})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	pkgs, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
+	}, "../../testdata/parser/allmodels/")
+	require.NoError(t, err)
+
+	require.Len(t, pkgs, 1)
+
+	pkg := pkgs[0]
+	require.Len(t, pkg.Errors, 0)
+
+	p, err := New()
+	require.NoError(t, err)
+
+	res, err := p.Parse(pkg, ParseAllModels())
+	require.NoError(t, err)
+
+	want := Result{
+		Enums:    nil,
+		Handlers: nil,
+		AdditionalModels: []Model{
+			{
+				Name:    "allmodels.Form",
+				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+			},
+			{
+				Name:    "allmodels.Error",
+				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+			},
+			{
+				Name:    "allmodels.Result",
+				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+			},
+			{
+				Name:    "allmodels.User",
+				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+			},
+			{
+				Name:    "string",
+				PkgPath: "",
+			},
+			{
+				Name:    "map[string]string",
+				PkgPath: "",
+			},
+		},
+	}
+
+	unique := make(map[Model]struct{})
+	for _, m := range res.AdditionalModels {
+		unique[m] = struct{}{}
+	}
+
+	require.ElementsMatch(t, want.AdditionalModels, maps.Keys(unique))
 }

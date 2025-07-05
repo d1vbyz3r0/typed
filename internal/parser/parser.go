@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/common/meta"
+	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/enums"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
@@ -73,7 +74,7 @@ type Result struct {
 	Enums    map[string][]any
 	Handlers []Handler
 	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
-	//It can contain duplicates, it's up to you to deduplicate them
+	//It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
 	AdditionalModels []Model
 }
 
@@ -117,7 +118,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 	}
 
 	result := Result{
-		Enums: make(map[string][]any),
+		Enums: nil,
 	}
 
 	for _, file := range pkg.Syntax {
@@ -126,7 +127,12 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 			if err != nil {
 				return Result{}, fmt.Errorf("extract enums: %w", err)
 			}
-			combineEnums(result.Enums, foundEnums)
+
+			if result.Enums == nil {
+				result.Enums = foundEnums
+			} else {
+				combineEnums(result.Enums, foundEnums)
+			}
 		}
 
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -145,13 +151,19 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 			responses := response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo)
 
 			if parseOpts.parseAllModels {
-				result.AdditionalModels = append(result.AdditionalModels, Model{
-					Name:    req.BindModel,
-					PkgPath: req.BindModelPkg,
-				})
+				if req.BindModel != "" && req.BindModelPkg != "" {
+					result.AdditionalModels = append(result.AdditionalModels, Model{
+						Name:    req.BindModel,
+						PkgPath: req.BindModelPkg,
+					})
+				}
 
 				for _, resp := range responses {
 					for _, r := range resp {
+						if r.TypeName == "" && r.TypePkgPath == "" {
+							continue
+						}
+
 						result.AdditionalModels = append(result.AdditionalModels, Model{
 							Name:    r.TypeName,
 							PkgPath: r.TypePkgPath,
@@ -183,6 +195,11 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 
 				if !obj.Exported() {
 					slog.Debug("skipping non-exported object", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
+				if typing.IsFunc(obj.Type()) {
+					slog.Debug("skipping function object", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 

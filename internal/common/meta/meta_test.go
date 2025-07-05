@@ -73,3 +73,41 @@ func TestGetTypeName(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPkgPath(t *testing.T) {
+	echoPkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
+	customPkg := types.NewPackage("mypkg/types", "types")
+
+	namedEchoMap := types.NewNamed(types.NewTypeName(0, echoPkg, "Map", nil), nil, nil)
+	namedMyStruct := types.NewNamed(types.NewTypeName(0, customPkg, "MyStruct", nil), nil, nil)
+
+	cases := []struct {
+		Name      string
+		Type      types.Type
+		Pkg       string
+		WantError bool
+	}{
+		{
+			Name:      "Third party package",
+			Type:      namedEchoMap,
+			Pkg:       "github.com/labstack/echo/v4",
+			WantError: false,
+		},
+		{
+			Name:      "custom package",
+			Type:      namedMyStruct,
+			Pkg:       "mypkg/types",
+			WantError: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			p, err := GetPkgPath(tc.Type)
+			if err != nil && !tc.WantError {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			require.Equal(t, tc.Pkg, p)
+		})
+	}
+}

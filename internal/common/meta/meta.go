@@ -80,16 +80,16 @@ func resolveTypeName(t types.Type) (string, error) {
 	}
 }
 
-// GetPkgName returns package name for type
-func GetPkgName(t types.Type) (string, error) {
+// GetPkgPath returns full package path for type
+func GetPkgPath(t types.Type) (string, error) {
 	switch t := t.(type) {
 	case *types.Named:
 		obj := t.Obj()
-		return obj.Pkg().Name(), nil
+		return obj.Pkg().Path(), nil
 
 	case *types.Pointer:
 		elem := t.Elem()
-		return GetPkgName(elem)
+		return GetPkgPath(elem)
 
 	default:
 		return "", fmt.Errorf("unsupported type: %T", t)

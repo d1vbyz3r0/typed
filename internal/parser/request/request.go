@@ -20,6 +20,11 @@ var echoBodyBindTags = []string{
 	"form",
 }
 
+var echoParamsBindTags = []string{
+	"param",
+	"query",
+}
+
 type ContentTypeMapping map[string]Body
 
 type Body struct {
@@ -117,7 +122,7 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 		r.BindModel = typeName
 		r.BindModelPkg = pkgPath
 
-		if !binding.HasTags(s, echoBodyBindTags) {
+		if !binding.HasTags(s, echoBodyBindTags) && !binding.HasTags(s, echoParamsBindTags) {
 			// If no tags provided, echo will try to bind xml + json: https://echo.labstack.com/docs/binding
 			r.ContentTypeMapping[echo.MIMEApplicationJSON] = Body{}
 			r.ContentTypeMapping[echo.MIMEApplicationXML] = Body{}

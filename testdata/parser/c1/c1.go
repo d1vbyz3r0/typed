@@ -22,8 +22,8 @@ const (
 )
 
 type Form struct {
-	Name string          `form:"name"`
-	File *multipart.File `form:"file"`
+	Name string                `form:"name"`
+	File *multipart.FileHeader `form:"file"`
 }
 
 type Error struct {
@@ -56,7 +56,7 @@ func Handler(c echo.Context) error {
 	}
 
 	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
-	res := &Result{Id: id}
+	res := Result{Id: id}
 	return c.JSON(http.StatusOK, res)
 }
 

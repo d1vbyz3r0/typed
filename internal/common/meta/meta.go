@@ -70,7 +70,7 @@ func resolveTypeName(t types.Type) (string, error) {
 	}
 }
 
-// GetPkgPath returns full package path for type
+// GetPkgPath returns full package path for type. Underlying type should be types.Named
 func GetPkgPath(t types.Type) (string, error) {
 	switch t := t.(type) {
 	case *types.Named:

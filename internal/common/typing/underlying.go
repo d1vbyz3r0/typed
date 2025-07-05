@@ -2,7 +2,7 @@ package typing
 
 import "go/types"
 
-// GetUnderlyingStruct returns underlying type struct, "dereferencing" pointers recursively. For not *types.Struct underlying type, second param will be always false
+// GetUnderlyingStruct returns underlying type struct, "dereferencing" pointers recursively
 func GetUnderlyingStruct(t types.Type) (*types.Struct, bool) {
 	t = t.Underlying()
 	switch t := t.(type) {
@@ -59,6 +59,59 @@ func IsSlice(t types.Type) bool {
 	case *types.Pointer:
 		return IsSlice(t.Elem())
 
+	default:
+		return false
+	}
+}
+
+func IsMap(t types.Type) bool {
+	t = t.Underlying()
+	switch t := t.(type) {
+	case *types.Map:
+		return true
+
+	case *types.Pointer:
+		return IsMap(t.Elem())
+
+	default:
+		return false
+	}
+}
+
+// GetUnderlyingElemType returns elem for slice or map. Elem can be empty interface or aliased "any" type
+func GetUnderlyingElemType(t types.Type) (types.Type, bool) {
+	switch t := t.(type) {
+	case *types.Named:
+		return t, true
+
+	case *types.Alias:
+		return GetUnderlyingElemType(t.Underlying())
+
+	case *types.Interface:
+		if IsAnyType(t) {
+			return t, true
+		}
+		return nil, false
+
+	case *types.Pointer:
+		return GetUnderlyingElemType(t.Elem())
+
+	case *types.Slice:
+		return GetUnderlyingElemType(t.Elem())
+
+	case *types.Map:
+		return GetUnderlyingElemType(t.Elem())
+
+	default:
+		return nil, false
+	}
+}
+
+func IsAnyType(t types.Type) bool {
+	t = types.Unalias(t)
+	switch t := t.(type) {
+	case *types.Interface:
+		return t.NumMethods() == 0
 	default:
 		return false
 	}

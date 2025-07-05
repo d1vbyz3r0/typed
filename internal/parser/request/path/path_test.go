@@ -64,7 +64,9 @@ func Test_NewStructPathParams(t *testing.T) {
 		Age  int    `param:"age"`
 	}
 
-	got := NewStructPathParams(reflect.TypeOf(Struct{}))
+	got, err := NewStructPathParams(reflect.TypeOf(Struct{}))
+	require.NoError(t, err)
+
 	want := []Param{
 		{
 			Name: "name",
@@ -77,4 +79,10 @@ func Test_NewStructPathParams(t *testing.T) {
 	}
 
 	require.ElementsMatch(t, want, got)
+}
+
+func Test_NewStructPathParamsWrongArg(t *testing.T) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+	_, err := NewStructPathParams(reflect.TypeOf(map[string]interface{}{}))
+	require.Error(t, err)
 }

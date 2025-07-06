@@ -1,166 +1,214 @@
 package typed
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/handlers"
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
-	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
-	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
-	"github.com/d1vbyz3r0/typed/internal/parser/response"
+	"github.com/d1vbyz3r0/typed/generator"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"log/slog"
+	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
+	"log"
+	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 )
 
-func AddPathParams(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	registry map[string]any,
-) {
-	params := make(map[string]path.Param, len(h.PathParams()))
+type SpecFormat string
 
-	model := h.BindModel()
-	if model != "" {
-		obj, ok := registry[model]
-		if ok {
-			typedParams, err := path.NewStructPathParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
-			if err != nil {
-				slog.Error("get path params from bind model", "error", err)
-			}
+const (
+	UndefinedFormat = SpecFormat("")
+	YamlFormat      = SpecFormat("yaml")
+	JsonFormat      = SpecFormat("json")
+)
 
-			for _, p := range typedParams {
-				param := openapi3.NewPathParameter(p.Name)
-				param.Required = true
+var NoContent = "No content"
 
-				schema, err := openapiGen.GenerateSchemaRef(p.Type)
-				if err != nil {
-					slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
-					continue
-				}
+func getSpecFormat(path string) SpecFormat {
+	ext := filepath.Ext(path)
+	switch ext {
+	case ".yaml", ".yml":
+		return YamlFormat
 
-				param.Schema = schema
-				params[p.Name] = p
-				op.AddParameter(param)
-			}
-		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
+	case ".json":
+		return JsonFormat
+
+	default:
+		return UndefinedFormat
+	}
+}
+
+func SaveSpec(spec *openapi3.T, outPath string) error {
+	f, err := os.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+
+	format := getSpecFormat(outPath)
+	switch format {
+	case YamlFormat:
+		enc := yaml.NewEncoder(f)
+		enc.SetIndent(2)
+		err := enc.Encode(spec)
+		if err != nil {
+			return fmt.Errorf("encode spec: %w", err)
 		}
+
+	case JsonFormat:
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		err := enc.Encode(spec)
+		if err != nil {
+			return fmt.Errorf("encode spec: %w", err)
+		}
+
+	case UndefinedFormat:
+		return fmt.Errorf("can't define spec format basing on path, check extension: %s", outPath)
 	}
 
-	for _, p := range h.PathParams() {
-		_, ok := params[p.Name]
-		if ok {
+	return nil
+}
+
+func NormalizePathParams(path string) string {
+	segments := strings.Split(path, "/")
+	for i, segment := range segments {
+		if strings.HasPrefix(segment, ":") {
+			trimmed := strings.TrimPrefix(segment, ":")
+			segments[i] = "{" + trimmed + "}"
+		}
+	}
+	return strings.Join(segments, "/")
+}
+
+func IsJwtMiddleware(mw echo.MiddlewareFunc) bool {
+	funcName := runtime.FuncForPC(reflect.ValueOf(mw).Pointer()).Name()
+	return strings.Contains(funcName, "github.com/labstack/echo-jwt")
+}
+
+func AddPathParams(op *openapi3.Operation, r *generator.RouteInfo) {
+	for _, p := range r.PathParams {
+		if p == nil {
 			continue
 		}
 
 		param := openapi3.NewPathParameter(p.Name)
-		param.Required = true
-		schema, err := openapiGen.GenerateSchemaRef(p.Type)
-		if err != nil {
-			slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
-			continue
+		param.Required = p.Required
+		param.Schema = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type:     &openapi3.Types{toOpenApiType(p.Type)},
+				Nullable: false,
+			},
 		}
-
-		param.Schema = schema
 		op.AddParameter(param)
 	}
 }
 
 func AddQueryParams(
 	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	registry map[string]any,
+	r *generator.RouteInfo,
+	enums map[string][]any,
 ) {
-	params := make(map[string]query.Param, len(h.QueryParams()))
-
-	model := h.BindModel()
-	if model != "" {
-		obj, ok := registry[model]
-		if ok {
-			typedParams, err := query.NewStructQueryParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
-			if err != nil {
-				slog.Error("get query params from bind model", "error", err)
-			}
-
-			for _, p := range typedParams {
-				param := openapi3.NewQueryParameter(p.Name)
-				param.Required = p.Type.Kind() != reflect.Pointer
-
-				schema, err := openapiGen.GenerateSchemaRef(p.Type)
-				if err != nil {
-					slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
-					continue
-				}
-
-				param.Schema = schema
-				params[p.Name] = p
-				op.AddParameter(param)
-			}
-		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
-		}
-	}
-
-	for _, p := range h.QueryParams() {
-		_, ok := params[p.Name]
-		if ok {
+	for _, p := range r.Handler.QueryParams {
+		if p == nil {
 			continue
 		}
 
 		param := openapi3.NewQueryParameter(p.Name)
-		param.Required = true
+		param.Required = p.Required
 
-		schema, err := openapiGen.GenerateSchemaRef(p.Type)
-		if err != nil {
-			slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
-			continue
+		if values, ok := enums[p.Type]; ok {
+			param.Schema = &openapi3.SchemaRef{
+				Value: &openapi3.Schema{
+					Enum:     values,
+					Nullable: !p.Required,
+				},
+			}
+		} else {
+			param.Schema = &openapi3.SchemaRef{
+				Value: &openapi3.Schema{
+					Type:     &openapi3.Types{toOpenApiType(p.Type)},
+					Nullable: !p.Required,
+				},
+			}
 		}
 
-		param.Schema = schema
 		op.AddParameter(param)
 	}
 }
 
 func AddRequestBody(
 	op *openapi3.Operation,
-	h handlers.Handler,
+	r *generator.RouteInfo,
 	openapiGen *openapi3gen.Generator,
-	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
+	dto := r.Handler.RequestDTO
+	if dto == nil {
+		return
+	}
+
 	body := openapi3.NewRequestBody()
-	content := make(openapi3.Content)
-	request := h.Request()
 
-	for contentType, reqBody := range request.ContentTypeMapping {
-		if reqBody.Form != nil {
-			ref, err := openapiGen.GenerateSchemaRef(reqBody.Form)
-			if err != nil {
-				slog.Error("generate schema ref for request form", "form", reqBody.Form, "error", err)
-				continue
-			}
-
-			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
+	if dto.IsForm {
+		body.Content = map[string]*openapi3.MediaType{
+			dto.ContentType: {
+				Schema: &openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:       &openapi3.Types{openapi3.TypeObject},
+						Properties: make(map[string]*openapi3.SchemaRef),
+					},
+				},
+			},
 		}
 
-		if request.BindModel != "" {
-			obj, ok := registry[request.BindModel]
-			if !ok {
-				slog.Warn("bind model not found in provided registry", "model", request.BindModel)
-				continue
-			}
+		for _, f := range dto.FormFields {
+			if f.IsFile {
+				var (
+					items *openapi3.SchemaRef
+					ftype = openapi3.TypeString
+				)
 
-			ref, err := openapiGen.NewSchemaRefForValue(obj, schemas)
-			if err != nil {
-				slog.Error("generate schema ref for bind model", "model", request.BindModel, "error", err)
-				continue
-			}
+				if f.IsArray {
+					ftype = openapi3.TypeArray
+					items = &openapi3.SchemaRef{
+						Value: &openapi3.Schema{
+							Type:   &openapi3.Types{openapi3.TypeString},
+							Format: "binary",
+						},
+					}
+				}
 
-			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
+				body.Content[dto.ContentType].Schema.Value.Properties[f.Name] = &openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:  &openapi3.Types{ftype},
+						Items: items,
+					},
+				}
+			} else {
+				body.Content[dto.ContentType].Schema.Value.Properties[f.Name] = &openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:   &openapi3.Types{openapi3.TypeString},
+						Format: f.Type,
+					},
+				}
+			}
+		}
+	} else {
+		t, ok := registry[dto.TypeName]
+		if !ok {
+			log.Println("[WARN] can't find type in registry", dto.TypeName)
+			return
+		}
+
+		bodyType := reflect.TypeOf(t)
+		schemaRef := openapiGen.Types[bodyType]
+		body.Content = map[string]*openapi3.MediaType{
+			dto.ContentType: {
+				Schema: schemaRef,
+			},
 		}
 	}
 
@@ -171,39 +219,72 @@ func AddRequestBody(
 
 func AddResponses(
 	op *openapi3.Operation,
-	statusCodeMapping response.StatusCodeMapping,
+	r *generator.RouteInfo,
 	openapiGen *openapi3gen.Generator,
 	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
-	for status, responses := range statusCodeMapping {
-		r := openapi3.NewResponse()
-		content := make(openapi3.Content, len(responses))
-		for _, resp := range responses {
-			mediaType := openapi3.NewMediaType()
-			if resp.TypeName != "" {
-				val, ok := registry[resp.TypeName]
-				if !ok {
-					slog.Warn("type not found in registry", "type", resp.TypeName, "pkg", resp.TypePkgPath)
-					continue
-				}
 
-				ref, err := openapiGen.NewSchemaRefForValue(val, schemas)
-				if err != nil {
-					slog.Error("generate ref for value", "type", resp.TypeName, "error", err)
-					continue
-				}
+	for status, resp := range r.Handler.Responses {
+		if resp == nil {
+			continue
+		}
 
-				mediaType.WithSchemaRef(ref)
+		rk := resp.TypeName
+		if resp.IsMap {
+			rk = fmt.Sprintf("map[%s]%s", resp.KeyType, resp.ValueType)
+		}
+
+		var (
+			ref *openapi3.SchemaRef
+			err error
+		)
+
+		t, ok := registry[rk]
+		if !ok {
+			log.Println("[WARN] can't find type in registry", rk)
+			continue
+		}
+
+		switch {
+		case resp.IsArray:
+			ref, err = openapiGen.GenerateSchemaRef(reflect.SliceOf(reflect.TypeOf(t)))
+			if err != nil {
+				log.Println("[ERR] Failed to generate schema for array item", err)
+				continue
 			}
 
-			if resp.ContentType != "" {
-				content[resp.ContentType] = mediaType
+		case resp.IsMap:
+			ref, err = openapiGen.NewSchemaRefForValue(t, schemas)
+			if err != nil {
+				log.Println("[ERR] Failed to generate schema for map", err)
+				continue
+			}
+
+		default:
+			if resp.NoContent {
+				op.AddResponse(status, &openapi3.Response{
+					Content:     map[string]*openapi3.MediaType{},
+					Description: &NoContent,
+				})
+				continue
+			}
+
+			ref, err = openapiGen.NewSchemaRefForValue(t, schemas)
+			if err != nil {
+				log.Printf("[ERR] Failed to generate shema ref for value in registry: %T: %v", t, err)
+				continue
 			}
 		}
 
-		r.WithContent(content)
-		op.AddResponse(status, r)
+		op.AddResponse(status, &openapi3.Response{
+			Content: map[string]*openapi3.MediaType{
+				resp.ContentType: {
+					Schema: ref,
+				},
+			},
+			Description: &resp.TypeName,
+		})
 	}
 }
 
@@ -217,24 +298,51 @@ func TagOperation(op *openapi3.Operation, path string, apiPrefix string) error {
 	return nil
 }
 
-func AddOperationId(op *openapi3.Operation, h handlers.Handler) {
-	op.OperationID = h.HandlerName()
+func AddOperationId(op *openapi3.Operation, r *generator.RouteInfo) {
+	if op != nil {
+		op.OperationID = r.Handler.Name
+	}
 }
 
 func extractOpTag(path string, prefix string) (string, error) {
 	// /api/v1/tasks -> tasks
-	p, found := strings.CutPrefix(path, prefix)
+	path, found := strings.CutPrefix(path, prefix)
 	if !found {
 		return "", fmt.Errorf("bad api prefix '%s' for path: '%s'", prefix, path)
 	}
 
-	p, _ = strings.CutPrefix(p, "/")
-	p = strings.Title(p)
+	path, _ = strings.CutPrefix(path, "/")
+	path = strings.Title(path)
 
-	parts := strings.Split(p, "/")
+	parts := strings.Split(path, "/")
 	if len(parts) == 0 {
 		return "", fmt.Errorf("bad path or prefix provided, nothing to extract after prefix cutoff: %s", parts)
 	}
 
 	return parts[0], nil
+}
+
+func toOpenApiType(t string) string {
+	var ptype string
+	switch t {
+	case "string":
+		ptype = openapi3.TypeString
+
+	case "array":
+		ptype = openapi3.TypeArray
+
+	case "int", "int32", "int64", "uint", "uint32", "uint16", "uint64":
+		ptype = openapi3.TypeInteger
+
+	case "float32", "float64":
+		ptype = openapi3.TypeNumber
+
+	case "bool":
+		ptype = openapi3.TypeBoolean
+
+	default:
+		ptype = openapi3.TypeString
+	}
+
+	return ptype
 }

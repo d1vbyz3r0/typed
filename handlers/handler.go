@@ -15,25 +15,24 @@ import (
 var stringType = reflect.TypeOf("")
 
 type Handler struct {
-	route   echo.Route
-	handler parser.Handler
+	route      echo.Route
+	handler    parser.Handler
+	path       string
+	pathParams []path.Param
 }
 
-func (h Handler) Path() string {
-	segments := strings.Split(h.route.Path, "/")
+func NewHandler(route echo.Route, handler parser.Handler) Handler {
+	segments := strings.Split(route.Path, "/")
 	for i, segment := range segments {
 		if strings.HasPrefix(segment, ":") {
 			trimmed := strings.TrimPrefix(segment, ":")
 			segments[i] = "{" + trimmed + "}"
 		}
 	}
+	p := strings.Join(segments, "/")
 
-	return strings.Join(segments, "/")
-}
-
-func (h Handler) PathParams() []path.Param {
-	params := make(map[string]path.Param, len(h.handler.Request.PathParams))
-	parts := strings.Split(h.route.Path, "/")
+	params := make(map[string]path.Param, len(handler.Request.PathParams))
+	parts := strings.Split(route.Path, "/")
 
 	for _, part := range parts {
 		if strings.HasPrefix(part, ":") {
@@ -45,14 +44,28 @@ func (h Handler) PathParams() []path.Param {
 		}
 	}
 
-	for _, param := range h.handler.Request.PathParams {
+	for _, param := range handler.Request.PathParams {
 		params[param.Name] = path.Param{
 			Name: param.Name,
 			Type: param.Type,
 		}
 	}
+	pathParams := maps.Values(params)
 
-	return maps.Values(params)
+	return Handler{
+		route:      route,
+		handler:    handler,
+		path:       p,
+		pathParams: pathParams,
+	}
+}
+
+func (h Handler) Path() string {
+	return h.path
+}
+
+func (h Handler) PathParams() []path.Param {
+	return h.pathParams
 }
 
 func (h Handler) QueryParams() []query.Param {

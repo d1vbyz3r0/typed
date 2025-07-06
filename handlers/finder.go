@@ -91,10 +91,7 @@ func (f *Finder) Match(routes []echo.Route) []Handler {
 			continue
 		}
 
-		res = append(res, Handler{
-			route:   route,
-			handler: h,
-		})
+		res = append(res, NewHandler(route, h))
 	}
 
 	return res

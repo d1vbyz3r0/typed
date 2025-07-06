@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/d1vbyz3r0/typed/generator"
+	"github.com/d1vbyz3r0/typed/internal/generator"
 	"log"
 )
 
@@ -22,8 +22,13 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	g := generator.New(cfg)
-	if err := g.Generate(); err != nil {
-		log.Fatalf("Failed to generate spec builder: %v", err)
+	g, err := generator.New(cfg)
+	if err != nil {
+		log.Fatalf("create generator: %v", err)
+	}
+
+	err = g.Generate()
+	if err != nil {
+		log.Fatalf("failed to generate spec builder: %v", err)
 	}
 }

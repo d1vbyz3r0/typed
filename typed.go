@@ -3,7 +3,6 @@ package typed
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/handlers"
-	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
@@ -127,35 +126,36 @@ func AddQueryParams(
 
 func AddRequestBody(
 	op *openapi3.Operation,
-	h parser.Handler,
+	h handlers.Handler,
 	openapiGen *openapi3gen.Generator,
 	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
 	body := openapi3.NewRequestBody()
 	content := make(openapi3.Content)
+	request := h.Request()
 
-	for contentType, req := range h.Request.ContentTypeMapping {
-		if req.Form != nil {
-			ref, err := openapiGen.GenerateSchemaRef(req.Form)
+	for contentType, reqBody := range request.ContentTypeMapping {
+		if reqBody.Form != nil {
+			ref, err := openapiGen.GenerateSchemaRef(reqBody.Form)
 			if err != nil {
-				slog.Error("generate schema ref for request form", "form", req.Form, "error", err)
+				slog.Error("generate schema ref for request form", "form", reqBody.Form, "error", err)
 				continue
 			}
 
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		}
 
-		if h.Request.BindModel != "" {
-			obj, ok := registry[h.Request.BindModel]
+		if request.BindModel != "" {
+			obj, ok := registry[request.BindModel]
 			if !ok {
-				slog.Warn("bind model not found in provided registry", "model", h.Request.BindModel)
+				slog.Warn("bind model not found in provided registry", "model", request.BindModel)
 				continue
 			}
 
 			ref, err := openapiGen.NewSchemaRefForValue(obj, schemas)
 			if err != nil {
-				slog.Error("generate schema ref for bind model", "model", h.Request.BindModel, "error", err)
+				slog.Error("generate schema ref for bind model", "model", request.BindModel, "error", err)
 				continue
 			}
 
@@ -217,9 +217,7 @@ func TagOperation(op *openapi3.Operation, path string, apiPrefix string) error {
 }
 
 func AddOperationId(op *openapi3.Operation, h handlers.Handler) {
-	if op != nil {
-		op.OperationID = h.HandlerName()
-	}
+	op.OperationID = h.HandlerName()
 }
 
 func extractOpTag(path string, prefix string) (string, error) {

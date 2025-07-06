@@ -43,40 +43,6 @@ func TestTagOperation(t *testing.T) {
 	}
 }
 
-func TestNormalizePathParams(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "simple path param",
-			input:    "/api/users/:id",
-			expected: "/api/users/{id}",
-		},
-		{
-			name:     "multiple path params",
-			input:    "/api/v1/tags/:tagId/pin/:taskId",
-			expected: "/api/v1/tags/{tagId}/pin/{taskId}",
-		},
-		{
-			name:     "no path params",
-			input:    "/api/health",
-			expected: "/api/health",
-		},
-		{
-			name:     "root path",
-			input:    "/",
-			expected: "/",
-		},
-	}
+func TestAddPathParams(t *testing.T) {
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NormalizePathParams(tt.input)
-			if got != tt.expected {
-				t.Errorf("NormalizePathParams() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
 }

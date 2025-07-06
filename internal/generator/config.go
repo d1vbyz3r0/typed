@@ -7,29 +7,31 @@ import (
 	"os"
 )
 
-func Load(path string) (*Config, error) {
+func LoadConfig(path string) (Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("open config: %w", err)
+		return Config{}, fmt.Errorf("open config: %w", err)
 	}
 	defer f.Close()
 
 	var cfg Config
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("unmarshal config: %w", err)
+		return Config{}, fmt.Errorf("unmarshal config: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("validate config: %w", err)
+		return Config{}, fmt.Errorf("validate config: %w", err)
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
 
 type Config struct {
-	Input  InputConfig  `yaml:"input"`
-	Output OutputConfig `yaml:"output"`
-	Debug  bool         `yaml:"debug"`
+	GenerateLib bool         `yaml:"generate_lib"`
+	LibPkg      string       `yaml:"lib_pkg"`
+	Input       InputConfig  `yaml:"input"`
+	Output      OutputConfig `yaml:"output"`
+	Debug       bool         `yaml:"debug"`
 }
 
 func (c *Config) Validate() error {
@@ -53,6 +55,8 @@ type InputConfig struct {
 	RoutesProviderPkg  string           `yaml:"routes-provider-pkg"`
 	Handlers           []HandlersConfig `yaml:"handlers"`
 	Models             []ModelsConfig   `yaml:"models"`
+	IncludeModels      []string         `yaml:"include-models"`
+	ExcludeModels      []string         `yaml:"exclude-models"`
 }
 
 func (c *InputConfig) Validate() error {
@@ -80,9 +84,8 @@ func (c *InputConfig) Validate() error {
 }
 
 type ModelsConfig struct {
-	Path      string  `yaml:"path"`
-	Recursive bool    `yaml:"recursive"`
-	Filter    *string `yaml:"filter,omitempty"`
+	Path      string `yaml:"path"`
+	Recursive bool   `yaml:"recursive"`
 }
 
 func (c *ModelsConfig) Validate() error {

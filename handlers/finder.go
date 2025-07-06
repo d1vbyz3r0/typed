@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/tools/go/packages"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -46,7 +47,14 @@ func (f *Finder) Find(patterns []SearchPattern) error {
 			packages.NeedName,
 	}
 
-	pkgs, err := packages.Load(cfg, f.buildSearchPatterns(patterns)...)
+	sp, err := f.buildSearchPatterns(patterns)
+	if err != nil {
+		return fmt.Errorf("build search patterns: %w", err)
+	}
+
+	slog.Debug("loaded search patterns", "patterns", sp)
+
+	pkgs, err := packages.Load(cfg, sp...)
 	if err != nil {
 		return fmt.Errorf("load packages: %w", err)
 	}
@@ -155,15 +163,20 @@ func (f *Finder) getHandlerName(route echo.Route) string {
 	return handlerName
 }
 
-func (f *Finder) buildSearchPatterns(patterns []SearchPattern) []string {
+func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get current working directory: %v", err)
+	}
+
 	res := make([]string, 0, len(patterns))
 	for _, pattern := range patterns {
 		p := pattern.Path
 		if pattern.Recursive {
 			p = filepath.Join(p, "...")
 		}
-		res = append(res, p)
+		res = append(res, filepath.Join(cwd, p))
 	}
 
-	return res
+	return res, nil
 }

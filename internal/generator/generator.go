@@ -1,8 +1,10 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/d1vbyz3r0/typed/internal/parser"
+	"go/format"
 	"golang.org/x/exp/maps"
 	"golang.org/x/tools/go/packages"
 	"log/slog"
@@ -64,6 +66,8 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("build load patterns: %w", err)
 	}
 
+	slog.Debug("built packages load patterns", "patterns", patterns)
+
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
 		return fmt.Errorf("load packages: %w", err)
@@ -93,9 +97,31 @@ func (g *Generator) Generate() error {
 			enums[k] = enum
 		}
 
-		imports[pkg.PkgPath] = struct{}{}
+		for _, h := range res.Handlers {
+			if h.Request != nil {
+				if h.Request.BindModel != "" {
+					types[h.Request.BindModel] = struct{}{}
+					imports[h.Request.BindModelPkg] = struct{}{}
+				}
+			}
+
+			for _, responses := range h.Responses {
+				for _, resp := range responses {
+					if resp.TypeName != "" {
+						types[resp.TypeName] = struct{}{}
+					}
+
+					if resp.TypePkgPath != "" {
+						imports[resp.TypePkgPath] = struct{}{}
+					}
+				}
+			}
+
+		}
+
 		for _, model := range g.filterModels(res.AdditionalModels) {
 			imports[model.PkgPath] = struct{}{}
+			types[model.Name] = struct{}{}
 		}
 	}
 
@@ -107,20 +133,9 @@ func (g *Generator) Generate() error {
 	}
 
 	tmpl := template.Must(template.New("spec").Parse(scriptTemplate))
+	result := bytes.NewBuffer(make([]byte, 0, len(scriptTemplate)))
 
-	path := filepath.Dir(g.cfg.Output.Path)
-	err = os.MkdirAll(path, 0644)
-	if err != nil {
-		return fmt.Errorf("create output directory: %w", err)
-	}
-
-	f, err := os.Create(g.cfg.Output.Path)
-	if err != nil {
-		return fmt.Errorf("create output file: %w", err)
-	}
-	defer f.Close()
-
-	return tmpl.Execute(f, TemplateArgs{
+	err = tmpl.Execute(result, TemplateArgs{
 		ApiPrefix:              g.cfg.Input.ApiPrefix,
 		Types:                  maps.Keys(types),
 		Imports:                validImports,
@@ -135,6 +150,33 @@ func (g *Generator) Generate() error {
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 	})
+	if err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	formatted, err := format.Source(result.Bytes())
+	if err != nil {
+		return fmt.Errorf("run formatter on generated code: %w", err)
+	}
+
+	path := filepath.Dir(g.cfg.Output.Path)
+	err = os.MkdirAll(path, 0644)
+	if err != nil {
+		return fmt.Errorf("create output directory: %w", err)
+	}
+
+	f, err := os.Create(g.cfg.Output.Path)
+	if err != nil {
+		return fmt.Errorf("create output file: %w", err)
+	}
+	defer f.Close()
+
+	_, err = f.Write(formatted)
+	if err != nil {
+		return fmt.Errorf("write output file: %w", err)
+	}
+
+	return nil
 }
 
 func (g *Generator) filterModels(models []parser.Model) []parser.Model {

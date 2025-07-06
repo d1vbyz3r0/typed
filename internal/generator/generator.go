@@ -28,6 +28,8 @@ type TemplateArgs struct {
 	Servers                []Server
 	HandlersPkgs           []HandlersConfig
 	RoutesProviderCtor     string
+	GenerateLib            bool
+	LibPkg                 string
 	SpecPath               string
 	HandlerProcessingHooks []string
 }
@@ -128,6 +130,8 @@ func (g *Generator) Generate() error {
 		Servers:                g.cfg.Input.Servers,
 		HandlersPkgs:           g.cfg.Input.Handlers,
 		RoutesProviderCtor:     g.buildCtorCall(),
+		GenerateLib:            g.cfg.GenerateLib,
+		LibPkg:                 g.cfg.LibPkg,
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 	})

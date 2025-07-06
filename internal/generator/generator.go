@@ -19,16 +19,17 @@ import (
 var scriptTemplate string
 
 type TemplateArgs struct {
-	ApiPrefix          *string
-	Types              []string
-	Imports            []string
-	Enums              map[string][]any
-	Title              string
-	Version            string
-	ServerUrl          string
-	HandlersPkgs       []HandlersConfig
-	RoutesProviderCtor string
-	SpecPath           string
+	ApiPrefix              *string
+	Types                  []string
+	Imports                []string
+	Enums                  map[string][]any
+	Title                  string
+	Version                string
+	Servers                []Server
+	HandlersPkgs           []HandlersConfig
+	RoutesProviderCtor     string
+	SpecPath               string
+	HandlerProcessingHooks []string
 }
 
 type Generator struct {
@@ -70,6 +71,7 @@ func (g *Generator) Generate() error {
 	imports := map[string]struct{}{
 		g.cfg.Input.RoutesProviderPkg: {},
 	}
+	enums := make(map[string][]any)
 
 	for _, pkg := range pkgs {
 		if len(pkg.Errors) > 0 {
@@ -83,6 +85,10 @@ func (g *Generator) Generate() error {
 		if err != nil {
 			slog.Error("failed to parse package", "path", pkg.PkgPath)
 			continue
+		}
+
+		for k, enum := range res.Enums {
+			enums[k] = enum
 		}
 
 		imports[pkg.PkgPath] = struct{}{}
@@ -113,15 +119,17 @@ func (g *Generator) Generate() error {
 	defer f.Close()
 
 	return tmpl.Execute(f, TemplateArgs{
-		ApiPrefix:          g.cfg.Input.ApiPrefix,
-		Types:              maps.Keys(types),
-		Imports:            validImports,
-		Title:              g.cfg.Input.Title,
-		Version:            g.cfg.Input.Version,
-		ServerUrl:          g.cfg.Input.ServerUrl,
-		HandlersPkgs:       g.cfg.Input.Handlers,
-		RoutesProviderCtor: g.buildCtorCall(),
-		SpecPath:           g.cfg.Output.SpecPath,
+		ApiPrefix:              g.cfg.Input.ApiPrefix,
+		Types:                  maps.Keys(types),
+		Imports:                validImports,
+		Enums:                  enums,
+		Title:                  g.cfg.Input.Title,
+		Version:                g.cfg.Input.Version,
+		Servers:                g.cfg.Input.Servers,
+		HandlersPkgs:           g.cfg.Input.Handlers,
+		RoutesProviderCtor:     g.buildCtorCall(),
+		SpecPath:               g.cfg.Output.SpecPath,
+		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 	})
 }
 

@@ -27,11 +27,12 @@ func LoadConfig(path string) (Config, error) {
 }
 
 type Config struct {
-	GenerateLib bool         `yaml:"generate_lib"`
-	LibPkg      string       `yaml:"lib_pkg"`
-	Input       InputConfig  `yaml:"input"`
-	Output      OutputConfig `yaml:"output"`
-	Debug       bool         `yaml:"debug"`
+	GenerateLib     bool         `yaml:"generate_lib"`
+	LibPkg          string       `yaml:"lib_pkg"`
+	ProcessingHooks []string     `json:"processing_hooks"`
+	Input           InputConfig  `yaml:"input"`
+	Output          OutputConfig `yaml:"output"`
+	Debug           bool         `yaml:"debug"`
 }
 
 func (c *Config) Validate() error {
@@ -50,13 +51,17 @@ type InputConfig struct {
 	ApiPrefix          *string          `yaml:"api-prefix,omitempty"`
 	Title              string           `yaml:"title"`
 	Version            string           `yaml:"version"`
-	ServerUrl          string           `yaml:"server-url"`
+	Servers            []Server         `yaml:"servers"`
 	RoutesProviderCtor string           `yaml:"routes-provider-ctor"`
 	RoutesProviderPkg  string           `yaml:"routes-provider-pkg"`
 	Handlers           []HandlersConfig `yaml:"handlers"`
 	Models             []ModelsConfig   `yaml:"models"`
 	IncludeModels      []string         `yaml:"include-models"`
 	ExcludeModels      []string         `yaml:"exclude-models"`
+}
+
+type Server struct {
+	Url string `yaml:"url"`
 }
 
 func (c *InputConfig) Validate() error {

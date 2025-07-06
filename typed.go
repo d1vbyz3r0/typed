@@ -186,7 +186,6 @@ func AddResponses(
 	registry map[string]any,
 ) {
 	for status, responses := range statusCodeMapping {
-		r := openapi3.NewResponse()
 		content := make(openapi3.Content, len(responses))
 		for _, resp := range responses {
 			mediaType := openapi3.NewMediaType()
@@ -203,7 +202,7 @@ func AddResponses(
 					continue
 				}
 
-				mediaType.WithSchemaRef(ref)
+				mediaType = mediaType.WithSchemaRef(ref)
 			}
 
 			if resp.ContentType != "" {
@@ -211,8 +210,7 @@ func AddResponses(
 			}
 		}
 
-		r.WithContent(content)
-		op.AddResponse(status, r)
+		op.AddResponse(status, openapi3.NewResponse().WithContent(content))
 	}
 }
 

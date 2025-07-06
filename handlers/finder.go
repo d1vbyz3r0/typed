@@ -6,9 +6,15 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/tools/go/packages"
 	"log/slog"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+type SearchPattern struct {
+	Path      string
+	Recursive bool
+}
 
 type Finder struct {
 	parser   *parser.Parser
@@ -27,15 +33,15 @@ func NewFinder() (*Finder, error) {
 	}, nil
 }
 
-// TODO: pass packages patterns to load
-func (f *Finder) Find() error {
+func (f *Finder) Find(patterns []SearchPattern) error {
 	cfg := &packages.Config{
 		Mode: packages.NeedTypes |
 			packages.NeedSyntax |
-			packages.NeedTypesInfo,
+			packages.NeedTypesInfo |
+			packages.NeedName,
 	}
 
-	pkgs, err := packages.Load(cfg)
+	pkgs, err := packages.Load(cfg, f.buildSearchPatterns(patterns)...)
 	if err != nil {
 		return fmt.Errorf("load packages: %w", err)
 	}
@@ -55,8 +61,19 @@ func (f *Finder) Find() error {
 		}
 
 		for _, h := range res.Handlers {
-			fullHandlerPath := h.Pkg + "." + h.Name
-			f.handlers[fullHandlerPath] = h
+			//fullHandlerPath := h.Pkg + "." + h.Name
+			v, ok := f.handlers[h.Name]
+			if ok {
+				// workaround...
+				slog.Warn(
+					"handler already found in map, use unique names for your handlers",
+					"old_pkg", v.Pkg,
+					"new_pkg", h.Pkg,
+					"handler", h.Name,
+				)
+			}
+
+			f.handlers[h.Name] = h
 		}
 	}
 
@@ -66,10 +83,11 @@ func (f *Finder) Find() error {
 func (f *Finder) Match(routes []echo.Route) []Handler {
 	res := make([]Handler, 0, len(routes))
 	for _, route := range routes {
-		fullPath := f.getHandlerFullPath(route)
-		h, ok := f.handlers[fullPath]
+		//fullPath := f.getHandlerFullPath(route)
+		handlerName := f.getHandlerName(route)
+		h, ok := f.handlers[handlerName]
 		if !ok {
-			slog.Warn("matched handler not found, skipping", "path", fullPath)
+			slog.Warn("matched handler not found, skipping", "handler", handlerName)
 			continue
 		}
 
@@ -83,6 +101,7 @@ func (f *Finder) Match(routes []echo.Route) []Handler {
 }
 
 func (f *Finder) getHandlerFullPath(route echo.Route) string {
+	// TODO: not working in case of direct echo.HandlerFunc usages, last pkg skipped :)
 	closureRegexp := regexp.MustCompile(`^func\d+(\.\d+)?$`)
 	slashParts := strings.Split(route.Name, "/")
 	hasDots := strings.Contains(route.Name, ".")
@@ -118,4 +137,31 @@ func (f *Finder) getHandlerFullPath(route echo.Route) string {
 	}
 
 	return pkgPath + "." + handler
+}
+
+func (f *Finder) getHandlerName(route echo.Route) string {
+	// Example route name: "xxx/internal/api.(*Server).mapUsers.LoginUserHandler.func1"
+	parts := strings.Split(route.Name, ".")
+
+	// Get the package and handler name
+	// For wrapper handlers (with .funcN suffix), we need to take the part before .funcN
+	handlerName := parts[len(parts)-1]
+	if strings.HasPrefix(handlerName, "func") {
+		handlerName = parts[len(parts)-2]
+	}
+
+	return handlerName
+}
+
+func (f *Finder) buildSearchPatterns(patterns []SearchPattern) []string {
+	res := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
+		p := pattern.Path
+		if pattern.Recursive {
+			p = filepath.Join(p, "...")
+		}
+		res = append(res, p)
+	}
+
+	return res
 }

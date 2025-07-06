@@ -140,7 +140,6 @@ func AddRequestBody(
 	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
-	body := openapi3.NewRequestBody()
 	content := make(openapi3.Content)
 	request := h.Request()
 
@@ -175,7 +174,7 @@ func AddRequestBody(
 	}
 
 	op.RequestBody = &openapi3.RequestBodyRef{
-		Value: body,
+		Value: openapi3.NewRequestBody().WithContent(content),
 	}
 }
 

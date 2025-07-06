@@ -20,6 +20,7 @@ func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
 	customizers = append(customizers, fn)
 }
 
+// Customizer is a top-level openapi3gen.SchemaCustomizerFn. It will call some default customizers and all registered with RegisterCustomizer
 func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
 	for _, customizeFn := range customizers {
 		err := customizeFn(name, t, tag, schema)
@@ -56,17 +57,7 @@ func overrideNames(name string, t reflect.Type, tag reflect.StructTag, schema *o
 		schema.Extensions = make(map[string]any)
 	}
 
-	v, ok := tag.Lookup("query")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideKey] = v
-	}
-
-	v, ok = tag.Lookup("header")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideKey] = v
-	}
-
-	v, ok = tag.Lookup("param")
+	v, ok := tag.Lookup("header")
 	if ok && v != "-" {
 		schema.Extensions[FieldNameOverrideKey] = v
 	}

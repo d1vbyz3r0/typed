@@ -102,7 +102,7 @@ func TestAddPathParams(t *testing.T) {
 	}{
 		{
 			Name: "Bind model only",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",
@@ -170,7 +170,7 @@ func TestAddPathParams(t *testing.T) {
 		},
 		{
 			Name: "Inline params only",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",
@@ -254,7 +254,7 @@ func TestAddPathParams(t *testing.T) {
 		},
 		{
 			Name: "Mixed",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",
@@ -364,7 +364,7 @@ func TestAddQueryParams(t *testing.T) {
 	}{
 		{
 			Name: "Bind model only",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",
@@ -432,7 +432,7 @@ func TestAddQueryParams(t *testing.T) {
 		},
 		{
 			Name: "Inline params only",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",
@@ -517,7 +517,7 @@ func TestAddQueryParams(t *testing.T) {
 		},
 		{
 			Name: "Mixed",
-			Handler: handlers.NewHandler(echo.Route{}, parser.Handler{
+			Handler: handlers.NewHandler(echo.Route{}, nil, parser.Handler{
 				Doc:  "",
 				Name: "Test",
 				Pkg:  "test",

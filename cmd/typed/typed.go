@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/d1vbyz3r0/typed/internal/generator"
 	"log"
+	"log/slog"
+	"os"
 )
 
 var (
@@ -20,6 +22,16 @@ func main() {
 	cfg, err := generator.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("load config: %v", err)
+	}
+
+	if cfg.Debug {
+		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			AddSource:   true,
+			Level:       slog.LevelDebug,
+			ReplaceAttr: nil,
+		})
+		logger := slog.New(handler)
+		slog.SetDefault(logger)
 	}
 
 	g, err := generator.New(cfg)

@@ -1,6 +1,9 @@
 package typing
 
-import "go/types"
+import (
+	"go/types"
+	"reflect"
+)
 
 // GetUnderlyingStruct returns underlying type struct, "dereferencing" pointers recursively
 func GetUnderlyingStruct(t types.Type) (*types.Struct, bool) {
@@ -129,4 +132,17 @@ func IsFunc(t types.Type) bool {
 	t = t.Underlying()
 	_, ok := t.(*types.Signature)
 	return ok
+}
+
+// DerefReflectPtr returns t, if it's kind is not reflect.Ptr, otherwise recursively gets t.Elem(), while it's pointer
+func DerefReflectPtr(t reflect.Type) reflect.Type {
+	if t.Kind() != reflect.Ptr {
+		return t
+	}
+
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
 }

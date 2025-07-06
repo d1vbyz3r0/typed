@@ -15,13 +15,14 @@ import (
 var stringType = reflect.TypeOf("")
 
 type Handler struct {
-	route      echo.Route
-	handler    parser.Handler
-	path       string
-	pathParams []path.Param
+	route       echo.Route
+	middlewares []echo.MiddlewareFunc
+	handler     parser.Handler
+	path        string
+	pathParams  []path.Param
 }
 
-func NewHandler(route echo.Route, handler parser.Handler) Handler {
+func NewHandler(route echo.Route, middlewares []echo.MiddlewareFunc, handler parser.Handler) Handler {
 	segments := strings.Split(route.Path, "/")
 	for i, segment := range segments {
 		if strings.HasPrefix(segment, ":") {
@@ -53,10 +54,11 @@ func NewHandler(route echo.Route, handler parser.Handler) Handler {
 	pathParams := maps.Values(params)
 
 	return Handler{
-		route:      route,
-		handler:    handler,
-		path:       p,
-		pathParams: pathParams,
+		route:       route,
+		middlewares: middlewares,
+		handler:     handler,
+		path:        p,
+		pathParams:  pathParams,
 	}
 }
 
@@ -94,4 +96,8 @@ func (h Handler) Responses() response.StatusCodeMapping {
 
 func (h Handler) BindModel() string {
 	return h.handler.Request.BindModel
+}
+
+func (h Handler) Middlewares() []echo.MiddlewareFunc {
+	return h.middlewares
 }

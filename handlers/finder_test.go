@@ -243,11 +243,11 @@ func TestFinder_Match(t *testing.T) {
 	}
 	server.MapHandlers()
 
-	routes := make(map[string]echo.Route)
+	routes := make(map[string]EchoRoute)
 	for _, r := range server.Router.Routes() {
 		route := *r
 		p := f.getHandlerName(route)
-		routes[p] = route
+		routes[p] = EchoRoute{Route: route}
 	}
 
 	expectedFindRes := map[string]parser.Handler{
@@ -391,7 +391,7 @@ func TestFinder_Match(t *testing.T) {
 		require.True(t, ok, "key: %s", k)
 
 		want = append(want, Handler{
-			route:   r,
+			route:   r.Route,
 			handler: v,
 		})
 	}

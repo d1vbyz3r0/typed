@@ -16,6 +16,11 @@ type SearchPattern struct {
 	Recursive bool
 }
 
+type EchoRoute struct {
+	Route       echo.Route
+	Middlewares []echo.MiddlewareFunc
+}
+
 type Finder struct {
 	parser   *parser.Parser
 	handlers map[string]parser.Handler
@@ -80,18 +85,18 @@ func (f *Finder) Find(patterns []SearchPattern) error {
 	return nil
 }
 
-func (f *Finder) Match(routes []echo.Route) []Handler {
+func (f *Finder) Match(routes []EchoRoute) []Handler {
 	res := make([]Handler, 0, len(routes))
 	for _, route := range routes {
 		//fullPath := f.getHandlerFullPath(route)
-		handlerName := f.getHandlerName(route)
+		handlerName := f.getHandlerName(route.Route)
 		h, ok := f.handlers[handlerName]
 		if !ok {
 			slog.Warn("matched handler not found, skipping", "handler", handlerName)
 			continue
 		}
 
-		res = append(res, NewHandler(route, h))
+		res = append(res, NewHandler(route.Route, route.Middlewares, h))
 	}
 
 	return res

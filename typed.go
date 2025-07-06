@@ -41,7 +41,9 @@ func AddPathParams(
 					continue
 				}
 
-				param.Schema = schema
+				param.Schema = &openapi3.SchemaRef{
+					Value: schema.Value,
+				}
 				params[p.Name] = p
 				op.AddParameter(param)
 			}
@@ -64,7 +66,9 @@ func AddPathParams(
 			continue
 		}
 
-		param.Schema = schema
+		param.Schema = &openapi3.SchemaRef{
+			Value: schema.Value,
+		}
 		op.AddParameter(param)
 	}
 }
@@ -96,7 +100,9 @@ func AddQueryParams(
 					continue
 				}
 
-				param.Schema = schema
+				param.Schema = &openapi3.SchemaRef{
+					Value: schema.Value,
+				}
 				params[p.Name] = p
 				op.AddParameter(param)
 			}
@@ -120,7 +126,9 @@ func AddQueryParams(
 			continue
 		}
 
-		param.Schema = schema
+		param.Schema = &openapi3.SchemaRef{
+			Value: schema.Value,
+		}
 		op.AddParameter(param)
 	}
 }

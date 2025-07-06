@@ -29,7 +29,7 @@ func LoadConfig(path string) (Config, error) {
 type Config struct {
 	GenerateLib     bool         `yaml:"generate_lib"`
 	LibPkg          string       `yaml:"lib-pkg"`
-	ProcessingHooks []string     `json:"processing-hooks"`
+	ProcessingHooks []string     `yaml:"processing-hooks"`
 	Input           InputConfig  `yaml:"input"`
 	Output          OutputConfig `yaml:"output"`
 	Debug           bool         `yaml:"debug"`

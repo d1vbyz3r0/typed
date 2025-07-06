@@ -89,7 +89,7 @@ func Generate() {
 
     typed.RegisterCustomizer(typed.NewEnumsCustomizer(enums))
     {{- range .HandlerProcessingHooks }}
-	typed.RegisterHandlerProcessingHook({{.}})
+	typed.RegisterHandlerProcessingHook(typed.{{.}})
     {{- end }}
 
     routesProvider := {{ .RoutesProviderCtor }}

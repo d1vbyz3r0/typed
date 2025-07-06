@@ -7,7 +7,7 @@ type RoutesProvider interface {
 		host string,
 		route echo.Route,
 		handler echo.HandlerFunc,
-		middleware []echo.MiddlewareFunc,
-	))
+		middleware []echo.MiddlewareFunc),
+	)
 	ProvideRoutes()
 }

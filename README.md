@@ -98,13 +98,13 @@ handlers:
 
 ```go
 func GetUser(c echo.Context) error {
-// Typed detects 'id' parameter and infers int type from strconv.Atoi usage. Note that for now you should pass c.Param directly as argument
-id, err := strconv.Atoi(c.Param("id"))
-if err != nil {
-return err
-}
-// Handler logic...
-return c.JSON(http.StatusOK, user)
+    // Typed detects 'id' parameter and infers int type from strconv.Atoi usage. Note that for now you should pass c.Param directly as argument
+    id, err := strconv.Atoi(c.Param("id"))
+    if err != nil {
+        return err
+    }
+    // Handler logic...
+    return c.JSON(http.StatusOK, user)
 }
 
 // Route: e.GET("/users/:id", GetUser)
@@ -115,12 +115,12 @@ return c.JSON(http.StatusOK, user)
 
 ```go
 func SearchUsers(c echo.Context) error {
-// Typed detects 'limit' as integer and 'active' as boolean
-limit, _ := strconv.Atoi(c.QueryParam("limit"))
-active, _ := strconv.ParseBool(c.QueryParam("active"))
-
-// Handler logic...
-return c.JSON(http.StatusOK, users)
+    // Typed detects 'limit' as integer and 'active' as boolean
+    limit, _ := strconv.Atoi(c.QueryParam("limit"))
+    active, _ := strconv.ParseBool(c.QueryParam("active"))
+    
+    // Handler logic...
+    return c.JSON(http.StatusOK, users)
 }
 
 // Result: OpenAPI query parameters with correct types
@@ -130,18 +130,18 @@ return c.JSON(http.StatusOK, users)
 
 ```go
 func UpdateProfile(c echo.Context) error {
-// Typed detects form fields and file uploads
-name := c.FormValue("name")
-email := c.FormValue("email")
-
-// File upload detection
-avatar, err := c.FormFile("avatar")
-if err != nil {
-return err
-}
-
-// Handler logic...
-return c.JSON(http.StatusOK, response)
+    // Typed detects form fields and file uploads
+    name := c.FormValue("name")
+    email := c.FormValue("email")
+    
+    // File upload detection
+    avatar, err := c.FormFile("avatar")
+    if err != nil {
+        return err
+    }
+    
+    // Handler logic...
+    return c.JSON(http.StatusOK, response)
 }
 
 // Result: OpenAPI form schema with string fields and binary file field
@@ -182,26 +182,26 @@ Typed analyzes your Go constants and automatically generates OpenAPI enum schema
 type Role string
 
 const (
-RoleAdmin = Role("admin")
-RoleUser = Role("user")
-RoleGuest = Role("guest")
+    RoleAdmin = Role("admin")
+    RoleUser = Role("user")
+    RoleGuest = Role("guest")
 )
 
 // Integer-based enums
 type Status int
 
 const (
-StatusNew Status = 1
-StatusDone Status = 2
-StatusCancelled Status = 3
+    StatusNew Status = 1
+    StatusDone Status = 2
+    StatusCancelled Status = 3
 )
 
 // Usage in structs
 type User struct {
-ID     int    `json:"id"`
-Name   string `json:"name"`
-Role   Role   `json:"role"`
-Status Status `json:"status"`
+    ID     int    `json:"id"`
+    Name   string `json:"name"`
+    Role   Role   `json:"role"`
+    Status Status `json:"status"`
 }
 ```
 
@@ -254,10 +254,10 @@ providers = append(providers, p)
 
 // Custom provider example
 func customProvider(pkg string, funcName string) (reflect.Type, bool) {
-if pkg == "mypackage" && funcName == "ParseCustomType" {
-return reflect.TypeOf(MyCustomType{}), true
-}
-return nil, false
+    if pkg == "mypackage" && funcName == "ParseCustomType" {
+        return reflect.TypeOf(MyCustomType{}), true
+    }
+    return nil, false
 }
 ```
 
@@ -268,7 +268,7 @@ Customize OpenAPI schema generation with custom functions:
 ```go
 // Example from customizers.go
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
-customizers = append(customizers, fn)
+    customizers = append(customizers, fn)
 }
 
 // Built-in customizers include:
@@ -300,14 +300,14 @@ processing-hooks:
 
 ```go
 func GetProtectedResource(c echo.Context) error {
-// Your protected handler logic
-return c.JSON(http.StatusOK, data)
+    // Your protected handler logic
+    return c.JSON(http.StatusOK, data)
 }
 
 // Route with JWT middleware
 protected := e.Group("/api")
 protected.Use(echojwt.WithConfig(echojwt.Config{
-SigningKey: []byte("secret"),
+    SigningKey: []byte("secret"),
 }))
 protected.GET("/users", GetProtectedResource)
 ```
@@ -335,43 +335,43 @@ You can register custom hooks to extend the specification generation process:
 ```go
 // Example from middlewares.go
 func RegisterHandlerProcessingHook(hook HandlerProcessingHookFn) {
-handlerProcessingHooks = append(handlerProcessingHooks, hook)
+    handlerProcessingHooks = append(handlerProcessingHooks, hook)
 }
 
 // Custom hook example
 func CustomAuthHook(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler) {
-// Analyze handler middlewares
-for _, mw := range handler.Middlewares() {
-middlewareName := typed.GetMiddlewareFuncName(mw)
-
-if strings.Contains(middlewareName, "myauth") {
-// Add custom security scheme
-if spec.Components.SecuritySchemes == nil {
-spec.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
-}
-
-spec.Components.SecuritySchemes["customAuth"] = &openapi3.SecuritySchemeRef{
-Value: &openapi3.SecurityScheme{
-Type: "apiKey",
-In:   "header",
-Name: "X-API-Key",
-},
-}
-
-// Apply to operation
-if operation.Security == nil {
-operation.Security = openapi3.NewSecurityRequirements()
-}
-operation.Security.With(openapi3.SecurityRequirement{
-"customAuth": []string{},
-})
-}
-}
+    // Analyze handler middlewares
+    for _, mw := range handler.Middlewares() {
+        middlewareName := typed.GetMiddlewareFuncName(mw)
+        
+        if strings.Contains(middlewareName, "myauth") {
+            // Add custom security scheme
+            if spec.Components.SecuritySchemes == nil {
+                spec.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
+            }
+            
+            spec.Components.SecuritySchemes["customAuth"] = &openapi3.SecuritySchemeRef{
+                Value: &openapi3.SecurityScheme{
+                    Type: "apiKey",
+                    In:   "header",
+                    Name: "X-API-Key",
+                },
+            }
+            
+            // Apply to operation
+            if operation.Security == nil {
+				operation.Security = openapi3.NewSecurityRequirements()
+            }
+            operation.Security.With(openapi3.SecurityRequirement{
+                "customAuth": []string{},
+            })
+        }
+    }
 }
 
 // Register your custom hook
 func init() {
-typed.RegisterHandlerProcessingHook(CustomAuthHook)
+    typed.RegisterHandlerProcessingHook(CustomAuthHook)
 }
 ```
 
@@ -415,7 +415,6 @@ without manual specification.
 
 ---
 
----
 
 ## 🏗️ How It Works
 

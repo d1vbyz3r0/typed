@@ -3,6 +3,7 @@ package typed
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/handlers"
+	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
@@ -25,14 +26,14 @@ func AddPathParams(
 	if model != "" {
 		obj, ok := registry[model]
 		if ok {
-			typedParams, err := path.NewStructPathParams(reflect.TypeOf(obj))
+			typedParams, err := path.NewStructPathParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
 				slog.Error("get path params from bind model", "error", err)
 			}
 
 			for _, p := range typedParams {
 				param := openapi3.NewPathParameter(p.Name)
-				param.Required = p.Type.Kind() != reflect.Pointer
+				param.Required = true
 
 				schema, err := openapiGen.GenerateSchemaRef(p.Type)
 				if err != nil {
@@ -80,7 +81,7 @@ func AddQueryParams(
 	if model != "" {
 		obj, ok := registry[model]
 		if ok {
-			typedParams, err := query.NewStructQueryParams(reflect.TypeOf(obj))
+			typedParams, err := query.NewStructQueryParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
 				slog.Error("get query params from bind model", "error", err)
 			}

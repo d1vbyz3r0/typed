@@ -9,7 +9,7 @@ import (
     "github.com/labstack/echo/v4"
     "reflect"
 {{- range .Imports}}
-{{.}}
+    {{.}}
 {{- end}}
 )
 
@@ -56,7 +56,7 @@ var spec = &openapi3.T{
     },
 }
 
-var Routes []echo.Route
+var routes []echo.Route
 
 func onRouteAdded(
         host string,
@@ -64,7 +64,7 @@ func onRouteAdded(
         handler echo.HandlerFunc,
         middleware []echo.MiddlewareFunc,
 ) {
-    Routes = append(Routes, route)
+    routes = append(routes, route)
     for _, mw := range middleware {
         {{/*if typed.IsJwtMiddleware(mw) {*/}}
         {{/*    addJwtAuthSchema()*/}}
@@ -73,7 +73,7 @@ func onRouteAdded(
     }
 }
 
-func {{- if .GenerateLib }}Generate{{- else }}main{{- end }}() {
+func Generate() {
     g := openapi3gen.NewGenerator(
         openapi3gen.UseAllExportedFields(),
         openapi3gen.CreateComponentSchemas(openapi3gen.ExportComponentSchemasOptions{
@@ -110,16 +110,22 @@ func {{- if .GenerateLib }}Generate{{- else }}main{{- end }}() {
         panic(err)
     }
 
-    matchedHandlers := finder.Match(Routes)
+    matchedHandlers := finder.Match(routes)
     for _, handler := range matchedHandlers {
         operation := openapi3.NewOperation()
         operation.Description = handler.Description()
         typed.AddPathParams(operation, handler, g, usedTypes)
-		typed.AddQueryParams(operation, handler, g, usedTypes)
-		typed.AddRequestBody(operation, handler, g,  spec.Components.Schemas,usedTypes)
+        typed.AddQueryParams(operation, handler, g, usedTypes)
+        typed.AddRequestBody(operation, handler, g, spec.Components.Schemas, usedTypes)
         typed.AddOperationId(operation, handler)
-		if useTags {
-			typed.TagOperation(operation, handler.Path(), apiPrefix)
+        if useTags {
+            typed.TagOperation(operation, handler.Path(), apiPrefix)
         }
     }
 }
+
+{{- if not .GenerateLib }}
+func main() {
+    Generate()
+}
+{{- end }}

@@ -136,13 +136,8 @@ func IsFunc(t types.Type) bool {
 
 // DerefReflectPtr returns t, if it's kind is not reflect.Ptr, otherwise recursively gets t.Elem(), while it's pointer
 func DerefReflectPtr(t reflect.Type) reflect.Type {
-	if t.Kind() != reflect.Ptr {
-		return t
-	}
-
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-
 	return t
 }

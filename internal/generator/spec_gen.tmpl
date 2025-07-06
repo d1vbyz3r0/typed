@@ -122,6 +122,7 @@ func Generate() {
         typed.AddPathParams(operation, handler, g, usedTypes)
         typed.AddQueryParams(operation, handler, g, usedTypes)
         typed.AddRequestBody(operation, handler, g, spec.Components.Schemas, usedTypes)
+		typed.AddResponses(operation, handler, g, spec.Components.Schemas, usedTypes)
         typed.AddOperationId(operation, handler)
         if useTags {
             typed.TagOperation(operation, handler.Path(), apiPrefix)

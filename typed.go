@@ -6,7 +6,6 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
-	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"log/slog"
@@ -180,11 +179,12 @@ func AddRequestBody(
 
 func AddResponses(
 	op *openapi3.Operation,
-	statusCodeMapping response.StatusCodeMapping,
+	h handlers.Handler,
 	openapiGen *openapi3gen.Generator,
 	schemas openapi3.Schemas,
 	registry map[string]any,
 ) {
+	statusCodeMapping := h.Responses()
 	for status, responses := range statusCodeMapping {
 		content := make(openapi3.Content, len(responses))
 		for _, resp := range responses {

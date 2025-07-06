@@ -203,6 +203,16 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 					continue
 				}
 
+				if typing.IsInterface(obj.Type()) {
+					slog.Debug("skipping interface object", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
+				if typing.IsConstOrGlobal(obj) {
+					slog.Debug("skipping const/global object", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
 				pkgName := obj.Pkg().Name()
 				pkgPath := obj.Pkg().Path()
 				result.AdditionalModels = append(result.AdditionalModels, Model{

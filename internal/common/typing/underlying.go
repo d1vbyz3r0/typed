@@ -134,6 +134,29 @@ func IsFunc(t types.Type) bool {
 	return ok
 }
 
+func IsInterface(t types.Type) bool {
+	t = t.Underlying()
+	_, ok := t.(*types.Interface)
+	return ok
+}
+
+func IsConstOrGlobal(obj types.Object) bool {
+	switch o := obj.(type) {
+	case *types.Const:
+		return true
+
+	case *types.Var:
+		if o.IsField() {
+			return false
+		}
+
+		return true
+
+	default:
+		return false
+	}
+}
+
 // DerefReflectPtr returns t, if it's kind is not reflect.Ptr, otherwise recursively gets t.Elem(), while it's pointer
 func DerefReflectPtr(t reflect.Type) reflect.Type {
 	for t.Kind() == reflect.Ptr {

@@ -154,8 +154,10 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
-	formatted, err := format.Source(result.Bytes())
+	src := result.Bytes()
+	formatted, err := format.Source(src)
 	if err != nil {
+		fmt.Println(string(src))
 		return fmt.Errorf("run formatter on generated code: %w", err)
 	}
 

@@ -35,7 +35,7 @@ var enums = map[string][]any{
     "{{$type}}": {
         {{- range $i, $val := $values }}
         {{ printf "%#v" $val }},
-        {{- end }},
+        {{- end }}
     },
     {{- end }}
 }
@@ -125,7 +125,11 @@ func Generate() {
 		typed.AddResponses(operation, handler, g, spec.Components.Schemas, usedTypes)
         typed.AddOperationId(operation, handler)
         if useTags {
-            typed.TagOperation(operation, handler.Path(), apiPrefix)
+            err = typed.TagOperation(operation, handler.Path(), apiPrefix)
+			if err != nil {
+				slog.Error("tag operation", "error", err)
+				continue
+            }
         }
 
 		typed.RunHandlerHooks(spec, operation, handler)

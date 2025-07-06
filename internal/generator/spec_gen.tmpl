@@ -135,5 +135,10 @@ func Generate() {
 {{- if not .GenerateLib }}
 func main() {
     Generate()
+	err := typed.SaveSpec(spec, "{{.SpecPath}}")
+    if err != nil {
+		slog.Error("save spec", "error", err)
+        return
+	}
 }
 {{- end }}

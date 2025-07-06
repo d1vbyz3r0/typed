@@ -9,6 +9,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"log/slog"
+	"net/http"
 	"reflect"
 	"strings"
 )
@@ -210,7 +211,8 @@ func AddResponses(
 			}
 		}
 
-		op.AddResponse(status, openapi3.NewResponse().WithContent(content))
+		resp := openapi3.NewResponse().WithContent(content).WithDescription(http.StatusText(status))
+		op.AddResponse(status, resp)
 	}
 }
 

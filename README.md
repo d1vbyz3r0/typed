@@ -12,7 +12,7 @@ code and produce accurate, comprehensive API documentation.
 
 Existing OpenAPI generators for Go either require extensive manual annotations or don't work well with Echo framework.
 Typed solves this by automatically analyzing your Echo handlers and generating accurate OpenAPI specifications without
-any code modifications.
+large code modifications.
 
 ## 🚀 Features
 
@@ -46,6 +46,25 @@ go get github.com/d1vbyz3r0/typed@latest
 To generate OpenAPI specification for your Echo project, write yaml config and add go generate directives to your code (
 or run them manually).
 Example of config file can be found [here](./examples/typed.yaml)
+
+You should have somewhere an object, which will expose routes and middlewares and implement following interface:
+```go
+type RoutesProvider interface {
+	OnRouteAdded(func(
+		host string,
+		route echo.Route,
+		handler echo.HandlerFunc,
+		middleware []echo.MiddlewareFunc,
+	))
+	ProvideRoutes()
+}
+```
+
+Then provide a package of your implementation and name of object constructor in configuration file:
+```yaml
+routes-provider-ctor: NewServerBuilder
+routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
+```
 
 ```bash
 //go:generate typed -config ../typed.yaml

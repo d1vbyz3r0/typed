@@ -28,7 +28,7 @@ large code modifications.
 - **Echo Framework Integration**: Specifically designed for Echo-based projects
 - **Library Mode**: Generated code can be used as a library
 
----
+
 
 ## 📦 Installation
 
@@ -37,7 +37,7 @@ go install github.com/d1vbyz3r0/typed/cmd/typed@latest
 go get github.com/d1vbyz3r0/typed@latest
 ```
 
----
+
 
 ## 🛠️ Usage
 
@@ -87,7 +87,6 @@ The tool automatically detects the output format based on file extension:
 - **YAML**: `.yaml` or `.yml` extensions
 - **JSON**: `.json` extension
 
----
 
 ## 🧠 Intelligent Parameter Detection
 
@@ -165,7 +164,6 @@ Typed automatically infers parameter types from common conversion functions:
 | `uuid`    | `Parse`, `MustParse` | `uuid.UUID`   |
 | `time`    | `Parse`              | `time.Time`   |
 
----
 
 ## 📋 Enum Support
 
@@ -238,7 +236,6 @@ Typed supports various enum value types:
 | `float64` | `Priority(1.5)` | `number` with enum values  |
 | `bool`    | `Flag(true)`    | `boolean` with enum values |
 
----
 
 ## 🔧 Extensibility
 
@@ -278,7 +275,6 @@ func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
 // - Enum value support
 ```
 
----
 
 ## 🔌 Handler Processing Hooks
 
@@ -413,8 +409,6 @@ middlewareName := GetMiddlewareFuncName(middleware)
 This hook system makes Typed highly extensible and allows it to automatically document complex middleware behavior
 without manual specification.
 
----
-
 
 ## 🏗️ How It Works
 
@@ -452,19 +446,16 @@ The two-stage approach is necessary because:
 - **Go AST**: For source code analysis and type discovery
 - **Go Reflection**: For runtime type information access
 
----
 
 ## 🤝 Contributing
 
 Contributions are welcome! This project was created because similar tools weren't available for Echo framework projects.
 
----
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
 
 ## Acknowledgments
 
@@ -473,7 +464,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **[Echo Framework](https://echo.labstack.com/)** - High performance, minimalist Go web framework
 - **Go AST & Reflection** - Powerful code analysis and runtime type inspection capabilities
 
----
 
 ## 🐛 Issues & Support
 
@@ -483,7 +473,6 @@ If you encounter any issues or have questions:
 2. Create a new issue with detailed description
 3. Include code examples and error messages
 
----
 
 ## 🔮 Roadmap
 - [ ] Write doc for configuration

@@ -28,8 +28,8 @@ func LoadConfig(path string) (Config, error) {
 
 type Config struct {
 	GenerateLib     bool         `yaml:"generate_lib"`
-	LibPkg          string       `yaml:"lib_pkg"`
-	ProcessingHooks []string     `json:"processing_hooks"`
+	LibPkg          string       `yaml:"lib-pkg"`
+	ProcessingHooks []string     `json:"processing-hooks"`
 	Input           InputConfig  `yaml:"input"`
 	Output          OutputConfig `yaml:"output"`
 	Debug           bool         `yaml:"debug"`
@@ -42,6 +42,10 @@ func (c *Config) Validate() error {
 
 	if err := c.Output.Validate(); err != nil {
 		return fmt.Errorf("invalid output config: %w", err)
+	}
+
+	if c.GenerateLib && c.LibPkg == "" {
+		return errors.New("lib_pkg is required when generate_lib is true")
 	}
 
 	return nil

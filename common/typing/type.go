@@ -16,13 +16,13 @@ var providers = []Provider{
 }
 
 var (
-	intType     = reflect.TypeOf(int(0))
-	int64Type   = reflect.TypeOf(int64(0))
-	uintType    = reflect.TypeOf(uint(0))
-	float64Type = reflect.TypeOf(float64(0))
-	boolType    = reflect.TypeOf(false)
-	uuidType    = reflect.TypeOf(uuid.UUID{})
-	timeType    = reflect.TypeOf(time.Time{})
+	IntType     = reflect.TypeOf(int(0))
+	Int64Type   = reflect.TypeOf(int64(0))
+	UintType    = reflect.TypeOf(uint(0))
+	Float64Type = reflect.TypeOf(float64(0))
+	BoolType    = reflect.TypeOf(false)
+	UuidType    = reflect.TypeOf(uuid.UUID{})
+	TimeType    = reflect.TypeOf(time.Time{})
 )
 
 func RegisterTypeProvider(p Provider) {
@@ -46,19 +46,19 @@ func strconvProvider(pkg string, name string) (reflect.Type, bool) {
 
 	switch name {
 	case "Atoi":
-		return intType, true
+		return IntType, true
 
 	case "ParseInt":
-		return int64Type, true
+		return Int64Type, true
 
 	case "ParseUint":
-		return uintType, true
+		return UintType, true
 
 	case "ParseFloat":
-		return float64Type, true
+		return Float64Type, true
 
 	case "ParseBool":
-		return boolType, true
+		return BoolType, true
 	}
 
 	return nil, false
@@ -73,7 +73,7 @@ func uuidProvider(pkg string, funcName string) (reflect.Type, bool) {
 		return nil, false
 	}
 
-	return uuidType, true
+	return UuidType, true
 }
 
 func dateTimeProvider(pkg string, funcName string) (reflect.Type, bool) {
@@ -85,5 +85,5 @@ func dateTimeProvider(pkg string, funcName string) (reflect.Type, bool) {
 		return nil, false
 	}
 
-	return timeType, true
+	return TimeType, true
 }

@@ -1,7 +1,7 @@
 package binding
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"go/types"
 	"reflect"

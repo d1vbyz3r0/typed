@@ -1,8 +1,8 @@
 package request
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/binding"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/form"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"

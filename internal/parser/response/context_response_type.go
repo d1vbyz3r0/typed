@@ -2,8 +2,8 @@ package response
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/labstack/echo/v4"

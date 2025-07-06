@@ -2,8 +2,8 @@ package path
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	typing2 "github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"reflect"
@@ -47,7 +47,7 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 				return true
 			}
 
-			if typing.IsParamUsage(call, "Param", paramName) {
+			if typing2.IsParamUsage(call, "Param", paramName) {
 				funcName, ok := meta.GetCalledFuncName(call)
 				if !ok {
 					slog.Debug("failed to get func name", "param", paramName)
@@ -60,7 +60,7 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 					return false
 				}
 
-				t, ok := typing.GetTypeFromUsageContext(pkgName, funcName)
+				t, ok := typing2.GetTypeFromUsageContext(pkgName, funcName)
 				if !ok {
 					return false
 				}

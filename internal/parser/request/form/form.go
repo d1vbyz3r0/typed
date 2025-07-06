@@ -2,8 +2,8 @@ package form
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/common/typing"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	typing2 "github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"mime/multipart"
@@ -66,7 +66,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 					return true
 				}
 
-				if typing.IsParamUsage(call, "FormValue", paramName) {
+				if typing2.IsParamUsage(call, "FormValue", paramName) {
 					funcName, ok := meta.GetCalledFuncName(call)
 					if !ok {
 						slog.Debug("failed to get func name", "param", paramName)
@@ -79,7 +79,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 						return false
 					}
 
-					t, ok := typing.GetTypeFromUsageContext(pkgName, funcName)
+					t, ok := typing2.GetTypeFromUsageContext(pkgName, funcName)
 					if !ok {
 						slog.Debug("failed to get func pkg", "param", paramName)
 						return false

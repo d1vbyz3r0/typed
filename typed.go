@@ -173,8 +173,10 @@ func AddRequestBody(
 		}
 	}
 
-	op.RequestBody = &openapi3.RequestBodyRef{
-		Value: openapi3.NewRequestBody().WithContent(content),
+	if len(content) > 0 {
+		op.RequestBody = &openapi3.RequestBodyRef{
+			Value: openapi3.NewRequestBody().WithContent(content),
+		}
 	}
 }
 

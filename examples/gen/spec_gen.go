@@ -19,13 +19,13 @@ const (
 )
 
 var usedTypes = map[string]any{
+	"dto.Error":             new(dto.Error),
+	"dto.SortOrder":         new(dto.SortOrder),
 	"dto.User":              new(dto.User),
 	"dto.UserRole":          new(dto.UserRole),
 	"dto.UsersFilter":       new(dto.UsersFilter),
 	"[]dto.User":            new([]dto.User),
 	"map[string][]dto.User": new(map[string][]dto.User),
-	"dto.Error":             new(dto.Error),
-	"dto.SortOrder":         new(dto.SortOrder),
 }
 
 var enums = map[string][]any{

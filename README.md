@@ -8,6 +8,12 @@ framework.
 It uses a sophisticated two-stage approach combining AST (Abstract Syntax Tree) parsing and reflection to analyze your
 code and produce accurate, comprehensive API documentation.
 
+## 🎯 Why Typed?
+
+Existing OpenAPI generators for Go either require extensive manual annotations or don't work well with Echo framework.
+Typed solves this by automatically analyzing your Echo handlers and generating accurate OpenAPI specifications without
+any code modifications.
+
 ## 🚀 Features
 
 - **Two-Stage Generation Process**: Combines AST analysis with runtime reflection for maximum accuracy
@@ -37,7 +43,8 @@ go get github.com/d1vbyz3r0/typed@latest
 
 ### Basic Usage
 
-To generate OpenAPI specification for your Echo project, write yaml config and add go generate directives to your code (or run them manually).
+To generate OpenAPI specification for your Echo project, write yaml config and add go generate directives to your code (
+or run them manually).
 Example of config file can be found [here](./examples/typed.yaml)
 
 ```bash
@@ -72,13 +79,13 @@ handlers:
 
 ```go
 func GetUser(c echo.Context) error {
-    // Typed detects 'id' parameter and infers int type from strconv.Atoi usage. Note that for now you should pass c.Param directly as argument
-    id, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        return err
-    }
-    // Handler logic...
-    return c.JSON(http.StatusOK, user)
+// Typed detects 'id' parameter and infers int type from strconv.Atoi usage. Note that for now you should pass c.Param directly as argument
+id, err := strconv.Atoi(c.Param("id"))
+if err != nil {
+return err
+}
+// Handler logic...
+return c.JSON(http.StatusOK, user)
 }
 
 // Route: e.GET("/users/:id", GetUser)
@@ -89,12 +96,12 @@ func GetUser(c echo.Context) error {
 
 ```go
 func SearchUsers(c echo.Context) error {
-    // Typed detects 'limit' as integer and 'active' as boolean
-    limit, _ := strconv.Atoi(c.QueryParam("limit"))
-    active, _ := strconv.ParseBool(c.QueryParam("active"))
-    
-    // Handler logic...
-    return c.JSON(http.StatusOK, users)
+// Typed detects 'limit' as integer and 'active' as boolean
+limit, _ := strconv.Atoi(c.QueryParam("limit"))
+active, _ := strconv.ParseBool(c.QueryParam("active"))
+
+// Handler logic...
+return c.JSON(http.StatusOK, users)
 }
 
 // Result: OpenAPI query parameters with correct types
@@ -104,24 +111,25 @@ func SearchUsers(c echo.Context) error {
 
 ```go
 func UpdateProfile(c echo.Context) error {
-    // Typed detects form fields and file uploads
-    name := c.FormValue("name")
-    email := c.FormValue("email")
-    
-    // File upload detection
-    avatar, err := c.FormFile("avatar")
-    if err != nil {
-        return err
-    }
-    
-    // Handler logic...
-    return c.JSON(http.StatusOK, response)
+// Typed detects form fields and file uploads
+name := c.FormValue("name")
+email := c.FormValue("email")
+
+// File upload detection
+avatar, err := c.FormFile("avatar")
+if err != nil {
+return err
+}
+
+// Handler logic...
+return c.JSON(http.StatusOK, response)
 }
 
 // Result: OpenAPI form schema with string fields and binary file field
 ```
 
-Of course, you also can declare parameters as struct fields with necessary [tags](https://echo.labstack.com/docs/binding).
+Of course, you also can declare parameters as struct fields with
+necessary [tags](https://echo.labstack.com/docs/binding).
 When both struct tag and inline usage are found, the struct field will have priority.
 
 ### Supported Type Inference
@@ -138,6 +146,81 @@ Typed automatically infers parameter types from common conversion functions:
 | `uuid`    | `Parse`, `MustParse` | `uuid.UUID`   |
 | `time`    | `Parse`              | `time.Time`   |
 
+---
+
+## 📋 Enum Support
+
+Typed automatically detects and extracts Go enums (constants with custom types) and includes them in the OpenAPI
+specification as enum values. This ensures your API documentation accurately reflects the allowed values for enum
+fields.
+
+### Automatic Enum Detection
+
+Typed analyzes your Go constants and automatically generates OpenAPI enum schemas:
+
+```go
+// String-based enums
+type Role string
+
+const (
+RoleAdmin = Role("admin")
+RoleUser = Role("user")
+RoleGuest = Role("guest")
+)
+
+// Integer-based enums
+type Status int
+
+const (
+StatusNew Status = 1
+StatusDone Status = 2
+StatusCancelled Status = 3
+)
+
+// Usage in structs
+type User struct {
+ID     int    `json:"id"`
+Name   string `json:"name"`
+Role   Role   `json:"role"`
+Status Status `json:"status"`
+}
+```
+
+### Generated OpenAPI Schema
+
+The above Go enums are automatically converted to OpenAPI enum schemas:
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        role:
+          type: string
+          enum: [ "admin", "user", "guest" ]
+        status:
+          type: integer
+          enum: [ 1, 2, 3 ]
+```
+
+### Supported Enum Types
+
+Typed supports various enum value types:
+
+| Go Type   | Example         | OpenAPI Type               |
+|-----------|-----------------|----------------------------|
+| `string`  | `Role("admin")` | `string` with enum values  |
+| `int`     | `Status(1)`     | `integer` with enum values |
+| `float64` | `Priority(1.5)` | `number` with enum values  |
+| `bool`    | `Flag(true)`    | `boolean` with enum values |
+
+---
+
 ## 🔧 Extensibility
 
 ### Custom Type Providers
@@ -147,15 +230,15 @@ You can extend type inference by registering custom type providers:
 ```go
 // Example from common/typing/type.go
 func RegisterTypeProvider(p Provider) {
-    providers = append(providers, p)
+providers = append(providers, p)
 }
 
 // Custom provider example
 func customProvider(pkg string, funcName string) (reflect.Type, bool) {
-    if pkg == "mypackage" && funcName == "ParseCustomType" {
-        return reflect.TypeOf(MyCustomType{}), true
-    }
-    return nil, false
+if pkg == "mypackage" && funcName == "ParseCustomType" {
+return reflect.TypeOf(MyCustomType{}), true
+}
+return nil, false
 }
 ```
 
@@ -166,7 +249,7 @@ Customize OpenAPI schema generation with custom functions:
 ```go
 // Example from customizers.go
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
-    customizers = append(customizers, fn)
+customizers = append(customizers, fn)
 }
 
 // Built-in customizers include:
@@ -176,16 +259,21 @@ func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
 // - Enum value support
 ```
 
+---
+
 ## 🔌 Handler Processing Hooks
 
-Typed provides a hook system that allows you to customize OpenAPI specification generation based on handler analysis. This is particularly useful for automatically detecting and documenting middleware-specific behavior.
+Typed provides a hook system that allows you to customize OpenAPI specification generation based on handler analysis.
+This is particularly useful for automatically detecting and documenting middleware-specific behavior.
 
 ### Built-in Hooks
 
 #### JWT Authentication Hook
 
-Typed includes a built-in hook that automatically detects Echo JWT middleware usage and adds appropriate security schemes to your OpenAPI specification:
+Typed includes a built-in hook that automatically detects Echo JWT middleware usage and adds appropriate security
+schemes to your OpenAPI specification:
 To enable it, add following to your config file:
+
 ```yaml
 processing-hooks:
   - "EchoJWTMiddlewareHook"
@@ -193,14 +281,14 @@ processing-hooks:
 
 ```go
 func GetProtectedResource(c echo.Context) error {
-    // Your protected handler logic
-    return c.JSON(http.StatusOK, data)
+// Your protected handler logic
+return c.JSON(http.StatusOK, data)
 }
 
 // Route with JWT middleware
 protected := e.Group("/api")
 protected.Use(echojwt.WithConfig(echojwt.Config{
-    SigningKey: []byte("secret"),
+SigningKey: []byte("secret"),
 }))
 protected.GET("/users", GetProtectedResource)
 ```
@@ -218,7 +306,7 @@ paths:
   /api/users:
     get:
       security:
-        - bearerAuthScheme: []
+        - bearerAuthScheme: [ ]
 ```
 
 ### Custom Hooks
@@ -228,53 +316,54 @@ You can register custom hooks to extend the specification generation process:
 ```go
 // Example from middlewares.go
 func RegisterHandlerProcessingHook(hook HandlerProcessingHookFn) {
-    handlerProcessingHooks = append(handlerProcessingHooks, hook)
+handlerProcessingHooks = append(handlerProcessingHooks, hook)
 }
 
 // Custom hook example
 func CustomAuthHook(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler) {
-    // Analyze handler middlewares
-    for _, mw := range handler.Middlewares() {
-        middlewareName := typed.GetMiddlewareFuncName(mw)
-        
-        if strings.Contains(middlewareName, "myauth") {
-            // Add custom security scheme
-            if spec.Components.SecuritySchemes == nil {
-                spec.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
-            }
-            
-            spec.Components.SecuritySchemes["customAuth"] = &openapi3.SecuritySchemeRef{
-                Value: &openapi3.SecurityScheme{
-                    Type: "apiKey",
-                    In:   "header",
-                    Name: "X-API-Key",
-                },
-            }
-            
-            // Apply to operation
-            if operation.Security == nil {
-                operation.Security = openapi3.NewSecurityRequirements()
-            }
-            operation.Security.With(openapi3.SecurityRequirement{
-                "customAuth": []string{},
-            })
-        }
-    }
+// Analyze handler middlewares
+for _, mw := range handler.Middlewares() {
+middlewareName := typed.GetMiddlewareFuncName(mw)
+
+if strings.Contains(middlewareName, "myauth") {
+// Add custom security scheme
+if spec.Components.SecuritySchemes == nil {
+spec.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
+}
+
+spec.Components.SecuritySchemes["customAuth"] = &openapi3.SecuritySchemeRef{
+Value: &openapi3.SecurityScheme{
+Type: "apiKey",
+In:   "header",
+Name: "X-API-Key",
+},
+}
+
+// Apply to operation
+if operation.Security == nil {
+operation.Security = openapi3.NewSecurityRequirements()
+}
+operation.Security.With(openapi3.SecurityRequirement{
+"customAuth": []string{},
+})
+}
+}
 }
 
 // Register your custom hook
 func init() {
-    typed.RegisterHandlerProcessingHook(CustomAuthHook)
+typed.RegisterHandlerProcessingHook(CustomAuthHook)
 }
 ```
 
 ### Hook Function Signature
 
 ```go
-type HandlerProcessingHookFn func(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler)
+type HandlerProcessingHookFn func (spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler)
 ```
 
 **Parameters:**
+
 - `spec`: The OpenAPI specification being built
 - `operation`: The current operation being processed
 - `handler`: Handler information including middlewares, route, and metadata
@@ -302,7 +391,10 @@ middlewareName := GetMiddlewareFuncName(middleware)
 // "myproject/middleware.CustomAuth"
 ```
 
-This hook system makes Typed highly extensible and allows it to automatically document complex middleware behavior without manual specification.
+This hook system makes Typed highly extensible and allows it to automatically document complex middleware behavior
+without manual specification.
+
+---
 
 ---
 
@@ -376,7 +468,7 @@ If you encounter any issues or have questions:
 ---
 
 ## 🔮 Roadmap
-
+- [ ] Write doc for configuration
 - [ ] Enhanced comment parsing for OpenAPI descriptions
 - [ ] Headers support
 - [ ] Add more std hooks 

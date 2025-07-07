@@ -31,6 +31,7 @@ func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 	return nil
 }
 
+// TODO: ref.Value is nil, when ExportComponentSchemas true
 // OverrideFieldNames will replace all prop names to values extracted from tags and remove key FieldNameOverrideKey from Extensions
 func OverrideFieldNames(ref *openapi3.SchemaRef) {
 	props := ref.Value.Properties

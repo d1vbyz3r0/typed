@@ -167,7 +167,7 @@ func AddRequestBody(
 				continue
 			}
 
-			OverrideFieldNames(ref)
+			//OverrideFieldNames(ref)
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
 			slog.Debug("request contains empty bind model", "handler", h.HandlerName())
@@ -206,7 +206,7 @@ func AddResponses(
 					continue
 				}
 
-				OverrideFieldNames(ref)
+				//OverrideFieldNames(ref)
 				mediaType = mediaType.WithSchemaRef(ref)
 			}
 

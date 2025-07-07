@@ -9,14 +9,37 @@ components:
       properties:
         email:
           type: string
+          x-typed-override-form-key: email
         id:
           type: integer
+          x-typed-override-form-key: id
         name:
           type: string
+          x-typed-override-form-key: name
         role:
           enum:
             - user
             - admin
+          type: string
+          x-typed-override-form-key: role
+      type: object
+    dto.UsersFilter:
+      properties:
+        Limit:
+          maximum: 1.8446744073709552e+19
+          minimum: 0
+          type: integer
+        Offset:
+          maximum: 1.8446744073709552e+19
+          minimum: 0
+          type: integer
+        Search:
+          nullable: true
+          type: string
+        Sort:
+          enum:
+            - asc
+            - desc
           type: string
       type: object
 info:
@@ -54,8 +77,6 @@ paths:
               - asc
               - desc
             type: string
-      requestBody:
-        content: {}
       responses:
         "200":
           content:
@@ -86,6 +107,12 @@ paths:
       requestBody:
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/dto.User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/dto.User'
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/dto.User'
       responses:
@@ -121,8 +148,6 @@ paths:
           required: true
           schema:
             type: integer
-      requestBody:
-        content: {}
       responses:
         "200":
           content:
@@ -149,8 +174,6 @@ paths:
   /api/v1/users/map:
     get:
       operationId: ReturningMap
-      requestBody:
-        content: {}
       responses:
         "200":
           content:

@@ -1,10 +1,10 @@
 package dto
 
 type User struct {
-	Id    int      `json:"id"`
-	Name  string   `json:"name"`
-	Email string   `json:"email"`
-	Role  UserRole `json:"role"`
+	Id    int      `json:"id" form:"id"`
+	Name  string   `json:"name" form:"name"`
+	Email string   `json:"email" form:"email"`
+	Role  UserRole `json:"role" form:"role"`
 }
 
 type UsersFilter struct {

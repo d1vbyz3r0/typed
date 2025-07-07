@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed"
 	"github.com/d1vbyz3r0/typed/examples/api"
 	"github.com/d1vbyz3r0/typed/examples/api/dto"
@@ -10,25 +11,20 @@ import (
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
 	"log/slog"
-	"reflect"
+	"os"
 )
 
-const (
-	apiPrefix = "/api/v1"
-	useTags   = true
-)
-
-var usedTypes = map[string]any{
-	"dto.Error":             new(dto.Error),
-	"dto.SortOrder":         new(dto.SortOrder),
+var UsedTypes = map[string]any{
 	"dto.User":              new(dto.User),
 	"dto.UserRole":          new(dto.UserRole),
 	"dto.UsersFilter":       new(dto.UsersFilter),
 	"[]dto.User":            new([]dto.User),
 	"map[string][]dto.User": new(map[string][]dto.User),
+	"dto.Error":             new(dto.Error),
+	"dto.SortOrder":         new(dto.SortOrder),
 }
 
-var enums = map[string][]any{
+var Enums = map[string][]any{
 	"dto.SortOrder": {
 		"asc",
 		"desc",
@@ -39,7 +35,7 @@ var enums = map[string][]any{
 	},
 }
 
-var spec = &openapi3.T{
+var Spec = &openapi3.T{
 	OpenAPI: "3.0.0",
 	Info: &openapi3.Info{
 		Title:   "Example api",
@@ -56,21 +52,56 @@ var spec = &openapi3.T{
 	},
 }
 
-var routes []handlers.EchoRoute
-
-func onRouteAdded(
-	host string,
-	route echo.Route,
-	handler echo.HandlerFunc,
-	middleware []echo.MiddlewareFunc,
-) {
-	routes = append(routes, handlers.EchoRoute{
-		Route:       route,
-		Middlewares: middleware,
-	})
+type GenerateOpts struct {
+	Generator      *openapi3gen.Generator
+	Routes         []handlers.EchoRoute
+	UseTags        bool
+	ApiPrefix      string
+	SearchPatterns []handlers.SearchPattern
 }
 
-func Generate() {
+func Generate(opts GenerateOpts) error {
+	finder, err := handlers.NewFinder()
+	if err != nil {
+		return fmt.Errorf("create handlers finder: %w", err)
+	}
+
+	err = finder.Find(opts.SearchPatterns)
+	if err != nil {
+		return fmt.Errorf("run finder: %w", err)
+	}
+
+	matchedHandlers := finder.Match(opts.Routes)
+	for _, handler := range matchedHandlers {
+		operation := openapi3.NewOperation()
+		operation.Description = handler.Description()
+		typed.AddPathParams(operation, handler, opts.Generator, UsedTypes)
+		typed.AddQueryParams(operation, handler, opts.Generator, UsedTypes)
+		typed.AddRequestBody(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
+		typed.AddResponses(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
+		typed.AddOperationId(operation, handler)
+		if opts.UseTags {
+			err = typed.TagOperation(operation, handler.Path(), opts.ApiPrefix)
+			if err != nil {
+				slog.Error("tag operation", "error", err)
+				continue
+			}
+		}
+
+		typed.RunHandlerHooks(Spec, operation, handler)
+		Spec.AddOperation(handler.Path(), handler.Method(), operation)
+	}
+
+	return nil
+}
+func main() {
+	const (
+		apiPrefix = "/api/v1"
+		useTags   = true
+	)
+
+	typed.RegisterCustomizer(typed.NewEnumsCustomizer(Enums))
+
 	g := openapi3gen.NewGenerator(
 		openapi3gen.UseAllExportedFields(),
 		openapi3gen.CreateComponentSchemas(openapi3gen.ExportComponentSchemasOptions{
@@ -79,60 +110,52 @@ func Generate() {
 			ExportGenerics:         false,
 		}),
 		openapi3gen.SchemaCustomizer(typed.Customizer),
-		openapi3gen.CreateTypeNameGenerator(func(t reflect.Type) string {
-			return t.String()
-		}),
+		openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
 	)
 
-	typed.RegisterCustomizer(typed.NewEnumsCustomizer(enums))
+	err := typed.GenerateRefs(g, Spec.Components.Schemas, UsedTypes)
+	if err != nil {
+		slog.Error("generate refs for type registry", "error", err)
+		os.Exit(1)
+	}
 
+	var routes []handlers.EchoRoute
 	routesProvider := api.NewServerBuilder()
-	routesProvider.OnRouteAdded(onRouteAdded)
+	routesProvider.OnRouteAdded(func(
+		host string,
+		route echo.Route,
+		handler echo.HandlerFunc,
+		middleware []echo.MiddlewareFunc,
+	) {
+		routes = append(routes, handlers.EchoRoute{
+			Route:       route,
+			Middlewares: middleware,
+		})
+	})
 	routesProvider.ProvideRoutes()
 
-	finder, err := handlers.NewFinder()
-	if err != nil {
-		slog.Error("create handlers finder", "error", err)
-		return
-	}
-
-	err = finder.Find([]handlers.SearchPattern{
-		{
-			Path:      "./handlers",
-			Recursive: true,
+	opts := GenerateOpts{
+		Generator: g,
+		Routes:    routes,
+		UseTags:   useTags,
+		ApiPrefix: apiPrefix,
+		SearchPatterns: []handlers.SearchPattern{
+			{
+				Path:      "./handlers",
+				Recursive: true,
+			},
 		},
-	})
+	}
+
+	err = Generate(opts)
 	if err != nil {
-		slog.Error("run finder", "error", err)
-		return
+		slog.Error("generate spec", "error", err)
+		os.Exit(1)
 	}
 
-	matchedHandlers := finder.Match(routes)
-	for _, handler := range matchedHandlers {
-		operation := openapi3.NewOperation()
-		operation.Description = handler.Description()
-		typed.AddPathParams(operation, handler, g, usedTypes)
-		typed.AddQueryParams(operation, handler, g, usedTypes)
-		typed.AddRequestBody(operation, handler, g, spec.Components.Schemas, usedTypes)
-		typed.AddResponses(operation, handler, g, spec.Components.Schemas, usedTypes)
-		typed.AddOperationId(operation, handler)
-		if useTags {
-			err = typed.TagOperation(operation, handler.Path(), apiPrefix)
-			if err != nil {
-				slog.Error("tag operation", "error", err)
-				continue
-			}
-		}
-
-		typed.RunHandlerHooks(spec, operation, handler)
-		spec.AddOperation(handler.Path(), handler.Method(), operation)
-	}
-}
-func main() {
-	Generate()
-	err := typed.SaveSpec(spec, "../gen/example.yaml")
+	err = typed.SaveSpec(Spec, "../gen/example.yaml")
 	if err != nil {
 		slog.Error("save spec", "error", err)
-		return
+		os.Exit(1)
 	}
 }

@@ -153,13 +153,23 @@ necessary [tags](https://echo.labstack.com/docs/binding).
 When both struct tag and inline usage are found, the struct field will have priority.
 
 #### Some limitations
-For now, xml and form tags are not supported. You can still use them, but names should be as they occur in field names, ex:
+For now, xml and form tags are not fully supported. You can still use them, but names should be as they occur in field names if the tag is standalone:
 ```go
 type AuthForm struct {
-	Name string `json:"name" form:"Name" xml:"Name"`
-	Age  int    `json:"age" form:"Age" xml:"Age"`
+	Name string `form:"Name"`
+	Age  int    `xml:"Age"`
 }
 ```
+
+Or same as json tag, if you for some reason need to process multiple data formats
+```go
+type AuthForm struct {
+	Name string `json:"name" form:"name" xml:"name"`
+	Age  int    `json:"age" form:"name" xml:"name"`
+}
+```
+
+That's because 
 
 It will be fixed in the nearest future, when I figure out how to properly implement that
 

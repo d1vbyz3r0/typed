@@ -71,6 +71,8 @@ routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
 //go:generate go run ../gen/spec_gen.go
 ```
 
+If you don't want to implement interface, you can use typed as library and provide options to Generate function
+
 ### Command Line Options
 
 ```bash
@@ -149,6 +151,17 @@ func UpdateProfile(c echo.Context) error {
 Of course, you also can declare parameters as struct fields with
 necessary [tags](https://echo.labstack.com/docs/binding).
 When both struct tag and inline usage are found, the struct field will have priority.
+
+#### Some limitations
+For now, xml and form tags are not supported. You can still use them, but names should be as they occur in field names, ex:
+```go
+type AuthForm struct {
+	Name string `json:"name" form:"Name" xml:"Name"`
+	Age  int    `json:"age" form:"Age" xml:"Age"`
+}
+```
+
+It will be fixed in the nearest future, when I figure out how to properly implement that
 
 ### Supported Type Inference
 
@@ -246,7 +259,7 @@ You can extend type inference by registering custom type providers:
 ```go
 // Example from common/typing/type.go
 func RegisterTypeProvider(p Provider) {
-providers = append(providers, p)
+    providers = append(providers, p)
 }
 
 // Custom provider example

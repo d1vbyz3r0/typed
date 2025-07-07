@@ -167,12 +167,12 @@ func AddRequestBody(
 				continue
 			}
 
-			typeName := TypeNameGenerator(reflect.TypeOf(obj))
-			err = OverrideFieldNames(ref, schemas, typeName, contentType)
-			if err != nil {
-				slog.Error("override field names", "error", err)
-				continue
-			}
+			//typeName := TypeNameGenerator(reflect.TypeOf(obj))
+			//err = OverrideFieldNames(ref, schemas, typeName, contentType)
+			//if err != nil {
+			//	slog.Error("override field names", "error", err)
+			//	continue
+			//}
 
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
@@ -212,12 +212,12 @@ func AddResponses(
 					continue
 				}
 
-				typeName := TypeNameGenerator(reflect.TypeOf(val))
-				err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
-				if err != nil {
-					slog.Error("override field names", "error", err)
-					continue
-				}
+				//typeName := TypeNameGenerator(reflect.TypeOf(val))
+				//err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
+				//if err != nil {
+				//	slog.Error("override field names", "error", err)
+				//	continue
+				//}
 
 				mediaType = mediaType.WithSchemaRef(ref)
 			}

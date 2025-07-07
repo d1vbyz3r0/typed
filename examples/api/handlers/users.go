@@ -32,6 +32,15 @@ func GetUser(srv UsersService) echo.HandlerFunc {
 	}
 }
 
+func Login(c echo.Context) error {
+	username := c.FormValue("username")
+	password := c.FormValue("password")
+	return c.JSON(http.StatusOK, echo.Map{
+		"username": username,
+		"password": password,
+	})
+}
+
 func GetUsers(srv UsersService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var q dto.UsersFilter

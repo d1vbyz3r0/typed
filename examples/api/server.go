@@ -15,6 +15,7 @@ type server struct {
 func (s *server) mapHandlers() {
 	api := s.router.Group("/api/v1")
 	users := api.Group("/users")
+	users.POST("/login", handlers.Login)
 	users.GET("/:userId", handlers.GetUser(nil))
 	users.GET("/", handlers.GetUsers(nil))
 	users.POST("/", handlers.CreateUser(nil))

@@ -167,6 +167,12 @@ func AddRequestBody(
 				continue
 			}
 
+			err = OverrideFieldNames(ref, schemas, reflect.TypeOf(obj), contentType)
+			if err != nil {
+				slog.Error("override field names", "error", err)
+				continue
+			}
+
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
 			slog.Debug("request contains empty bind model", "handler", h.HandlerName())
@@ -202,6 +208,12 @@ func AddResponses(
 				ref, err := openapiGen.NewSchemaRefForValue(val, schemas)
 				if err != nil {
 					slog.Error("generate ref for value", "type", resp.TypeName, "error", err)
+					continue
+				}
+
+				err = OverrideFieldNames(ref, schemas, reflect.TypeOf(val), resp.ContentType)
+				if err != nil {
+					slog.Error("override field names", "error", err)
 					continue
 				}
 

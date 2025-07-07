@@ -2,6 +2,7 @@ package typed
 
 import (
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"reflect"
 	"regexp"
@@ -19,6 +20,7 @@ func NewTypeNameGenerator() openapi3gen.TypeNameGenerator {
 	)
 
 	return func(t reflect.Type) string {
+		t = typing.DerefReflectPtr(t)
 		name := t.String()
 		if anonymousStructRegex.MatchString(name) {
 			name = fmt.Sprintf("AnonymousStruct%d", anonStructsCount.Load())

@@ -167,7 +167,8 @@ func AddRequestBody(
 				continue
 			}
 
-			err = OverrideFieldNames(ref, schemas, TypeNameGenerator(reflect.TypeOf(obj)), contentType)
+			typeName := TypeNameGenerator(reflect.TypeOf(obj))
+			err = OverrideFieldNames(ref, schemas, typeName, contentType)
 			if err != nil {
 				slog.Error("override field names", "error", err)
 				continue
@@ -211,7 +212,8 @@ func AddResponses(
 					continue
 				}
 
-				err = OverrideFieldNames(ref, schemas, TypeNameGenerator(reflect.TypeOf(val)), resp.ContentType)
+				typeName := TypeNameGenerator(reflect.TypeOf(val))
+				err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
 				if err != nil {
 					slog.Error("override field names", "error", err)
 					continue

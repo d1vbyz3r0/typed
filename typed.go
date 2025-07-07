@@ -249,3 +249,17 @@ func extractOpTag(path string, prefix string) (string, error) {
 
 	return parts[0], nil
 }
+
+func GenerateTypeName(t reflect.Type) string {
+	return t.String()
+}
+
+func GenerateRefs(g *openapi3gen.Generator, schemas openapi3.Schemas, registry map[string]any) error {
+	for _, instance := range registry {
+		_, err := g.NewSchemaRefForValue(instance, schemas)
+		if err != nil {
+			return fmt.Errorf("new schema ref for value: %w", err)
+		}
+	}
+	return nil
+}

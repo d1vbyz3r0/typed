@@ -16,13 +16,13 @@ import (
 
 var UsedTypes = map[string]any{
 	"dto.SortOrder":         new(dto.SortOrder),
+	"dto.UserRole":          new(dto.UserRole),
 	"dto.UsersFilter":       new(dto.UsersFilter),
-	"map[string][]dto.User": new(map[string][]dto.User),
 	"dto.Error":             new(dto.Error),
 	"dto.User":              new(dto.User),
-	"dto.UserRole":          new(dto.UserRole),
 	"echo.Map":              new(echo.Map),
 	"[]dto.User":            new([]dto.User),
+	"map[string][]dto.User": new(map[string][]dto.User),
 }
 
 var Enums = map[string][]any{

@@ -7,9 +7,10 @@ input:
   routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
   api-prefix: /api/v1
   handlers:
-    - path: ./handlers # Relative to generation package path
+    - path: ./handlers # Relative to a generation package path
       recursive: true
 
+  # by default, typed will collect types, that used in your handlers, but you can provide path to models if they're not explicitely used (for example you have json.RawMessage field and want to generate schema for possible models)
   models:
     - path: ./dto
       recursive: false

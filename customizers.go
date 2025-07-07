@@ -35,7 +35,7 @@ func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 }
 
 // OverrideFieldNames will replace all prop names to values extracted from tags and remove key FieldNameOverrideKey from Extensions.
-func OverrideFieldNames(ref *openapi3.SchemaRef, schemas openapi3.Schemas, obj reflect.Type, contentType string) error {
+func OverrideFieldNames(ref *openapi3.SchemaRef, schemas openapi3.Schemas, typeName string, contentType string) error {
 	key := ""
 	if contentType == echo.MIMEApplicationForm || contentType == echo.MIMEMultipartForm {
 		key = FieldNameOverrideFormKey
@@ -50,7 +50,6 @@ func OverrideFieldNames(ref *openapi3.SchemaRef, schemas openapi3.Schemas, obj r
 		schemaRef *openapi3.SchemaRef
 	)
 	if schemas != nil {
-		typeName := obj.Name()
 		schema, ok := schemas[typeName]
 		if !ok {
 			return fmt.Errorf("schema not found for type %s", typeName)

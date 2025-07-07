@@ -51,11 +51,11 @@ var Spec = &openapi3.T{
 }
 
 type GenerateOpts struct {
-    Generator      *openapi3gen.Generator
-    Routes         []handlers.EchoRoute
-    UseTags        bool
-    ApiPrefix      string
-    SearchPatterns []handlers.SearchPattern
+    Generator         *openapi3gen.Generator
+    Routes            []handlers.EchoRoute
+    UseTags           bool
+    ApiPrefix         string
+    SearchPatterns    []handlers.SearchPattern
 }
 
 func Generate(opts GenerateOpts) error {
@@ -93,6 +93,7 @@ func Generate(opts GenerateOpts) error {
 	return nil
 }
 
+
 {{- if not .GenerateLib }}
 func main() {
     const (
@@ -118,7 +119,7 @@ func main() {
             ExportGenerics:         false,
         }),
         openapi3gen.SchemaCustomizer(typed.Customizer),
-        openapi3gen.CreateTypeNameGenerator(typed.GenerateTypeName),
+        openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
     )
 
     err := typed.GenerateRefs(g, Spec.Components.Schemas, UsedTypes)

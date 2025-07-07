@@ -167,7 +167,7 @@ func AddRequestBody(
 				continue
 			}
 
-			err = OverrideFieldNames(ref, schemas, reflect.TypeOf(obj), contentType)
+			err = OverrideFieldNames(ref, schemas, TypeNameGenerator(reflect.TypeOf(obj)), contentType)
 			if err != nil {
 				slog.Error("override field names", "error", err)
 				continue
@@ -211,7 +211,7 @@ func AddResponses(
 					continue
 				}
 
-				err = OverrideFieldNames(ref, schemas, reflect.TypeOf(val), resp.ContentType)
+				err = OverrideFieldNames(ref, schemas, TypeNameGenerator(reflect.TypeOf(val)), resp.ContentType)
 				if err != nil {
 					slog.Error("override field names", "error", err)
 					continue
@@ -260,10 +260,6 @@ func extractOpTag(path string, prefix string) (string, error) {
 	}
 
 	return parts[0], nil
-}
-
-func GenerateTypeName(t reflect.Type) string {
-	return t.String()
 }
 
 func GenerateRefs(g *openapi3gen.Generator, schemas openapi3.Schemas, registry map[string]any) error {

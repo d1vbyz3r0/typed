@@ -14,7 +14,7 @@ const (
 )
 
 var customizers = []openapi3gen.SchemaCustomizerFn{
-	overrideNames,
+	//overrideNames,
 	processFormFiles,
 	uuidCustomizer,
 }

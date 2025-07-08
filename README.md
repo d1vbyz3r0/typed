@@ -169,8 +169,6 @@ type AuthForm struct {
 }
 ```
 
-That's because 
-
 It will be fixed in the nearest future, when I figure out how to properly implement that
 
 ### Supported Type Inference

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"text/template"
 
 	_ "embed"
@@ -34,6 +35,7 @@ type TemplateArgs struct {
 	LibPkg                 string
 	SpecPath               string
 	HandlerProcessingHooks []string
+	Concurrency            int
 }
 
 type Generator struct {
@@ -79,51 +81,81 @@ func (g *Generator) Generate() error {
 	}
 	enums := make(map[string][]any)
 
-	for _, pkg := range pkgs {
-		if len(pkg.Errors) > 0 {
-			for _, err := range pkg.Errors {
-				slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
-			}
-			continue
-		}
-
-		res, err := g.parser.Parse(pkg, parser.ParseAllModels(), parser.ParseEnums())
-		if err != nil {
-			slog.Error("failed to parse package", "path", pkg.PkgPath)
-			continue
-		}
-
-		for k, enum := range res.Enums {
-			enums[k] = enum
-		}
-
-		for _, h := range res.Handlers {
-			if h.Request != nil {
-				if h.Request.BindModel != "" {
-					types[h.Request.BindModel] = struct{}{}
-					imports[h.Request.BindModelPkg] = struct{}{}
-				}
-			}
-
-			for _, responses := range h.Responses {
-				for _, resp := range responses {
-					if resp.TypeName != "" {
-						types[resp.TypeName] = struct{}{}
-					}
-
-					if resp.TypePkgPath != "" {
-						imports[resp.TypePkgPath] = struct{}{}
-					}
-				}
-			}
-
-		}
-
-		for _, model := range g.filterModels(res.AdditionalModels) {
-			imports[model.PkgPath] = struct{}{}
-			types[model.Name] = struct{}{}
-		}
+	if g.cfg.Concurrency == 0 {
+		g.cfg.Concurrency = 5
 	}
+
+	var (
+		mtx sync.Mutex
+		wg  sync.WaitGroup
+		sem = make(chan struct{}, g.cfg.Concurrency)
+	)
+
+	for _, pkg := range pkgs {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(pkg *packages.Package) {
+			defer func() {
+				wg.Done()
+				<-sem
+			}()
+
+			if len(pkg.Errors) > 0 {
+				for _, err := range pkg.Errors {
+					slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
+				}
+				return
+			}
+
+			res, err := g.parser.Parse(pkg, parser.ParseAllModels(), parser.ParseEnums())
+			if err != nil {
+				slog.Error("failed to parse package", "path", pkg.PkgPath)
+				return
+			}
+
+			for k, enum := range res.Enums {
+				mtx.Lock()
+				enums[k] = enum
+				mtx.Unlock()
+			}
+
+			for _, h := range res.Handlers {
+				if h.Request != nil {
+					if h.Request.BindModel != "" {
+						mtx.Lock()
+						types[h.Request.BindModel] = struct{}{}
+						imports[h.Request.BindModelPkg] = struct{}{}
+						mtx.Unlock()
+					}
+				}
+
+				for _, responses := range h.Responses {
+					for _, resp := range responses {
+						if resp.TypeName != "" {
+							mtx.Lock()
+							types[resp.TypeName] = struct{}{}
+							mtx.Unlock()
+						}
+
+						if resp.TypePkgPath != "" {
+							mtx.Lock()
+							imports[resp.TypePkgPath] = struct{}{}
+							mtx.Unlock()
+						}
+					}
+				}
+			}
+
+			for _, model := range g.filterModels(res.AdditionalModels) {
+				mtx.Lock()
+				imports[model.PkgPath] = struct{}{}
+				types[model.Name] = struct{}{}
+				mtx.Unlock()
+			}
+		}(pkg)
+	}
+
+	wg.Wait()
 
 	validImports := make([]string, 0)
 	for imp := range imports {
@@ -149,6 +181,7 @@ func (g *Generator) Generate() error {
 		LibPkg:                 g.cfg.LibPkg,
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
+		Concurrency:            g.cfg.Concurrency,
 	})
 	if err != nil {
 		return fmt.Errorf("execute template: %w", err)
@@ -186,10 +219,12 @@ func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	hasIncludeFilter := len(g.cfg.Input.IncludeModels) > 0
 	for _, model := range models {
 		if hasIncludeFilter && !slices.Contains(g.cfg.Input.IncludeModels, model.Name) {
+			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
 		if slices.Contains(g.cfg.Input.ExcludeModels, model.Name) {
+			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 

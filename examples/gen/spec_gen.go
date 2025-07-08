@@ -15,14 +15,14 @@ import (
 )
 
 var UsedTypes = map[string]any{
+	"[]dto.User":            new([]dto.User),
+	"map[string][]dto.User": new(map[string][]dto.User),
 	"dto.SortOrder":         new(dto.SortOrder),
-	"dto.UserRole":          new(dto.UserRole),
 	"dto.UsersFilter":       new(dto.UsersFilter),
 	"dto.Error":             new(dto.Error),
 	"dto.User":              new(dto.User),
+	"dto.UserRole":          new(dto.UserRole),
 	"echo.Map":              new(echo.Map),
-	"[]dto.User":            new([]dto.User),
-	"map[string][]dto.User": new(map[string][]dto.User),
 }
 
 var Enums = map[string][]any{
@@ -59,6 +59,7 @@ type GenerateOpts struct {
 	UseTags        bool
 	ApiPrefix      string
 	SearchPatterns []handlers.SearchPattern
+	Concurrency    int
 }
 
 func Generate(opts GenerateOpts) error {
@@ -67,7 +68,7 @@ func Generate(opts GenerateOpts) error {
 		return fmt.Errorf("create handlers finder: %w", err)
 	}
 
-	err = finder.Find(opts.SearchPatterns)
+	err = finder.Find(opts.SearchPatterns, handlers.WithConcurrency(opts.Concurrency))
 	if err != nil {
 		return fmt.Errorf("run finder: %w", err)
 	}
@@ -146,6 +147,7 @@ func main() {
 				Recursive: true,
 			},
 		},
+		Concurrency: 5,
 	}
 
 	err = Generate(opts)

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type SearchPattern struct {
@@ -39,7 +40,12 @@ func NewFinder() (*Finder, error) {
 	}, nil
 }
 
-func (f *Finder) Find(patterns []SearchPattern) error {
+func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
+	findOpts := new(finderOpts)
+	for _, opt := range opts {
+		opt(findOpts)
+	}
+
 	cfg := &packages.Config{
 		Mode: packages.NeedTypes |
 			packages.NeedSyntax |
@@ -59,37 +65,55 @@ func (f *Finder) Find(patterns []SearchPattern) error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
+	var (
+		mtx sync.Mutex
+		wg  sync.WaitGroup
+		sem = make(chan struct{}, findOpts.concurrency)
+	)
+
 	for _, pkg := range pkgs {
-		if len(pkg.Errors) > 0 {
-			for _, err := range pkg.Errors {
-				slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
-			}
-			continue
-		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(pkg *packages.Package) {
+			defer func() {
+				wg.Done()
+				<-sem
+			}()
 
-		res, err := f.parser.Parse(pkg, parser.ParseInlineForms(), parser.ParseInlinePathParams(), parser.ParseInlineQueryParams())
-		if err != nil {
-			slog.Error("failed to parse package", "path", pkg.PkgPath)
-			continue
-		}
-
-		for _, h := range res.Handlers {
-			//fullHandlerPath := h.Pkg + "." + h.Name
-			v, ok := f.handlers[h.Name]
-			if ok {
-				// workaround...
-				slog.Warn(
-					"handler already found in map, use unique names for your handlers",
-					"old_pkg", v.Pkg,
-					"new_pkg", h.Pkg,
-					"handler", h.Name,
-				)
+			if len(pkg.Errors) > 0 {
+				for _, err := range pkg.Errors {
+					slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
+				}
+				return
 			}
 
-			f.handlers[h.Name] = h
-		}
+			res, err := f.parser.Parse(pkg, parser.ParseInlineForms(), parser.ParseInlinePathParams(), parser.ParseInlineQueryParams())
+			if err != nil {
+				slog.Error("failed to parse package", "path", pkg.PkgPath)
+				return
+			}
+
+			for _, h := range res.Handlers {
+				//fullHandlerPath := h.Pkg + "." + h.Name
+				mtx.Lock()
+				v, ok := f.handlers[h.Name]
+				if ok {
+					// workaround...
+					slog.Warn(
+						"handler already found in map, use unique names for your handlers",
+						"old_pkg", v.Pkg,
+						"new_pkg", h.Pkg,
+						"handler", h.Name,
+					)
+				}
+
+				f.handlers[h.Name] = h
+				mtx.Unlock()
+			}
+		}(pkg)
 	}
 
+	wg.Wait()
 	return nil
 }
 

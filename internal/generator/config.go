@@ -33,6 +33,7 @@ type Config struct {
 	Input           InputConfig  `yaml:"input"`
 	Output          OutputConfig `yaml:"output"`
 	Debug           bool         `yaml:"debug"`
+	Concurrency     int          `yaml:"concurrency"`
 }
 
 func (c *Config) Validate() error {

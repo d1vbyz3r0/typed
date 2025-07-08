@@ -56,6 +56,7 @@ type GenerateOpts struct {
     UseTags           bool
     ApiPrefix         string
     SearchPatterns    []handlers.SearchPattern
+	Concurrency       int
 }
 
 func Generate(opts GenerateOpts) error {
@@ -64,7 +65,7 @@ func Generate(opts GenerateOpts) error {
         return fmt.Errorf("create handlers finder: %w", err)
     }
 
-    err = finder.Find(opts.SearchPatterns)
+    err = finder.Find(opts.SearchPatterns, handlers.WithConcurrency(opts.Concurrency))
     if err != nil {
 		return fmt.Errorf("run finder: %w", err)
     }
@@ -156,6 +157,7 @@ func main() {
             },
             {{- end}}
         },
+		Concurrency: {{ .Concurrency }},
     }
 
 	err = Generate(opts)

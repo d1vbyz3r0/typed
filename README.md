@@ -10,7 +10,7 @@ code and produce accurate, comprehensive API documentation.
 
 ## 🎯 Why Typed?
 
-Existing OpenAPI generators for Go either require extensive manual annotations or don't work well with Echo framework.
+Most of existing code-first OpenAPI generators for Go require extensive manual annotations.
 Typed solves this by automatically analyzing your Echo handlers and generating accurate OpenAPI specifications without
 large code modifications.
 

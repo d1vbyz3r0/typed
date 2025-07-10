@@ -3,7 +3,7 @@ package query
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/common/meta"
-	typing2 "github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"reflect"
@@ -47,7 +47,7 @@ func NewInlineQueryParams(funcDecl *ast.FuncDecl) []Param {
 				return true
 			}
 
-			if typing2.IsParamUsage(call, "QueryParam", paramName) {
+			if typing.IsParamUsage(call, "QueryParam", paramName) {
 				funcName, ok := meta.GetCalledFuncName(call)
 				if !ok {
 					slog.Debug("failed to get func name", "param", paramName)
@@ -60,7 +60,7 @@ func NewInlineQueryParams(funcDecl *ast.FuncDecl) []Param {
 					return false
 				}
 
-				t, ok := typing2.GetTypeFromUsageContext(pkgName, funcName)
+				t, ok := typing.GetTypeFromUsageContext(pkgName, funcName)
 				if !ok {
 					return false
 				}

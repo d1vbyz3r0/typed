@@ -1,0 +1,36 @@
+package dto
+
+import (
+	"github.com/google/uuid"
+	"mime/multipart"
+	"time"
+)
+
+type Status string
+
+const (
+	StatusActive   = Status("active")
+	StatusInactive = Status("inactive")
+)
+
+type User struct {
+	ID     uuid.UUID `json:"id" xml:"id"`
+	Name   string    `json:"name" xml:"name"`
+	Age    int       `json:"age" xml:"age"`
+	Status Status    `json:"status" xml:"status"`
+}
+
+type Form struct {
+	Timestamp time.Time             `form:"Timestamp"`
+	File      *multipart.FileHeader `form:"File"`
+	Name      string                `form:"Name"`
+	Age       int                   `form:"Age"`
+}
+
+type FormUploadResp struct {
+	Name      string    `json:"name"`
+	Active    bool      `json:"active"`
+	Token     string    `json:"token"`
+	Timestamp time.Time `json:"timestamp"`
+	Filename  string    `json:"filename"`
+}

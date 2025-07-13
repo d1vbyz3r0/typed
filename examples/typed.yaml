@@ -3,20 +3,33 @@ input:
   version: "0.0.1"
   servers:
     - url: http://localhost:8080
-  routes-provider-ctor: NewServerBuilder
-  routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
+  routes-provider-ctor: NewBuilder
+  routes-provider-pkg: "github.com/d1vbyz3r0/typed/examples/server"
   api-prefix: /api/v1
   handlers:
-    - path: ./handlers # Relative to a generation package path
-      recursive: true
-
-  # by default, typed will collect types, that used in your handlers, but you can provide path to models if they're not explicitely used (for example you have json.RawMessage field and want to generate schema for possible models)
-  models:
-    - path: ./dto
+    - path: . # Relative to a generation package path
       recursive: false
 
+  # by default, typed will collect types, that used in your handlers,
+  # but you can provide a path to models if they're not explicitly used by c.Bind or in responses
+  # (for example, you have json.RawMessage field and want to generate schema for possible models)
+  # also it's reasonable to set this option if your enums declared in package, different from handlers pkg
+
+  models:
+    - path: ../dto
+      recursive: false
+
+  # You can exclude models from schema generation
+  exclude-models:
+    - "server.Server"
+    - "server.Builder"
+    - "server.FormsHandler"
+
+  # Or include only listed with
+  # include-models:
+
 output:
-  path: ../gen/spec_gen.go
+  path: ../gen/spec.go
   spec-path: ../gen/example.yaml
 
 debug: true

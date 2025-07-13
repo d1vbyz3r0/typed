@@ -2,189 +2,151 @@ components:
   schemas:
     AnonStruct1:
       properties:
-        Password:
+        Active:
+          type: boolean
+        Avatar:
+          $ref: '#/components/schemas/multipart.FileHeader'
+        Name:
           type: string
-        Username:
+        Timestamp:
           type: string
       type: object
-    dto.Error:
+    dto.Form:
       properties:
-        message:
+        Age:
+          type: integer
+        File:
+          $ref: '#/components/schemas/multipart.FileHeader'
+        Name:
+          type: string
+        Timestamp:
+          format: date-time
+          type: string
+      type: object
+    dto.FormUploadResp:
+      properties:
+        active:
+          type: boolean
+        filename:
+          type: string
+        name:
+          type: string
+        timestamp:
+          format: date-time
+          type: string
+        token:
           type: string
       type: object
     dto.User:
       properties:
-        email:
-          type: string
-        id:
+        age:
           type: integer
+        id:
+          format: uuid
+          type: string
         name:
           type: string
-        role:
+        status:
           enum:
-            - user
-            - admin
+            - active
+            - inactive
           type: string
       type: object
-    dto.UsersFilter:
-      properties:
-        Limit:
-          maximum: 1.8446744073709552e+19
-          minimum: 0
-          type: integer
-        Offset:
-          maximum: 1.8446744073709552e+19
-          minimum: 0
-          type: integer
-        Search:
-          nullable: true
-          type: string
-        Sort:
-          enum:
-            - asc
-            - desc
-          type: string
-      type: object
+    multipart.FileHeader:
+      format: binary
+      nullable: true
+      type: string
 info:
   title: Example api
   version: 0.0.1
 openapi: 3.0.0
 paths:
-  /api/v1/users/:
+  /api/v1/blobs/blob:
     get:
-      operationId: GetUsers
+      operationId: getBlob
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Blobs
+  /api/v1/blobs/stream:
+    get:
+      operationId: getStream
+      responses:
+        "200":
+          content:
+            text/plain: {}
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Blobs
+  /api/v1/blobs/string:
+    get:
+      operationId: getString
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Blobs
+  /api/v1/forms/inline:
+    post:
+      operationId: inlineForm
       parameters:
         - in: query
-          name: search
+          name: token
+          required: true
           schema:
             type: string
-        - in: query
-          name: limit
-          required: true
-          schema:
-            maximum: 1.8446744073709552e+19
-            minimum: 0
-            type: integer
-        - in: query
-          name: offset
-          required: true
-          schema:
-            maximum: 1.8446744073709552e+19
-            minimum: 0
-            type: integer
-        - in: query
-          name: sort
-          required: true
-          schema:
-            enum:
-              - asc
-              - desc
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/dto.User'
-                type: array
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Bad Request
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Internal Server Error
-        default:
-          description: ""
-      tags:
-        - Users
-    post:
-      operationId: CreateUser
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/dto.User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/dto.User'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/dto.User'
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.User'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Bad Request
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Internal Server Error
-        default:
-          description: ""
-      tags:
-        - Users
-  /api/v1/users/{userId}:
-    get:
-      description: GetUser will return user by id
-      operationId: GetUser
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.User'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Bad Request
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/dto.Error'
-          description: Internal Server Error
-        default:
-          description: ""
-      tags:
-        - Users
-  /api/v1/users/login:
-    post:
-      operationId: Login
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AnonStruct1'
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/AnonStruct1'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.FormUploadResp'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Bad Request
+        "500":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Internal Server Error
+        default:
+          description: ""
+      tags:
+        - Forms
+  /api/v1/forms/struct:
+    post:
+      operationId: structForm
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/dto.Form'
       responses:
         "200":
           content:
@@ -193,27 +155,127 @@ paths:
                 additionalProperties: {}
                 type: object
           description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Bad Request
         default:
           description: ""
       tags:
-        - Users
-  /api/v1/users/map:
+        - Forms
+  /api/v1/json/{id}:
     get:
-      operationId: ReturningMap
+      operationId: getUserJSON
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            format: uuid
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                additionalProperties:
-                  items:
-                    $ref: '#/components/schemas/dto.User'
-                  type: array
-                type: object
+                $ref: '#/components/schemas/dto.User'
           description: OK
         default:
           description: ""
       tags:
-        - Users
+        - Json
+  /api/v1/json/blob:
+    get:
+      operationId: getUserJSONBlob
+      responses:
+        "200":
+          content:
+            application/json: {}
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Json
+  /api/v1/json/pretty:
+    get:
+      operationId: getUserJSONPretty
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.User'
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Json
+  /api/v1/nocontent/redirect:
+    get:
+      operationId: redirectSomewhere
+      responses:
+        "302":
+          description: Found
+        default:
+          description: ""
+      tags:
+        - Nocontent
+  /api/v1/nocontent/resource/{id}:
+    delete:
+      operationId: deleteResource
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          description: ""
+      tags:
+        - Nocontent
+  /api/v1/xml/:
+    get:
+      operationId: getUserXML
+      responses:
+        "200":
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/dto.User'
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Xml
+  /api/v1/xml/blob:
+    get:
+      operationId: getUserXMLBlob
+      responses:
+        "200":
+          content:
+            application/xml: {}
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Xml
+  /api/v1/xml/pretty:
+    get:
+      operationId: getUserXMLPretty
+      responses:
+        "200":
+          content:
+            application/xml: {}
+          description: OK
+        default:
+          description: ""
+      tags:
+        - Xml
 servers:
   - url: http://localhost:8080

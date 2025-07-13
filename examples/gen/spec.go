@@ -4,8 +4,8 @@ package main
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed"
-	"github.com/d1vbyz3r0/typed/examples/api"
-	"github.com/d1vbyz3r0/typed/examples/api/dto"
+	"github.com/d1vbyz3r0/typed/examples/dto"
+	"github.com/d1vbyz3r0/typed/examples/server"
 	"github.com/d1vbyz3r0/typed/handlers"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
@@ -15,24 +15,18 @@ import (
 )
 
 var UsedTypes = map[string]any{
-	"[]dto.User":            new([]dto.User),
-	"map[string][]dto.User": new(map[string][]dto.User),
-	"dto.SortOrder":         new(dto.SortOrder),
-	"dto.UsersFilter":       new(dto.UsersFilter),
-	"dto.Error":             new(dto.Error),
-	"dto.User":              new(dto.User),
-	"dto.UserRole":          new(dto.UserRole),
-	"echo.Map":              new(echo.Map),
+	"string":             new(string),
+	"echo.Map":           new(echo.Map),
+	"dto.Form":           new(dto.Form),
+	"dto.FormUploadResp": new(dto.FormUploadResp),
+	"dto.Status":         new(dto.Status),
+	"dto.User":           new(dto.User),
 }
 
 var Enums = map[string][]any{
-	"dto.SortOrder": {
-		"asc",
-		"desc",
-	},
-	"dto.UserRole": {
-		"user",
-		"admin",
+	"dto.Status": {
+		"active",
+		"inactive",
 	},
 }
 
@@ -96,6 +90,7 @@ func Generate(opts GenerateOpts) error {
 
 	return nil
 }
+
 func main() {
 	const (
 		apiPrefix = "/api/v1"
@@ -122,7 +117,7 @@ func main() {
 	}
 
 	var routes []handlers.EchoRoute
-	routesProvider := api.NewServerBuilder()
+	routesProvider := server.NewBuilder()
 	routesProvider.OnRouteAdded(func(
 		host string,
 		route echo.Route,
@@ -143,8 +138,8 @@ func main() {
 		ApiPrefix: apiPrefix,
 		SearchPatterns: []handlers.SearchPattern{
 			{
-				Path:      "./handlers",
-				Recursive: true,
+				Path:      ".",
+				Recursive: false,
 			},
 		},
 		Concurrency: 5,

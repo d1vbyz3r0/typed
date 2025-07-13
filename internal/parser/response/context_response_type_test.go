@@ -368,7 +368,7 @@ func Handler(c echo.Context) error {
 package test
 
 func Handler(c echo.Context) error {
-	return c.Redirect(http.StatusFound)
+	return c.Redirect(http.StatusFound, "/json/"+uuid.New().String())
 }`,
 				codes: cr,
 				mime:  mr,

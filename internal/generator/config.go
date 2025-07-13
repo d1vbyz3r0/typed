@@ -27,7 +27,7 @@ func LoadConfig(path string) (Config, error) {
 }
 
 type Config struct {
-	GenerateLib     bool         `yaml:"generate_lib"`
+	GenerateLib     bool         `yaml:"generate-lib"`
 	LibPkg          string       `yaml:"lib-pkg"`
 	ProcessingHooks []string     `yaml:"processing-hooks"`
 	Input           InputConfig  `yaml:"input"`

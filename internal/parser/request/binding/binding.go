@@ -2,6 +2,7 @@ package binding
 
 import (
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 	"go/ast"
 	"go/types"
 	"reflect"
@@ -72,6 +73,10 @@ func HasFiles(s *types.Struct) bool {
 }
 
 func IsBindCall(call *ast.CallExpr) bool {
+	if !calls.IsEchoContextMethodCall(call) {
+		return false
+	}
+
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false

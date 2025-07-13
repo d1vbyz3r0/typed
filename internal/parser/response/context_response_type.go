@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/labstack/echo/v4"
@@ -57,6 +58,10 @@ func newContextResponseType(
 	mr *mime.Resolver,
 	typesInfo *types.Info,
 ) (t ContextResponseType, supported bool) {
+	if !calls.IsEchoContextMethodCall(call) {
+		return ContextResponseType{}, false
+	}
+
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return ContextResponseType{}, false

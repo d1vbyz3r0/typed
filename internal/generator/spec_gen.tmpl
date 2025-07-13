@@ -94,8 +94,7 @@ func Generate(opts GenerateOpts) error {
 	return nil
 }
 
-
-{{- if not .GenerateLib }}
+{{ if not .GenerateLib }}
 func main() {
     const (
     {{- if ne .ApiPrefix nil }}
@@ -172,4 +171,4 @@ func main() {
         os.Exit(1)
     }
 }
-{{- end }}
+{{ end }}

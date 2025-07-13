@@ -157,7 +157,7 @@ func Handler(c echo.Context) error {
 package test
 
 func Handler(c echo.Context) error {
-	return c.Redirect(301)
+	return c.Redirect(301, "/some")
 }`,
 				codes: cr,
 				mime:  mr,

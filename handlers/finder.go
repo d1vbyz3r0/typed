@@ -41,7 +41,7 @@ func NewFinder() (*Finder, error) {
 }
 
 func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
-	findOpts := new(finderOpts)
+	findOpts := newFinderOpts()
 	for _, opt := range opts {
 		opt(findOpts)
 	}

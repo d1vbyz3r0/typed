@@ -109,7 +109,7 @@ func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema
 	if isFileHeader(t) {
 		schema.Type = &openapi3.Types{openapi3.TypeString}
 		schema.Format = "binary"
-		schema.Properties = nil
+		schema.Properties = make(openapi3.Schemas)
 	}
 
 	if t.Kind() == reflect.Slice && isFileHeader(t.Elem()) {

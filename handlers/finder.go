@@ -184,6 +184,12 @@ func (f *Finder) getHandlerName(route echo.Route) string {
 		handlerName = parts[len(parts)-2]
 	}
 
+	// struct methods seems to have format <func-name>-fm
+	idx := strings.Index(handlerName, "-")
+	if idx != -1 {
+		handlerName = handlerName[:idx]
+	}
+
 	return handlerName
 }
 

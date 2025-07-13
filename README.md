@@ -37,6 +37,9 @@ go install github.com/d1vbyz3r0/typed/cmd/typed@latest
 go get github.com/d1vbyz3r0/typed@latest
 ```
 
+## Demo
+You can find demo swagger [here](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/gen/example.yaml). 
+Used openapi spec was generated with typed, you can find it in [examples](./examples)
 
 
 ## 🛠️ Usage
@@ -170,6 +173,8 @@ type AuthForm struct {
 ```
 
 It will be fixed in the nearest future, when I figure out how to properly implement that
+
+Also, file arrays are not properly handled in forms
 
 ### Supported Type Inference
 

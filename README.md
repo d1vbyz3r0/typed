@@ -155,6 +155,8 @@ Of course, you also can declare parameters as struct fields with
 necessary [tags](https://echo.labstack.com/docs/binding).
 When both struct tag and inline usage are found, the struct field will have priority.
 
+For more look at [examples](./examples/dto/dto.go).
+
 #### Some limitations
 For now, xml and form tags are not fully supported. You can still use them, but names should be as they occur in field names if the tag is standalone:
 ```go
@@ -174,7 +176,6 @@ type AuthForm struct {
 
 It will be fixed in the nearest future, when I figure out how to properly implement that
 
-Also, file arrays are not properly handled in forms
 
 ### Supported Type Inference
 

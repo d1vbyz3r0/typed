@@ -17,6 +17,11 @@ components:
           type: integer
         File:
           $ref: '#/components/schemas/multipart.FileHeader'
+        FileArray:
+          items:
+            format: binary
+            type: string
+          type: array
         Name:
           type: string
         Timestamp:
@@ -162,6 +167,13 @@ paths:
                 additionalProperties: {}
                 type: object
           description: Bad Request
+        "500":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Internal Server Error
         default:
           description: ""
       tags:

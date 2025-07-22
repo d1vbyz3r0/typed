@@ -15,12 +15,12 @@ import (
 )
 
 var UsedTypes = map[string]any{
-	"string":             new(string),
-	"echo.Map":           new(echo.Map),
 	"dto.Form":           new(dto.Form),
 	"dto.FormUploadResp": new(dto.FormUploadResp),
 	"dto.Status":         new(dto.Status),
 	"dto.User":           new(dto.User),
+	"string":             new(string),
+	"echo.Map":           new(echo.Map),
 }
 
 var Enums = map[string][]any{

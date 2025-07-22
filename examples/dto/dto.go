@@ -21,10 +21,11 @@ type User struct {
 }
 
 type Form struct {
-	Timestamp time.Time             `form:"Timestamp"`
-	File      *multipart.FileHeader `form:"File"`
-	Name      string                `form:"Name"`
-	Age       int                   `form:"Age"`
+	Timestamp time.Time               `form:"Timestamp"`
+	File      *multipart.FileHeader   `form:"File"`
+	Name      string                  `form:"Name"`
+	Age       int                     `form:"Age"`
+	FileArray []*multipart.FileHeader `form:"FileArray"`
 }
 
 type FormUploadResp struct {

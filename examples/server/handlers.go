@@ -152,9 +152,42 @@ func (h FormsHandler) structForm(c echo.Context) error {
 		})
 	}
 
+	if req.File != nil {
+		f, err := req.File.Open()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"error": err.Error(),
+			})
+		}
+		defer f.Close()
+
+		res, err := os.Create(filepath.Join("uploads", req.File.Filename))
+		_, err = io.Copy(res, f)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		}
+	}
+
+	for _, file := range req.FileArray {
+		f, err := file.Open()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"error": err.Error(),
+			})
+		}
+		defer f.Close()
+
+		res, err := os.Create(filepath.Join("uploads", file.Filename))
+		_, err = io.Copy(res, f)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		}
+	}
+
 	return c.JSON(http.StatusOK, echo.Map{
-		"name":      req.Name,
-		"age":       req.Age,
-		"file_name": req.File.Filename,
+		"name":           req.Name,
+		"age":            req.Age,
+		"file_name":      req.File.Filename,
+		"file_array_len": len(req.FileArray),
 	})
 }

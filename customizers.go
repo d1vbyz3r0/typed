@@ -17,6 +17,7 @@ var customizers = []openapi3gen.SchemaCustomizerFn{
 	//overrideNames,
 	processFormFiles,
 	uuidCustomizer,
+	excludeNonBodyFieldsFromGeneration,
 }
 
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
@@ -155,4 +156,20 @@ func NewEnumsCustomizer(enums map[string][]any) openapi3gen.SchemaCustomizerFn {
 		}
 		return nil
 	}
+}
+
+func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
+	shouldSkip := []string{
+		"query",
+		"header",
+		"param",
+	}
+
+	for _, tagName := range shouldSkip {
+		if v, ok := tag.Lookup(tagName); ok && v != "-" && v != "" {
+			return new(openapi3gen.ExcludeSchemaSentinel)
+		}
+	}
+
+	return nil
 }

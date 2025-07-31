@@ -21,6 +21,8 @@ type User struct {
 }
 
 type Form struct {
+	Q         string                  `query:"q"`
+	PathParam uuid.UUID               `param:"pathParam"`
 	Timestamp time.Time               `form:"Timestamp"`
 	File      *multipart.FileHeader   `form:"File"`
 	Name      string                  `form:"Name"`

@@ -144,12 +144,27 @@ paths:
           description: ""
       tags:
         - Forms
-  /api/v1/forms/struct:
+  /api/v1/forms/struct/{pathParam}:
     post:
       operationId: structForm
+      parameters:
+        - in: path
+          name: pathParam
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dto.Form'
+          application/xml:
             schema:
               $ref: '#/components/schemas/dto.Form'
       responses:
@@ -180,6 +195,7 @@ paths:
         - Forms
   /api/v1/json/{id}:
     get:
+      description: Also docstrings are supported to document your handlers
       operationId: getUserJSON
       parameters:
         - in: path
@@ -254,6 +270,12 @@ paths:
   /api/v1/xml/:
     get:
       operationId: getUserXML
+      parameters:
+        - in: query
+          name: message
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           content:

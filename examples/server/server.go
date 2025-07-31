@@ -43,7 +43,7 @@ func (s *Server) mapRoutes() {
 	forms := api.Group("/forms")
 	h := FormsHandler{}
 	forms.POST("/inline", h.inlineForm)
-	forms.POST("/struct", h.structForm)
+	forms.POST("/struct/:pathParam", h.structForm)
 }
 
 func (s *Server) Start(addr string) error {

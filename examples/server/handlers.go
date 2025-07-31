@@ -17,6 +17,7 @@ import (
 
 // You can use regular echo.HandlerFunc
 
+// Also docstrings are supported to document your handlers
 func getUserJSON(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
 	return c.JSON(http.StatusOK, dto.User{
@@ -46,6 +47,7 @@ func getUserJSONBlob(c echo.Context) error {
 
 func getUserXML( /*deps here*/ ) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		c.QueryParam("message")
 		u := dto.User{
 			ID:     uuid.New(),
 			Name:   "Charlie",

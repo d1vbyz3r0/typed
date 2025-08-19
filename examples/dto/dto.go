@@ -37,3 +37,6 @@ type FormUploadResp struct {
 	Timestamp time.Time `json:"timestamp"`
 	Filename  string    `json:"filename"`
 }
+
+type ShouldBeExcluded struct {
+}

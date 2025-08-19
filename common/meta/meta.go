@@ -122,3 +122,13 @@ func GetCalledFuncName(call *ast.CallExpr) (string, bool) {
 
 	return sel.Sel.Name, true
 }
+
+// GetPkgName returns last part of pkg path
+func GetPkgName(pkgPath string) string {
+	parts := strings.Split(pkgPath, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return parts[len(parts)-1]
+}

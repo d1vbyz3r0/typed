@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"go/format"
 	"golang.org/x/exp/maps"
@@ -41,8 +42,8 @@ type TemplateArgs struct {
 type Generator struct {
 	cfg            Config
 	parser         *parser.Parser
-	includeFilters []string
-	excludeFilters []string
+	includeFilters map[string][]string
+	excludeFilters map[string][]string
 }
 
 func New(cfg Config) (*Generator, error) {
@@ -51,17 +52,21 @@ func New(cfg Config) (*Generator, error) {
 		return nil, fmt.Errorf("init parser: %w", err)
 	}
 
-	includeFilters := make([]string, 0)
-	excludeFilters := make([]string, 0)
+	includeFilters := make(map[string][]string)
+	excludeFilters := make(map[string][]string)
 	for _, c := range cfg.Input.Models {
+		pkgName := meta.GetPkgName(c.Path)
 		for _, model := range c.IncludeModels {
-			includeFilters = append(includeFilters, model)
+			includeFilters[pkgName] = append(includeFilters[pkgName], model)
 		}
 
 		for _, model := range c.ExcludeModels {
-			excludeFilters = append(excludeFilters, model)
+			excludeFilters[pkgName] = append(excludeFilters[pkgName], model)
 		}
 	}
+
+	slog.Debug("include filters", "filters", includeFilters)
+	slog.Debug("exclude filters", "filters", excludeFilters)
 
 	return &Generator{
 		cfg:            cfg,
@@ -232,15 +237,15 @@ func (g *Generator) Generate() error {
 
 func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	res := make([]parser.Model, 0, len(models))
-
-	hasIncludeFilter := len(g.includeFilters) > 0
 	for _, model := range models {
-		if hasIncludeFilter && !slices.Contains(g.includeFilters, model.Name) {
+		pkgName := meta.GetPkgName(model.PkgPath)
+		hasIncludeFilter := len(g.includeFilters[pkgName]) > 0
+		if hasIncludeFilter && !slices.Contains(g.includeFilters[pkgName], model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
-		if slices.Contains(g.excludeFilters, model.Name) {
+		if slices.Contains(g.excludeFilters[pkgName], model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}

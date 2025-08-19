@@ -18,15 +18,12 @@ input:
   models:
     - path: ../dto
       recursive: false
+      # You can exclude models from schema generation
+      exclude-models:
+        - "dto.ShouldBeExcluded"
+#      include-models:
+#        - "dto.ShouldBeExcluded"
 
-  # You can exclude models from schema generation
-  exclude-models:
-    - "server.Server"
-    - "server.Builder"
-    - "server.FormsHandler"
-
-  # Or include only listed with
-  # include-models:
 
 output:
   path: ../gen/spec.go

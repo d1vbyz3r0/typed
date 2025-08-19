@@ -37,8 +37,24 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if err := c.Input.Validate(); err != nil {
-		return fmt.Errorf("invalid input config: %w", err)
+	if c.Input.RoutesProviderCtor == "" && !c.GenerateLib {
+		return errors.New("routes-provider-ctor is required")
+	}
+
+	if c.Input.RoutesProviderPkg == "" && !c.GenerateLib {
+		return errors.New("routes-provider-pkg is required")
+	}
+
+	for i, h := range c.Input.Handlers {
+		if err := h.Validate(); err != nil {
+			return fmt.Errorf("validate handler[%d] config: %w", i, err)
+		}
+	}
+
+	for i, m := range c.Input.Models {
+		if err := m.Validate(); err != nil {
+			return fmt.Errorf("validate model[%d] config: %w", i, err)
+		}
 	}
 
 	if err := c.Output.Validate(); err != nil {
@@ -61,41 +77,17 @@ type InputConfig struct {
 	RoutesProviderPkg  string           `yaml:"routes-provider-pkg"`
 	Handlers           []HandlersConfig `yaml:"handlers"`
 	Models             []ModelsConfig   `yaml:"models"`
-	IncludeModels      []string         `yaml:"include-models"`
-	ExcludeModels      []string         `yaml:"exclude-models"`
 }
 
 type Server struct {
 	Url string `yaml:"url"`
 }
 
-func (c *InputConfig) Validate() error {
-	if c.RoutesProviderCtor == "" {
-		return errors.New("routes-provider-ctor is required")
-	}
-
-	if c.RoutesProviderPkg == "" {
-		return errors.New("routes-provider-pkg is required")
-	}
-
-	for i, h := range c.Handlers {
-		if err := h.Validate(); err != nil {
-			return fmt.Errorf("validate handler[%d] config: %w", i, err)
-		}
-	}
-
-	for i, m := range c.Models {
-		if err := m.Validate(); err != nil {
-			return fmt.Errorf("validate model[%d] config: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
 type ModelsConfig struct {
-	Path      string `yaml:"path"`
-	Recursive bool   `yaml:"recursive"`
+	Path          string   `yaml:"path"`
+	Recursive     bool     `yaml:"recursive"`
+	IncludeModels []string `yaml:"include-models"`
+	ExcludeModels []string `yaml:"exclude-models"`
 }
 
 func (c *ModelsConfig) Validate() error {

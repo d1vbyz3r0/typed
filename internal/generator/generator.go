@@ -39,8 +39,10 @@ type TemplateArgs struct {
 }
 
 type Generator struct {
-	cfg    Config
-	parser *parser.Parser
+	cfg            Config
+	parser         *parser.Parser
+	includeFilters []string
+	excludeFilters []string
 }
 
 func New(cfg Config) (*Generator, error) {
@@ -49,9 +51,23 @@ func New(cfg Config) (*Generator, error) {
 		return nil, fmt.Errorf("init parser: %w", err)
 	}
 
+	includeFilters := make([]string, 0)
+	excludeFilters := make([]string, 0)
+	for _, c := range cfg.Input.Models {
+		for _, model := range c.IncludeModels {
+			includeFilters = append(includeFilters, model)
+		}
+
+		for _, model := range c.ExcludeModels {
+			excludeFilters = append(excludeFilters, model)
+		}
+	}
+
 	return &Generator{
-		cfg:    cfg,
-		parser: p,
+		cfg:            cfg,
+		parser:         p,
+		includeFilters: includeFilters,
+		excludeFilters: excludeFilters,
 	}, nil
 }
 
@@ -216,14 +232,15 @@ func (g *Generator) Generate() error {
 
 func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	res := make([]parser.Model, 0, len(models))
-	hasIncludeFilter := len(g.cfg.Input.IncludeModels) > 0
+
+	hasIncludeFilter := len(g.includeFilters) > 0
 	for _, model := range models {
-		if hasIncludeFilter && !slices.Contains(g.cfg.Input.IncludeModels, model.Name) {
+		if hasIncludeFilter && !slices.Contains(g.includeFilters, model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
-		if slices.Contains(g.cfg.Input.ExcludeModels, model.Name) {
+		if slices.Contains(g.excludeFilters, model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}

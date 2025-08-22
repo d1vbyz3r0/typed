@@ -176,11 +176,6 @@ func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect
 }
 
 func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	if name != "_root" {
-		// should be applied only for top-level schema
-		return nil
-	}
-
 	if t.Kind() != reflect.Struct {
 		return nil
 	}

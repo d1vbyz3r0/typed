@@ -18,6 +18,7 @@ var customizers = []openapi3gen.SchemaCustomizerFn{
 	processFormFiles,
 	uuidCustomizer,
 	excludeNonBodyFieldsFromGeneration,
+	makeFieldsRequired,
 }
 
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
@@ -172,4 +173,41 @@ func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect
 	}
 
 	return nil
+}
+
+func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
+	if name != "_root" {
+		// should be applied only for top-level schema
+		return nil
+	}
+
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		fieldType := t.Field(i).Type
+		if fieldType.Kind() == reflect.Ptr || fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map {
+			continue
+		}
+		schema.Required = append(schema.Required, getFieldNameByTag(t.Field(i)))
+	}
+
+	return nil
+}
+
+func getFieldNameByTag(field reflect.StructField) string {
+	if v := field.Tag.Get("json"); v != "" && v != "-" {
+		return v
+	}
+
+	if v := field.Tag.Get("form"); v != "" && v != "-" {
+		return v
+	}
+
+	if v := field.Tag.Get("xml"); v != "" && v != "-" {
+		return v
+	}
+
+	return field.Name
 }

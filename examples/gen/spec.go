@@ -19,10 +19,10 @@ var UsedTypes = map[string]any{
 	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.Status":          new(dto.Status),
 	"dto.User":            new(dto.User),
-	"string":              new(string),
 	"echo.Map":            new(echo.Map),
 	"server.Builder":      new(server.Builder),
 	"server.FormsHandler": new(server.FormsHandler),
+	"string":              new(string),
 	"server.Server":       new(server.Server),
 }
 

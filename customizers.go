@@ -186,7 +186,12 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 	}
 
 	for i := 0; i < t.NumField(); i++ {
-		fieldType := t.Field(i).Type
+		f := t.Field(i)
+		if !f.IsExported() {
+			continue
+		}
+
+		fieldType := f.Type
 		if fieldType.Kind() == reflect.Ptr || fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map {
 			continue
 		}

@@ -20,10 +20,10 @@ var UsedTypes = map[string]any{
 	"dto.Status":          new(dto.Status),
 	"dto.User":            new(dto.User),
 	"string":              new(string),
+	"echo.Map":            new(echo.Map),
 	"server.Builder":      new(server.Builder),
 	"server.FormsHandler": new(server.FormsHandler),
 	"server.Server":       new(server.Server),
-	"echo.Map":            new(echo.Map),
 }
 
 var Enums = map[string][]any{

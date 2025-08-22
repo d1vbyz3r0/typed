@@ -10,6 +10,10 @@ components:
           type: string
         Timestamp:
           type: string
+      required:
+        - Name
+        - Active
+        - Timestamp
       type: object
     dto.Form:
       properties:
@@ -23,10 +27,16 @@ components:
             type: string
           type: array
         Name:
+          nullable: true
           type: string
         Timestamp:
           format: date-time
           type: string
+      required:
+        - Q
+        - PathParam
+        - Timestamp
+        - Age
       type: object
     dto.FormUploadResp:
       properties:
@@ -41,6 +51,12 @@ components:
           type: string
         token:
           type: string
+      required:
+        - name
+        - active
+        - token
+        - timestamp
+        - filename
       type: object
     dto.User:
       properties:
@@ -56,6 +72,11 @@ components:
             - active
             - inactive
           type: string
+      required:
+        - id
+        - name
+        - age
+        - status
       type: object
     multipart.FileHeader:
       format: binary

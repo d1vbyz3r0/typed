@@ -126,9 +126,9 @@ func GetCalledFuncName(call *ast.CallExpr) (string, bool) {
 // GetPkgName returns last part of pkg path
 func GetPkgName(pkgPath string) string {
 	parts := strings.Split(pkgPath, "/")
-	if len(parts) == 0 {
-		return ""
-	}
-
 	return parts[len(parts)-1]
+}
+
+func IsSubPkg(parent string, child string) bool {
+	return GetPkgName(parent) == GetPkgName(child)
 }

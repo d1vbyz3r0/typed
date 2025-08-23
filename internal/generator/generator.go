@@ -52,27 +52,9 @@ func New(cfg Config) (*Generator, error) {
 		return nil, fmt.Errorf("init parser: %w", err)
 	}
 
-	includeFilters := make(map[string][]string)
-	excludeFilters := make(map[string][]string)
-	for _, c := range cfg.Input.Models {
-		pkgName := meta.GetPkgName(c.Path)
-		for _, model := range c.IncludeModels {
-			includeFilters[pkgName] = append(includeFilters[pkgName], model)
-		}
-
-		for _, model := range c.ExcludeModels {
-			excludeFilters[pkgName] = append(excludeFilters[pkgName], model)
-		}
-	}
-
-	slog.Debug("include filters", "filters", includeFilters)
-	slog.Debug("exclude filters", "filters", excludeFilters)
-
 	return &Generator{
-		cfg:            cfg,
-		parser:         p,
-		includeFilters: includeFilters,
-		excludeFilters: excludeFilters,
+		cfg:    cfg,
+		parser: p,
 	}, nil
 }
 
@@ -94,6 +76,11 @@ func (g *Generator) Generate() error {
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
 		return fmt.Errorf("load packages: %w", err)
+	}
+
+	err = g.initModelsFilter(pkgs)
+	if err != nil {
+		return fmt.Errorf("init models filter: %w", err)
 	}
 
 	types := make(map[string]struct{})
@@ -238,14 +225,13 @@ func (g *Generator) Generate() error {
 func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	res := make([]parser.Model, 0, len(models))
 	for _, model := range models {
-		pkgName := meta.GetPkgName(model.PkgPath)
-		hasIncludeFilter := len(g.includeFilters[pkgName]) > 0
-		if hasIncludeFilter && !slices.Contains(g.includeFilters[pkgName], model.Name) {
+		hasIncludeFilter := len(g.includeFilters[model.PkgPath]) > 0
+		if hasIncludeFilter && !slices.Contains(g.includeFilters[model.PkgPath], model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
-		if slices.Contains(g.excludeFilters[pkgName], model.Name) {
+		if slices.Contains(g.excludeFilters[model.PkgPath], model.Name) {
 			slog.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
@@ -254,6 +240,46 @@ func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	}
 
 	return res
+}
+
+func (g *Generator) initModelsFilter(pkgs []*packages.Package) error {
+	g.includeFilters = make(map[string][]string)
+	g.excludeFilters = make(map[string][]string)
+	for _, pkg := range pkgs {
+		for _, c := range g.cfg.Input.Models {
+			for _, model := range c.IncludeModels {
+				parts := strings.Split(model, ".")
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid model filter: %s. format should be <pkg>.<Name>", model)
+				}
+
+				modelPkg := parts[0]
+				if !meta.IsSubPkg(pkg.PkgPath, modelPkg) {
+					continue
+				}
+
+				g.includeFilters[pkg.PkgPath] = append(g.includeFilters[pkg.PkgPath], model)
+			}
+
+			for _, model := range c.ExcludeModels {
+				parts := strings.Split(model, ".")
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid model filter: %s. format should be <pkg>.<Name>", model)
+				}
+
+				modelPkg := parts[0]
+				if !meta.IsSubPkg(pkg.PkgPath, modelPkg) {
+					continue
+				}
+
+				g.excludeFilters[pkg.PkgPath] = append(g.excludeFilters[pkg.PkgPath], model)
+			}
+		}
+	}
+
+	slog.Debug("include filters", "filters", g.includeFilters)
+	slog.Debug("exclude filters", "filters", g.excludeFilters)
+	return nil
 }
 
 func (g *Generator) buildLoadPatterns() ([]string, error) {

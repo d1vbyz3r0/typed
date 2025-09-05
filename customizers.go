@@ -1,7 +1,6 @@
 package typed
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/d1vbyz3r0/typed/common/format"
@@ -9,7 +8,6 @@ import (
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -18,7 +16,6 @@ const (
 )
 
 var customizers = []openapi3gen.SchemaCustomizerFn{
-	//overrideNames,
 	processFormFiles,
 	stdSerializableTypes,
 	uuidCustomizer,
@@ -38,77 +35,6 @@ func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 			return err
 		}
 	}
-	return nil
-}
-
-// OverrideFieldNames will replace all prop names to values extracted from tags and remove key FieldNameOverrideKey from Extensions.
-func OverrideFieldNames(ref *openapi3.SchemaRef, schemas openapi3.Schemas, typeName string, contentType string) error {
-	key := ""
-	if contentType == echo.MIMEApplicationForm || contentType == echo.MIMEMultipartForm {
-		key = FieldNameOverrideFormKey
-	} else if contentType == echo.MIMEApplicationXML {
-		key = FieldNameOverrideXMLKey
-	} else {
-		return nil
-	}
-
-	var (
-		props     openapi3.Schemas
-		schemaRef *openapi3.SchemaRef
-	)
-	if schemas != nil {
-		schema, ok := schemas[typeName]
-		if !ok {
-			return fmt.Errorf("schema not found for type %s", typeName)
-		}
-
-		if schema.Value == nil {
-			return fmt.Errorf("schema value for %s is nil", typeName)
-		}
-
-		props = schema.Value.Properties
-		schemaRef = schema
-	} else {
-		if ref.Value == nil {
-			return fmt.Errorf("ref value for %s is nil", ref.RefString())
-		}
-		props = ref.Value.Properties
-		schemaRef = ref
-	}
-
-	renames := make(map[string]string, len(props))
-	for fieldName, fieldSchema := range props {
-		if override, ok := fieldSchema.Value.Extensions[key]; ok {
-			overrideStr := override.(string)
-			renames[fieldName] = overrideStr
-		}
-	}
-
-	for oldName, newName := range renames {
-		schema := schemaRef.Value.Properties[oldName]
-		delete(schema.Value.Extensions, key)
-		schemaRef.Value.Properties[newName] = schema
-		delete(schemaRef.Value.Properties, oldName)
-	}
-
-	return nil
-}
-
-func overrideNames(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	if schema.Extensions == nil {
-		schema.Extensions = make(map[string]any)
-	}
-
-	v, ok := tag.Lookup("form")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideFormKey] = v
-	}
-
-	v, ok = tag.Lookup("xml")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideXMLKey] = v
-	}
-
 	return nil
 }
 

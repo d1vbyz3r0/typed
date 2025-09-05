@@ -132,7 +132,7 @@ func main() {
     }
 
     var routes []handlers.EchoRoute
-    routesProvider := {{ .RoutesProviderCtor }}
+    var routesProvider typed.RoutesProvider = {{ .RoutesProviderCtor }}
     routesProvider.OnRouteAdded(func(
             host string,
             route echo.Route,

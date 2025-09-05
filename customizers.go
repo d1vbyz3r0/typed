@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/d1vbyz3r0/typed/common/format"
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
@@ -112,7 +113,7 @@ func overrideNames(name string, t reflect.Type, tag reflect.StructTag, schema *o
 func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
 	if isFileHeader(t) {
 		schema.Type = &openapi3.Types{openapi3.TypeString}
-		schema.Format = "binary"
+		schema.Format = format.Binary
 		schema.Properties = make(openapi3.Schemas)
 	}
 
@@ -121,7 +122,7 @@ func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema
 		schema.Items = &openapi3.SchemaRef{
 			Value: &openapi3.Schema{
 				Type:   &openapi3.Types{openapi3.TypeString},
-				Format: "binary",
+				Format: format.Binary,
 			},
 		}
 	}
@@ -144,7 +145,7 @@ func isFileHeader(t reflect.Type) bool {
 func uuidCustomizer(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
 	if t.PkgPath() == "github.com/google/uuid" && t.Name() == "UUID" {
 		schema.Type = &openapi3.Types{openapi3.TypeString}
-		schema.Format = "uuid"
+		schema.Format = format.UUID
 	}
 	return nil
 }

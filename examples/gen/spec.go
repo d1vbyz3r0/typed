@@ -3,6 +3,9 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/d1vbyz3r0/typed"
 	"github.com/d1vbyz3r0/typed/examples/dto"
 	"github.com/d1vbyz3r0/typed/examples/server"
@@ -10,20 +13,18 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
-	"log/slog"
-	"os"
 )
 
 var UsedTypes = map[string]any{
-	"dto.Form":            new(dto.Form),
-	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.Status":          new(dto.Status),
-	"dto.User":            new(dto.User),
-	"echo.Map":            new(echo.Map),
 	"server.Builder":      new(server.Builder),
-	"server.FormsHandler": new(server.FormsHandler),
+	"dto.FormUploadResp":  new(dto.FormUploadResp),
+	"dto.User":            new(dto.User),
 	"string":              new(string),
+	"echo.Map":            new(echo.Map),
+	"server.FormsHandler": new(server.FormsHandler),
 	"server.Server":       new(server.Server),
+	"dto.Form":            new(dto.Form),
 }
 
 var Enums = map[string][]any{
@@ -120,7 +121,7 @@ func main() {
 	}
 
 	var routes []handlers.EchoRoute
-	routesProvider := server.NewBuilder()
+	var routesProvider typed.RoutesProvider = server.NewBuilder()
 	routesProvider.OnRouteAdded(func(
 		host string,
 		route echo.Route,

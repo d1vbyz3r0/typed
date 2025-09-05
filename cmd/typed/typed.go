@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/generator"
 	"log"
 	"log/slog"
 	"os"
 	"runtime/debug"
+
+	"github.com/d1vbyz3r0/typed/internal/generator"
 )
 
 var (

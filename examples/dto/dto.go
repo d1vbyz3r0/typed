@@ -1,9 +1,10 @@
 package dto
 
 import (
-	"github.com/google/uuid"
 	"mime/multipart"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Status string
@@ -14,7 +15,7 @@ const (
 )
 
 type User struct {
-	ID     uuid.UUID `json:"id" xml:"id"`
+	ID     uuid.UUID `json:"id" xml:"id" validate:"required,uuid"`
 	Name   string    `json:"name" xml:"name"`
 	Age    int       `json:"age" xml:"age"`
 	Status Status    `json:"status" xml:"status"`

@@ -2,16 +2,17 @@ package typed
 
 import (
 	"fmt"
+	"log/slog"
+	"net/http"
+	"reflect"
+	"strings"
+
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/handlers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"log/slog"
-	"net/http"
-	"reflect"
-	"strings"
 )
 
 func AddPathParams(

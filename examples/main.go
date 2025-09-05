@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/d1vbyz3r0/typed/examples/server"
 	"log"
 	"os"
+
+	"github.com/d1vbyz3r0/typed/examples/server"
 )
 
 func main() {

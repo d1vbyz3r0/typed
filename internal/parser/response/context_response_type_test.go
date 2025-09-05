@@ -1,14 +1,15 @@
 package response
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"net/http"
 	"testing"
+
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"github.com/stretchr/testify/require"
 )
 
 func TestContextResponseType_ContentType(t *testing.T) {

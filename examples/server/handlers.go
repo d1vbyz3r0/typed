@@ -3,9 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/d1vbyz3r0/typed/examples/dto"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
 	"os"
@@ -13,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/d1vbyz3r0/typed/examples/dto"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 )
 
 // You can use regular echo.HandlerFunc

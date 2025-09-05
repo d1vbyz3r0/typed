@@ -1,11 +1,12 @@
 package response
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"go/ast"
 	"go/types"
 	"log/slog"
+
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 )
 
 type StatusCodeMapping map[int][]Response

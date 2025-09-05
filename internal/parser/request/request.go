@@ -1,6 +1,11 @@
 package request
 
 import (
+	"go/ast"
+	"go/types"
+	"log/slog"
+	"reflect"
+
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/binding"
@@ -8,10 +13,6 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/labstack/echo/v4"
-	"go/ast"
-	"go/types"
-	"log/slog"
-	"reflect"
 )
 
 var echoBodyBindTags = []string{

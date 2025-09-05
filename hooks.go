@@ -1,12 +1,13 @@
 package typed
 
 import (
-	"github.com/d1vbyz3r0/typed/handlers"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/labstack/echo/v4"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/d1vbyz3r0/typed/handlers"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/labstack/echo/v4"
 )
 
 type HandlerProcessingHookFn func(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler)

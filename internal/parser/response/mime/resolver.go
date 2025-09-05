@@ -5,11 +5,11 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"strconv"
 	"strings"
 
 	_ "github.com/labstack/echo/v4"
+	"golang.org/x/tools/go/packages"
 )
 
 type Resolver struct {

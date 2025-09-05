@@ -6,6 +6,7 @@ import (
 
 	"github.com/d1vbyz3r0/typed/common/format"
 	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
@@ -19,6 +20,7 @@ const (
 var customizers = []openapi3gen.SchemaCustomizerFn{
 	//overrideNames,
 	processFormFiles,
+	stdSerializableTypes,
 	uuidCustomizer,
 	excludeNonBodyFieldsFromGeneration,
 	makeFieldsRequired,
@@ -140,6 +142,26 @@ func isFileHeader(t reflect.Type) bool {
 	}
 
 	return t.PkgPath() == "mime/multipart" && t.Name() == "FileHeader"
+}
+
+// stdSerializableTypes customizer add proper formats for std types, not included in kin-openapi
+func stdSerializableTypes(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
+	t = typing.DerefReflectPtr(t)
+	pkg := t.PkgPath()
+	typeName := t.Name()
+
+	if pkg == "net/url" && typeName == "URL" {
+		schema.Type = &openapi3.Types{openapi3.TypeString}
+		schema.Format = format.URI
+		schema.Properties = make(openapi3.Schemas)
+	}
+
+	if pkg == "net" && typeName == "IP" {
+		schema.Type = &openapi3.Types{openapi3.TypeString}
+		schema.Pattern = format.IPAnyRegexString
+	}
+
+	return nil
 }
 
 func uuidCustomizer(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {

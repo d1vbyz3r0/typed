@@ -2,10 +2,12 @@ package typed
 
 import (
 	"fmt"
+	"reflect"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
-	"reflect"
 )
 
 const (
@@ -182,32 +184,20 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		fieldName := meta.GetFieldNameByTag(t.Field(i))
+		_, hasField := schema.Properties[fieldName]
+		if !f.IsExported() || !hasField {
 			continue
 		}
 
 		fieldType := f.Type
-		if fieldType.Kind() == reflect.Ptr || fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map {
+		if fieldType.Kind() == reflect.Ptr ||
+			fieldType.Kind() == reflect.Slice ||
+			fieldType.Kind() == reflect.Map {
 			continue
 		}
-		schema.Required = append(schema.Required, getFieldNameByTag(t.Field(i)))
+		schema.Required = append(schema.Required, fieldName)
 	}
 
 	return nil
-}
-
-func getFieldNameByTag(field reflect.StructField) string {
-	if v := field.Tag.Get("json"); v != "" && v != "-" {
-		return v
-	}
-
-	if v := field.Tag.Get("form"); v != "" && v != "-" {
-		return v
-	}
-
-	if v := field.Tag.Get("xml"); v != "" && v != "-" {
-		return v
-	}
-
-	return field.Name
 }

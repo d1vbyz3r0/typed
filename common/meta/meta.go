@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"reflect"
 	"strings"
 )
 
@@ -131,4 +132,20 @@ func GetPkgName(pkgPath string) string {
 
 func IsSubPkg(parent string, child string) bool {
 	return GetPkgName(parent) == GetPkgName(child)
+}
+
+func GetFieldNameByTag(field reflect.StructField) string {
+	if v := field.Tag.Get("json"); v != "" && v != "-" {
+		return v
+	}
+
+	if v := field.Tag.Get("form"); v != "" && v != "-" {
+		return v
+	}
+
+	if v := field.Tag.Get("xml"); v != "" && v != "-" {
+		return v
+	}
+
+	return field.Name
 }

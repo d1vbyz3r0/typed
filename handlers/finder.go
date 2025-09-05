@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/tools/go/packages"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/d1vbyz3r0/typed/internal/parser"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/tools/go/packages"
 )
 
 type SearchPattern struct {

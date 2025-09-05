@@ -2,10 +2,11 @@ package typed
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/typing"
-	"github.com/getkin/kin-openapi/openapi3gen"
 	"reflect"
 	"regexp"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/getkin/kin-openapi/openapi3gen"
 )
 
 // TypeNameGenerator is an openapi3gen.TypeNameGenerator to use when generating schema

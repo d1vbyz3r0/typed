@@ -1,12 +1,13 @@
 package mime
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"testing"
+
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolver_ResolveWithConst(t *testing.T) {

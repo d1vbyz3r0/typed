@@ -2,12 +2,13 @@ package query
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"reflect"
 	"strconv"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 )
 
 type Param struct {

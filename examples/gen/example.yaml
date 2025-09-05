@@ -33,8 +33,6 @@ components:
           format: date-time
           type: string
       required:
-        - Q
-        - PathParam
         - Timestamp
         - Age
       type: object

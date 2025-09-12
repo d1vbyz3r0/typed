@@ -2,6 +2,7 @@ package format
 
 import (
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"reflect"
 	"regexp"
 	"slices"
@@ -19,17 +20,22 @@ type FieldContext struct {
 	ValidationRules []string
 	Required        bool
 	// ShouldOmit is a special case for omitnil and omitempty tags
-	ShouldOmit      bool
-	Pattern         string
-	Format          string
-	Min             *float64
-	ExclusiveMin    bool
-	Max             *float64
-	ExclusiveMax    bool
+	ShouldOmit   bool
+	Pattern      string
+	Format       string
+	Min          *float64
+	ExclusiveMin bool
+	Max          *float64
+	ExclusiveMax bool
+	MinItems     uint64
+	MaxItems     uint64
+
 	HasOrConditions bool
 	OneOf           []any
 
-	shouldDive bool
+	// child will handle child elems validation context, created by "dive" tag.
+	// Each child will have child recursively, until dive tags found
+	child *FieldContext
 }
 
 func NewFieldContext(t reflect.Type, tag reflect.StructTag) *FieldContext {
@@ -39,21 +45,66 @@ func NewFieldContext(t reflect.Type, tag reflect.StructTag) *FieldContext {
 	}
 
 	rules := strings.Split(tagVal, ",")
-	return &FieldContext{
-		Type:            t,
-		Tag:             tag,
-		ValidationRules: rules,
-		HasOrConditions: strings.Contains(tagVal, "|"),
-		shouldDive:      strings.Contains(tagVal, "dive"),
+	ctx := buildContext(typing.DerefReflectPtr(t), rules)
+	return ctx
+}
+
+func buildContext(t reflect.Type, rules []string) *FieldContext {
+	segments := splitByDive(rules)
+	var (
+		root *FieldContext
+		curr *FieldContext
+	)
+
+	for _, seg := range segments {
+		segRules := filterEmpty(seg)
+
+		node := &FieldContext{
+			Type:            t,
+			ValidationRules: segRules,
+			HasOrConditions: strings.Contains(strings.Join(segRules, ","), "|"),
+		}
+
+		if root == nil {
+			root = node
+		} else {
+			curr.child = node
+		}
+		curr = node
+
+		t = typing.DerefReflectPtr(t)
+		if t.Kind() == reflect.Slice || t.Kind() == reflect.Array || t.Kind() == reflect.Map {
+			t = t.Elem()
+		}
 	}
+
+	return root
+}
+
+func splitByDive(rules []string) [][]string {
+	var out [][]string
+	start := 0
+	for i, r := range rules {
+		if r == "dive" {
+			out = append(out, rules[start:i])
+			start = i + 1
+		}
+	}
+	out = append(out, rules[start:])
+	return out
+}
+
+func filterEmpty(rules []string) []string {
+	out := make([]string, 0, len(rules))
+	for _, r := range rules {
+		if r != "" && r != "dive" {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 func (c *FieldContext) finalize() {
-	v := c.Tag.Get("validate")
-	if v == "" || v == "-" {
-		return
-	}
-
 	if slices.Contains(c.ValidationRules, "omitempty") || slices.Contains(c.ValidationRules, "omitnil") {
 		c.ShouldOmit = true
 	}
@@ -96,12 +147,16 @@ func (c *FieldContext) LookupString(key string) (string, error) {
 			continue
 		}
 
-		lt := strings.Split(rule, "=")
-		if len(lt) != 2 {
+		parts := strings.Split(rule, "=")
+		if len(parts) != 2 {
 			return "", fmt.Errorf("invalid format rule: '%s'", rule)
 		}
 
-		val = lt[1]
+		if parts[0] != key {
+			continue
+		}
+
+		val = parts[1]
 	}
 
 	return val, nil

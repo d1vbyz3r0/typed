@@ -205,63 +205,63 @@ var Formats = map[string]TagFn{
 	},
 	"uuid5": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UUID5RegexString
+		ctx.AddPattern(UUID5RegexString)
 	},
 	"uuid_rfc4122": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UUIDRFC4122RegexString
+		ctx.AddPattern(UUIDRFC4122RegexString)
 	},
 	"uuid3_rfc4122": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UUID3RFC4122RegexString
+		ctx.AddPattern(UUID3RFC4122RegexString)
 	},
 	"uuid4_rfc4122": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UUID4RFC4122RegexString
+		ctx.AddPattern(UUID4RFC4122RegexString)
 	},
 	"uuid5_rfc4122": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UUID5RFC4122RegexString
+		ctx.AddPattern(UUID5RFC4122RegexString)
 	},
 	"ulid": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = ULIDRegexString
+		ctx.AddPattern(ULIDRegexString)
 	},
 	"md4": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = MD4RegexString
+		ctx.AddPattern(MD4RegexString)
 	},
 	"md5": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = MD5RegexString
+		ctx.AddPattern(MD5RegexString)
 	},
 	"sha256": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SHA256RegexString
+		ctx.AddPattern(SHA256RegexString)
 	},
 	"sha384": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SHA384RegexString
+		ctx.AddPattern(SHA384RegexString)
 	},
 	"sha512": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SHA512RegexString
+		ctx.AddPattern(SHA512RegexString)
 	},
 	"ripemd128": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = Ripemd128RegexString
+		ctx.AddPattern(Ripemd128RegexString)
 	},
 	"ripemd160": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = Ripemd160RegexString
+		ctx.AddPattern(Ripemd160RegexString)
 	},
 	"tiger128": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = Tiger128RegexString
+		ctx.AddPattern(Tiger128RegexString)
 	},
 	"tiger160": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = Tiger160RegexString
+		ctx.AddPattern(Tiger160RegexString)
 	},
 	"tiger192": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -283,7 +283,7 @@ var Formats = map[string]TagFn{
 	"latitude": func(ctx *FieldContext) {
 		ctx.Required = true
 		if ctx.Type.Kind() == reflect.String {
-			ctx.Pattern = LatitudeRegexString
+			ctx.AddPattern(LatitudeRegexString)
 		} else {
 			_min := float64(-90)
 			_max := float64(90)
@@ -294,7 +294,7 @@ var Formats = map[string]TagFn{
 	"longitude": func(ctx *FieldContext) {
 		ctx.Required = true
 		if ctx.Type.Kind() == reflect.String {
-			ctx.Pattern = LongitudeRegexString
+			ctx.AddPattern(LongitudeRegexString)
 		} else {
 			_min := float64(-180)
 			_max := float64(180)
@@ -308,7 +308,7 @@ var Formats = map[string]TagFn{
 	},
 	"hostname": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = HostnameRegexStringRFC952
+		ctx.AddPattern(HostnameRegexStringRFC952)
 	},
 	"hostname_rfc1123": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -316,80 +316,80 @@ var Formats = map[string]TagFn{
 	},
 	"fqdn": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = FqdnRegexStringRFC1123
+		ctx.AddPattern(FqdnRegexStringRFC1123)
 	},
 	"btc_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = BtcAddressRegexString
+		ctx.AddPattern(BtcAddressRegexString)
 	},
 	"btc_addr_bech32": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = BtcAddressBech32RegexString
+		ctx.AddPattern(BtcAddressBech32RegexString)
 	},
 	"eth_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = EthAddressRegexString
+		ctx.AddPattern(EthAddressRegexString)
 	},
 	"url_encoded": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = URLEncodedRegexString
+		ctx.AddPattern(URLEncodedRegexString)
 	},
 	"html": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = HTMLRegexString
+		ctx.AddPattern(HTMLRegexString)
 	},
 	"html_encoded": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = HTMLEncodedRegexString
+		ctx.AddPattern(HTMLEncodedRegexString)
 	},
 	"jwt": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = JWTRegexString
+		ctx.AddPattern(JWTRegexString)
 	},
 	"bic": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = BicRegexString
+		ctx.AddPattern(BicRegexString)
 	},
 	"semver": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SemverRegexString
+		ctx.AddPattern(SemverRegexString)
 	},
 	"dns_rfc1035_label": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = DNSRegexStringRFC1035Label
+		ctx.AddPattern(DNSRegexStringRFC1035Label)
 	},
 	"cve": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = CVERegexString
+		ctx.AddPattern(CVERegexString)
 	},
 	"mongodb": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = MongodbIdRegexString
+		ctx.AddPattern(MongodbIdRegexString)
 	},
 	"mongodb_connection_string": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = MongodbConnStringRegexString
+		ctx.AddPattern(MongodbConnStringRegexString)
 	},
 	"cron": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = CronRegexString
+		ctx.AddPattern(CronRegexString)
 	},
 	"spicedb": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SpicedbIDRegexString
+		ctx.AddPattern(SpicedbIDRegexString)
 	},
 	"ein": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = EinRegexString
+		ctx.AddPattern(EinRegexString)
 	},
 
 	"cidr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = CIDRRegex
+		ctx.AddPattern(CIDRRegex)
 	},
 	"cidrv4": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = CIDRRegex
+		ctx.AddPattern(CIDRRegex)
 	},
 	"hostname_port": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -397,11 +397,11 @@ var Formats = map[string]TagFn{
 	},
 	"ip": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = IPAnyRegexString
+		ctx.AddPattern(IPAnyRegexString)
 	},
 	"ip_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = IPAnyRegexString
+		ctx.AddPattern(IPAnyRegexString)
 	},
 	"ipv4": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -421,35 +421,35 @@ var Formats = map[string]TagFn{
 	},
 	"mac": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = MACRegexString
+		ctx.AddPattern(MACRegexString)
 	},
 	"tcp4_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = TCP4AddrRegexString
+		ctx.AddPattern(TCP4AddrRegexString)
 	},
 	"tcp6_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = TCP6AddrRegexString
+		ctx.AddPattern(TCP6AddrRegexString)
 	},
 	"tcp_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = TCPAddrRegexString
+		ctx.AddPattern(TCPAddrRegexString)
 	},
 	"udp4_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UDP4AddrRegexString
+		ctx.AddPattern(UDP4AddrRegexString)
 	},
 	"udp6_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UDP6AddrRegexString
+		ctx.AddPattern(UDP6AddrRegexString)
 	},
 	"udp_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UDPAddrRegexString
+		ctx.AddPattern(UDPAddrRegexString)
 	},
 	"unix_addr": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = UnixAddrRegexString
+		ctx.AddPattern(UnixAddrRegexString)
 	},
 	"uri": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -457,11 +457,11 @@ var Formats = map[string]TagFn{
 	},
 	"url": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = URI
+		ctx.Format = URI
 	},
 	"urn_rfc2141": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = URNRFC2141RegexString
+		ctx.AddPattern(URNRFC2141RegexString)
 	},
 
 	"required": func(ctx *FieldContext) {
@@ -469,8 +469,8 @@ var Formats = map[string]TagFn{
 	},
 
 	"lt": func(ctx *FieldContext) {
-		lt, ok := GetFloatTagValue(ctx.Tag, "lt")
-		if !ok {
+		lt, err := ctx.LookupFloat("lt")
+		if err != nil {
 			return
 		}
 		ctx.Required = true
@@ -478,8 +478,8 @@ var Formats = map[string]TagFn{
 		ctx.ExclusiveMax = true
 	},
 	"lte": func(ctx *FieldContext) {
-		lte, ok := GetFloatTagValue(ctx.Tag, "lte")
-		if !ok {
+		lte, err := ctx.LookupFloat("lte")
+		if err != nil {
 			return
 		}
 		ctx.Required = true
@@ -488,8 +488,8 @@ var Formats = map[string]TagFn{
 	},
 	"gt": func(ctx *FieldContext) {
 		ctx.Required = true
-		gt, ok := GetFloatTagValue(ctx.Tag, "gt")
-		if !ok {
+		gt, err := ctx.LookupFloat("gt")
+		if err != nil {
 			return
 		}
 		ctx.Required = true
@@ -498,8 +498,8 @@ var Formats = map[string]TagFn{
 	},
 	"gte": func(ctx *FieldContext) {
 		ctx.Required = true
-		gte, ok := GetFloatTagValue(ctx.Tag, "gte")
-		if !ok {
+		gte, err := ctx.LookupFloat("gte")
+		if err != nil {
 			return
 		}
 		ctx.Required = true
@@ -541,5 +541,3 @@ var Formats = map[string]TagFn{
 		}
 	},
 }
-
-// TODO: dive tag

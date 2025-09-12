@@ -26,6 +26,8 @@ components:
             format: binary
             type: string
           type: array
+          minItems: 5
+
         Name:
           nullable: true
           type: string

@@ -2,9 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"go/ast"
-	"log/slog"
-
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/enums"
@@ -12,7 +9,9 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"go/ast"
 	"golang.org/x/tools/go/packages"
+	"log/slog"
 )
 
 // isWrapperFunction checks if func has signature: func(...) echo.HandlerFunc {}

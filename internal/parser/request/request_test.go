@@ -1,15 +1,14 @@
 package request
 
 import (
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/require"
 	"go/ast"
+	"golang.org/x/tools/go/packages"
 	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"testing"
-
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/packages"
 )
 
 func TestNewRequest_JSON(t *testing.T) {

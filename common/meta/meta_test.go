@@ -1,10 +1,9 @@
 package meta
 
 import (
+	"github.com/stretchr/testify/require"
 	"go/types"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetTypeName(t *testing.T) {

@@ -2,15 +2,14 @@ package form
 
 import (
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 )
 
 var multipartType = reflect.TypeOf(new(multipart.FileHeader))

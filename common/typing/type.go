@@ -1,10 +1,9 @@
 package typing
 
 import (
+	"github.com/google/uuid"
 	"reflect"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // TODO: add context func call arguments

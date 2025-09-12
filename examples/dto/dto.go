@@ -1,10 +1,9 @@
 package dto
 
 import (
+	"github.com/google/uuid"
 	"mime/multipart"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Status string

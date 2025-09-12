@@ -3,7 +3,11 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/internal/parser"
 	"go/format"
+	"golang.org/x/exp/maps"
+	"golang.org/x/tools/go/packages"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,11 +15,6 @@ import (
 	"strings"
 	"sync"
 	"text/template"
-
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"golang.org/x/exp/maps"
-	"golang.org/x/tools/go/packages"
 
 	_ "embed"
 )

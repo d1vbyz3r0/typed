@@ -1,18 +1,12 @@
 package typed
 
 import (
-	"reflect"
-
 	"github.com/d1vbyz3r0/typed/common/format"
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-)
-
-const (
-	FieldNameOverrideFormKey = "x-typed-override-form-key"
-	FieldNameOverrideXMLKey  = "x-typed-override-xml-key"
+	"reflect"
 )
 
 var customizers = []openapi3gen.SchemaCustomizerFn{
@@ -70,7 +64,7 @@ func isFileHeader(t reflect.Type) bool {
 	return t.PkgPath() == "mime/multipart" && t.Name() == "FileHeader"
 }
 
-// stdSerializableTypes customizer add proper formats for std types, not included in kin-openapi
+// stdSerializableTypes customizer adds proper formats for std types, not included in kin-openapi
 func stdSerializableTypes(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
 	t = typing.DerefReflectPtr(t)
 	pkg := t.PkgPath()
@@ -145,6 +139,7 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 			fieldType.Kind() == reflect.Map {
 			continue
 		}
+
 		schema.Required = append(schema.Required, fieldName)
 	}
 

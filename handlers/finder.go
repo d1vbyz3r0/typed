@@ -2,16 +2,15 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/d1vbyz3r0/typed/internal/parser"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/tools/go/packages"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
-
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/tools/go/packages"
 )
 
 type SearchPattern struct {
@@ -95,7 +94,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 			}
 
 			for _, h := range res.Handlers {
-				//fullHandlerPath := h.Pkg + "." + h.Name
+				// fullHandlerPath := h.Pkg + "." + h.Name
 				mtx.Lock()
 				v, ok := f.handlers[h.Name]
 				if ok {
@@ -121,7 +120,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 func (f *Finder) Match(routes []EchoRoute) []Handler {
 	res := make([]Handler, 0, len(routes))
 	for _, route := range routes {
-		//fullPath := f.getHandlerFullPath(route)
+		// fullPath := f.getHandlerFullPath(route)
 		handlerName := f.getHandlerName(route.Route)
 		h, ok := f.handlers[handlerName]
 		if !ok {

@@ -1,9 +1,6 @@
 package handlers
 
 import (
-	"reflect"
-	"strings"
-
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
@@ -11,6 +8,8 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/exp/maps"
+	"reflect"
+	"strings"
 )
 
 var stringType = reflect.TypeOf("")

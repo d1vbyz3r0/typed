@@ -1,12 +1,11 @@
 package enums
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go/parser"
 	"go/token"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEnumExtractor_extractFromFile(t *testing.T) {

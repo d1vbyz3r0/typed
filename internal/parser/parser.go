@@ -2,9 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"go/ast"
-	"log/slog"
-
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/enums"
@@ -12,7 +9,9 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"go/ast"
 	"golang.org/x/tools/go/packages"
+	"log/slog"
 )
 
 // isWrapperFunction checks if func has signature: func(...) echo.HandlerFunc {}
@@ -75,7 +74,7 @@ type Result struct {
 	Enums    map[string][]any
 	Handlers []Handler
 	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
-	//It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
+	// It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
 	AdditionalModels []Model
 }
 

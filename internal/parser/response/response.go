@@ -1,12 +1,11 @@
 package response
 
 import (
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"go/ast"
 	"go/types"
 	"log/slog"
-
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 )
 
 type StatusCodeMapping map[int][]Response
@@ -15,7 +14,7 @@ type Response struct {
 	// ContentType is a content type retrieved from func usage context. It's empty for Redirect and NoContent
 	ContentType string
 	// TypeName is a type name like it's used in code, with package name as prefix (except for std types).
-	//Field is empty for responses with empty body
+	// Field is empty for responses with empty body
 	TypeName string
 	// TypePkgPath is a full pkg path for type. Field is empty for responses with empty body
 	TypePkgPath string

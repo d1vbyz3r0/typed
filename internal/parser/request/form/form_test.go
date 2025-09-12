@@ -1,6 +1,7 @@
 package form
 
 import (
+	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -8,8 +9,6 @@ import (
 	"mime/multipart"
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func Test_NewInlineFormNoFiles(t *testing.T) {

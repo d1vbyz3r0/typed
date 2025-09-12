@@ -1,14 +1,13 @@
 package response
 
 import (
-	"go/ast"
-	"net/http"
-	"testing"
-
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/stretchr/testify/require"
+	"go/ast"
 	"golang.org/x/tools/go/packages"
+	"net/http"
+	"testing"
 )
 
 func TestStatusCodeMapping_extractResponses(t *testing.T) {

@@ -1,13 +1,12 @@
 package binding
 
 import (
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 	"go/ast"
 	"go/types"
 	"reflect"
 	"slices"
-
-	"github.com/d1vbyz3r0/typed/common/typing"
-	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 )
 
 func HasTag(s *types.Struct, tag string) bool {

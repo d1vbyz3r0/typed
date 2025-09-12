@@ -3,9 +3,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-
 	"github.com/d1vbyz3r0/typed"
 	"github.com/d1vbyz3r0/typed/examples/dto"
 	"github.com/d1vbyz3r0/typed/examples/server"
@@ -13,16 +10,18 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"github.com/labstack/echo/v4"
+	"log/slog"
+	"os"
 )
 
 var UsedTypes = map[string]any{
 	"dto.Status":          new(dto.Status),
-	"server.Builder":      new(server.Builder),
-	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.User":            new(dto.User),
-	"string":              new(string),
 	"echo.Map":            new(echo.Map),
+	"server.Builder":      new(server.Builder),
 	"server.FormsHandler": new(server.FormsHandler),
+	"dto.FormUploadResp":  new(dto.FormUploadResp),
+	"string":              new(string),
 	"server.Server":       new(server.Server),
 	"dto.Form":            new(dto.Form),
 }
@@ -121,7 +120,7 @@ func main() {
 	}
 
 	var routes []handlers.EchoRoute
-	var routesProvider typed.RoutesProvider = server.NewBuilder()
+	routesProvider := server.NewBuilder()
 	routesProvider.OnRouteAdded(func(
 		host string,
 		route echo.Route,

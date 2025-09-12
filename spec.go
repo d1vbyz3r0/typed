@@ -3,11 +3,10 @@ package typed
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"gopkg.in/yaml.v3"
+	"os"
+	"path/filepath"
 )
 
 type SpecFormat string

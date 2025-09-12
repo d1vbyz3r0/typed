@@ -1,13 +1,12 @@
 package codes
 
 import (
+	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"net/http"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestResolver_Resolve(t *testing.T) {

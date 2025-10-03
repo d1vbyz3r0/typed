@@ -1,7 +1,9 @@
 package format
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/getkin/kin-openapi/openapi3"
 	"reflect"
 	"slices"
@@ -15,12 +17,7 @@ func processStruct(name string, t reflect.Type, tag reflect.StructTag, schema *o
 			continue
 		}
 
-		v, ok := field.Tag.Lookup("validate")
-		if !ok || v == "-" {
-			return nil
-		}
-
-		ctx := NewFieldContext(t, tag)
+		ctx := NewFieldContext(field.Type, field.Tag)
 		if ctx == nil {
 			continue
 		}
@@ -28,18 +25,7 @@ func processStruct(name string, t reflect.Type, tag reflect.StructTag, schema *o
 		fieldName := meta.GetFieldNameByTag(field)
 		markedRequired := slices.Contains(schema.Required, fieldName)
 
-		for _, tagName := range ctx.TagNames() {
-			tagFn, ok := Formats[tagName]
-			if !ok {
-				continue
-			}
-
-			tagFn(ctx)
-		}
-
-		ctx.finalize()
-
-		if ctx.ShouldOmit && markedRequired {
+		if ctx.shouldOmit && markedRequired {
 			excludeFromRequired[fieldName] = struct{}{}
 		}
 
@@ -59,91 +45,77 @@ func processStruct(name string, t reflect.Type, tag reflect.StructTag, schema *o
 }
 
 func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	// if t.Kind() == reflect.Struct {
-	// 	return processStruct(name, t, tag, schema)
-	// }
-	//
-	// v := tag.Get("validate")
-	// if v == "" || v == "-" {
-	// 	return nil
-	// }
-	//
-	// rules := strings.Split(v, ",")
-	// isRequired := false
-	// for _, rule := range rules {
-	// 	if strings.Contains(rule, "=") {
-	// 		continue
-	// 	}
-	//
-	// 	fmt, ok := Formats[rule]
-	// 	if !ok {
-	// 		continue
-	// 	}
-	//
-	// 	// patterns applied only for string types
-	// 	if fmt.Pattern != "" && t.Kind() == reflect.String {
-	// 		schema.Pattern = fmt.Pattern
-	// 	}
-	//
-	// 	if fmt.Format != "" {
-	// 		schema.Format = fmt.Format
-	// 	}
-	//
-	// 	if fmt.LtFunc != nil {
-	// 		lt, ok := fmt.LtFunc(tag)
-	// 		if ok {
-	// 			schema.Max = &lt
-	// 			schema.ExclusiveMax = true
-	// 		}
-	// 	}
-	//
-	// 	if fmt.LteFunc != nil {
-	// 		lte, ok := fmt.LteFunc(tag)
-	// 		if ok {
-	// 			schema.Max = &lte
-	// 			schema.ExclusiveMax = false
-	// 		}
-	// 	}
-	//
-	// 	if fmt.GtFunc != nil {
-	// 		gt, ok := fmt.GtFunc(tag)
-	// 		if ok {
-	// 			schema.Min = &gt
-	// 			schema.ExclusiveMax = true
-	// 		}
-	// 	}
-	//
-	// 	if fmt.GteFunc != nil {
-	// 		gte, ok := fmt.GteFunc(tag)
-	// 		if ok {
-	// 			schema.Min = &gte
-	// 			schema.ExclusiveMax = false
-	// 		}
-	// 	}
-	//
-	// 	if fmt.Required {
-	// 		// we can't apply "required" processing rules, until other tags correctly processed cause of possible conflicts
-	// 		isRequired = true
-	// 	}
-	// }
-	//
-	// if isRequired {
-	// 	if t.Kind() == reflect.Slice || t.Kind() == reflect.Map || t.Kind() == reflect.Ptr {
-	// 		schema.Nullable = false
-	// 	}
-	//
-	// 	if schema.Type.Is(openapi3.TypeInteger) || schema.Type.Is(openapi3.TypeNumber) {
-	// 		schema.Not = &openapi3.SchemaRef{
-	// 			Value: &openapi3.Schema{
-	// 				Enum: []any{0},
-	// 			},
-	// 		}
-	// 	}
-	//
-	// 	if schema.Type.Is(openapi3.TypeString) && !IsKnown(schema.Format) {
-	// 		schema.Pattern = NonEmptyRegexString
-	// 	}
-	// }
+	t = typing.DerefReflectPtr(t)
+	if t.Kind() == reflect.Struct {
+		err := processStruct(name, t, tag, schema)
+		if err != nil {
+			return fmt.Errorf("process struct: %w", err)
+		}
+	}
 
+	ctx := NewFieldContext(t, tag)
+	if ctx == nil {
+		return nil
+	}
+
+	applyFieldContext(ctx, schema)
 	return nil
+}
+
+func applyFieldContext(ctx *FieldContext, schema *openapi3.Schema) {
+	if ctx.pattern != "" {
+		schema.Pattern = ctx.pattern
+	}
+
+	if ctx.MinLength > 0 {
+		schema.MinLength = ctx.MinLength
+	}
+
+	if ctx.MaxLength > 0 {
+		schema.MaxLength = &ctx.MaxLength
+	}
+
+	if ctx.Format != "" {
+		schema.Format = ctx.Format
+	}
+
+	if ctx.Min != nil {
+		schema.Min = ctx.Min
+		schema.ExclusiveMin = ctx.ExclusiveMin
+	}
+
+	if ctx.Max != nil {
+		schema.Max = ctx.Max
+		schema.ExclusiveMax = ctx.ExclusiveMax
+	}
+
+	if ctx.MinItems > 0 {
+		schema.MinItems = ctx.MinItems
+	}
+
+	if ctx.MaxItems > 0 {
+		schema.MaxItems = &ctx.MaxItems
+	}
+
+	if schema.Items != nil && ctx.child != nil {
+		applyFieldContext(ctx.child, schema.Items.Value)
+	}
+
+	if ctx.child != nil && schema.AdditionalProperties.Schema != nil {
+		applyFieldContext(ctx.child, schema.AdditionalProperties.Schema.Value)
+	}
+
+	schema.Nullable = ctx.Nullable
+
+	if ctx.OneOf != nil {
+		schema.Enum = append(schema.Enum, ctx.OneOf...)
+	}
+
+	if len(ctx.Not) > 0 {
+		schema.Not = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Enum: ctx.Not,
+			},
+		}
+	}
 }

@@ -3,6 +3,7 @@ package format
 import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"log/slog"
 	"reflect"
 	"regexp"
 	"slices"
@@ -15,13 +16,10 @@ var splitParamsRegex = regexp.MustCompile(`'[^']*'|\S+`)
 type TagFn func(ctx *FieldContext)
 
 type FieldContext struct {
-	Type            reflect.Type
-	Tag             reflect.StructTag
-	ValidationRules []string
-	Required        bool
-	// ShouldOmit is a special case for omitnil and omitempty tags
-	ShouldOmit   bool
-	Pattern      string
+	Type         reflect.Type
+	Required     bool
+	Nullable     bool
+	Not          []any
 	Format       string
 	Min          *float64
 	ExclusiveMin bool
@@ -29,15 +27,23 @@ type FieldContext struct {
 	ExclusiveMax bool
 	MinItems     uint64
 	MaxItems     uint64
-
-	HasOrConditions bool
-	OneOf           []any
+	MinLength    uint64
+	MaxLength    uint64
+	OneOf        []any
 
 	// child will handle child elems validation context, created by "dive" tag.
 	// Each child will have child recursively, until dive tags found
 	child *FieldContext
+	// shouldOmit is a special case for omitnil and omitempty tags
+	shouldOmit      bool
+	pattern         string
+	patterns        []string
+	validationRules []string
+	hasOrConditions bool
 }
 
+// NewFieldContext creates FieldContext with all required children.
+// If no valid "validate" tag found, or tag marked as "-" it returns nil
 func NewFieldContext(t reflect.Type, tag reflect.StructTag) *FieldContext {
 	tagVal := tag.Get("validate")
 	if tagVal == "" || tagVal == "-" {
@@ -46,6 +52,7 @@ func NewFieldContext(t reflect.Type, tag reflect.StructTag) *FieldContext {
 
 	rules := strings.Split(tagVal, ",")
 	ctx := buildContext(typing.DerefReflectPtr(t), rules)
+	ctx.finalize()
 	return ctx
 }
 
@@ -57,12 +64,36 @@ func buildContext(t reflect.Type, rules []string) *FieldContext {
 	)
 
 	for _, seg := range segments {
-		segRules := filterEmpty(seg)
+		segRules := stripKeysBlock(filterEmpty(seg))
+		shouldOmit := false
+		segRules = slices.DeleteFunc(segRules, func(s string) bool {
+			if s == "omitempty" || s == "omitnil" {
+				shouldOmit = true
+				return true
+			}
+			return false
+		})
+
+		isNullable := t.Kind() == reflect.Slice ||
+			t.Kind() == reflect.Map ||
+			t.Kind() == reflect.Pointer
 
 		node := &FieldContext{
 			Type:            t,
-			ValidationRules: segRules,
-			HasOrConditions: strings.Contains(strings.Join(segRules, ","), "|"),
+			Nullable:        isNullable,
+			validationRules: segRules,
+			shouldOmit:      shouldOmit,
+			hasOrConditions: strings.Contains(strings.Join(segRules, ","), "|"),
+		}
+
+		for _, rule := range node.tagNames() {
+			applyFormat, ok := Formats[rule]
+			if !ok {
+				slog.Warn("validation rule not found, skipping", "rule", rule)
+				continue
+			}
+
+			applyFormat(node)
 		}
 
 		if root == nil {
@@ -81,68 +112,44 @@ func buildContext(t reflect.Type, rules []string) *FieldContext {
 	return root
 }
 
-func splitByDive(rules []string) [][]string {
-	var out [][]string
-	start := 0
-	for i, r := range rules {
-		if r == "dive" {
-			out = append(out, rules[start:i])
-			start = i + 1
-		}
-	}
-	out = append(out, rules[start:])
-	return out
-}
-
-func filterEmpty(rules []string) []string {
-	out := make([]string, 0, len(rules))
-	for _, r := range rules {
-		if r != "" && r != "dive" {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-
 func (c *FieldContext) finalize() {
-	if slices.Contains(c.ValidationRules, "omitempty") || slices.Contains(c.ValidationRules, "omitnil") {
-		c.ShouldOmit = true
+	// if slices.Contains(c.validationRules, "omitempty") || slices.Contains(c.validationRules, "omitnil") {
+	// 	c.shouldOmit = true
+	// }
+
+	// if c.pattern != "" {
+	//	c.pattern += "$"
+	// }
+
+	if len(c.patterns) > 0 {
+		p := strings.Join(c.patterns, "|")
+		if len(c.patterns) > 1 {
+			c.pattern = fmt.Sprintf("^(%s)$", p)
+		} else {
+			c.pattern = fmt.Sprintf("^%s$", p)
+		}
 	}
 
-	c.Pattern += "$"
-
-	if c.HasOrConditions && c.Pattern != "" && c.Format != "" {
+	if c.hasOrConditions && c.pattern != "" && c.Format != "" {
 		c.Format = ""
 	}
 
-	if IsKnown(c.Format) && c.Pattern != "" {
-		c.Pattern = ""
+	if IsKnown(c.Format) && c.pattern != "" {
+		c.pattern = ""
+	}
+
+	for child := c.child; child != nil; child = child.child {
+		child.finalize()
 	}
 }
 
-// AddPattern ensures that validator tag contains "OR" condition and extend existing pattern or writes a new one
 func (c *FieldContext) AddPattern(pattern string) {
-	if c.Pattern == "" {
-		c.Pattern = "^"
-	}
-
-	if !c.HasOrConditions {
-		c.Pattern += pattern
-		return
-	}
-
-	prefix := ""
-	if c.Pattern != "^" {
-		prefix = "|"
-	}
-
-	pattern = fmt.Sprintf("%s(%s)", prefix, pattern)
-	c.Pattern += pattern
+	c.patterns = append(c.patterns, fmt.Sprintf("(%s)", pattern))
 }
 
 func (c *FieldContext) LookupString(key string) (string, error) {
 	val := ""
-	for _, rule := range c.ValidationRules {
+	for _, rule := range c.validationRules {
 		if !strings.Contains(rule, key) {
 			continue
 		}
@@ -169,6 +176,15 @@ func (c *FieldContext) LookupFloat(key string) (float64, error) {
 	}
 
 	return strconv.ParseFloat(v, 64)
+}
+
+func (c *FieldContext) LookupUint(key string) (uint64, error) {
+	v, err := c.LookupString(key)
+	if err != nil {
+		return 0, fmt.Errorf("lookup string: %w", err)
+	}
+
+	return strconv.ParseUint(v, 10, 64)
 }
 
 func (c *FieldContext) LookupStringSlice(key string) ([]string, error) {
@@ -205,11 +221,16 @@ func (c *FieldContext) LookupFloatSlice(key string) ([]float64, error) {
 	return result, nil
 }
 
-func (c *FieldContext) TagNames() []string {
-	names := make([]string, 0, len(c.ValidationRules))
-	for _, rule := range c.ValidationRules {
-		parts := strings.Split(rule, "=")
-		names = append(names, parts[0])
+func (c *FieldContext) tagNames() []string {
+	names := make([]string, 0, len(c.validationRules))
+	for _, rule := range c.validationRules {
+		if strings.Contains(rule, "|") {
+			parts := strings.Split(rule, "|")
+			names = append(names, parts...)
+		} else {
+			parts := strings.Split(rule, "=")
+			names = append(names, parts[0])
+		}
 	}
 
 	return names

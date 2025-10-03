@@ -1,9 +1,11 @@
 package format
 
 import (
+	"fmt"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"log/slog"
 	"reflect"
+	"time"
 )
 
 // https://github.com/go-playground/validator/blob/master/regexes.go
@@ -100,6 +102,12 @@ const (
 	NonEmptyRegexString         = ".+"
 )
 
+var (
+	floatType    = reflect.TypeOf(float64(0))
+	stringType   = reflect.TypeOf("")
+	durationType = reflect.TypeOf(time.Duration(0))
+)
+
 var Formats = map[string]TagFn{
 	"alpha": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -125,7 +133,7 @@ var Formats = map[string]TagFn{
 		ctx.Required = true
 		ctx.AddPattern(NumberRegexString)
 	},
-	"hexadeсimal": func(ctx *FieldContext) {
+	"hexadecimal": func(ctx *FieldContext) {
 		ctx.Required = true
 		ctx.AddPattern(HexadecimalRegexString)
 	},
@@ -265,20 +273,20 @@ var Formats = map[string]TagFn{
 	},
 	"tiger192": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = Tiger192RegexString
+		ctx.AddPattern(Tiger192RegexString)
 	},
 	"ascii": func(ctx *FieldContext) {
-		ctx.Pattern = ASCIIRegexString
+		ctx.AddPattern(ASCIIRegexString)
 	},
 	"printascii": func(ctx *FieldContext) {
-		ctx.Pattern = PrintableASCIIRegexString
+		ctx.AddPattern(PrintableASCIIRegexString)
 	},
 	"multibyte": func(ctx *FieldContext) {
-		ctx.Pattern = MultibyteRegexString
+		ctx.AddPattern(MultibyteRegexString)
 	},
 	"datauri": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = DataURIRegexString
+		ctx.AddPattern(DataURIRegexString)
 	},
 	"latitude": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -288,7 +296,7 @@ var Formats = map[string]TagFn{
 			_min := float64(-90)
 			_max := float64(90)
 			ctx.Min = &_min
-			ctx.Min = &_max
+			ctx.Max = &_max
 		}
 	},
 	"longitude": func(ctx *FieldContext) {
@@ -299,12 +307,12 @@ var Formats = map[string]TagFn{
 			_min := float64(-180)
 			_max := float64(180)
 			ctx.Min = &_min
-			ctx.Min = &_max
+			ctx.Max = &_max
 		}
 	},
 	"ssn": func(ctx *FieldContext) {
 		ctx.Required = true
-		ctx.Pattern = SSNRegexString
+		ctx.AddPattern(SSNRegexString)
 	},
 	"hostname": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -465,36 +473,307 @@ var Formats = map[string]TagFn{
 	},
 
 	"required": func(ctx *FieldContext) {
-		ctx.Required = true
+		if ctx.Type.ConvertibleTo(floatType) {
+			ctx.Required = true
+			ctx.Not = append(ctx.Not, 0)
+		} else if ctx.Type.Kind() == reflect.Slice ||
+			ctx.Type.Kind() == reflect.Map {
+			ctx.Required = true
+			ctx.Nullable = false
+		}
+	},
+
+	"min": func(ctx *FieldContext) {
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("min")
+			if err != nil {
+				slog.Warn("lookup string for min tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for min tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Min = &conv
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("min")
+			if err != nil {
+				slog.Warn("lookup float for min tag", "error", err)
+				return
+			}
+			ctx.Min = &v
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("min")
+			if err != nil {
+				slog.Warn("lookup string for min tag", "error", err)
+				return
+			}
+
+			ctx.MinLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("min")
+			if err != nil {
+				slog.Warn("lookup string for min tag", "error", err)
+				return
+			}
+
+			ctx.MinItems = v
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "min", "type", ctx.Type.String())
+		}
+	},
+
+	"max": func(ctx *FieldContext) {
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("max")
+			if err != nil {
+				slog.Warn("lookup string for max tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for max tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Max = &conv
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("max")
+			if err != nil {
+				slog.Warn("lookup float for min tag", "error", err)
+				return
+			}
+			ctx.Max = &v
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("max")
+			if err != nil {
+				slog.Warn("lookup string for max tag", "error", err)
+				return
+			}
+
+			ctx.MaxLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("max")
+			if err != nil {
+				slog.Warn("lookup string for max tag", "error", err)
+				return
+			}
+
+			ctx.MaxItems = v
+
+		default:
+			slog.Warn("type not supported", "tag", "max", "type", ctx.Type.String())
+		}
+	},
+
+	"len": func(ctx *FieldContext) {
+		switch {
+		case ctx.Type.Kind() == reflect.String:
+			v, err := ctx.LookupUint("len")
+			if err != nil {
+				slog.Warn("lookup string for len tag", "error", err)
+				return
+			}
+
+			ctx.MinLength = v
+			ctx.MaxLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			v, err := ctx.LookupUint("len")
+			if err != nil {
+				slog.Warn("lookup string for len tag", "error", err)
+				return
+			}
+
+			ctx.MinItems = v
+			ctx.MaxItems = v
+		}
 	},
 
 	"lt": func(ctx *FieldContext) {
-		lt, err := ctx.LookupFloat("lt")
-		if err != nil {
-			return
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("lt")
+			if err != nil {
+				slog.Warn("lookup string for lt tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for lt tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Max = &conv
+			ctx.ExclusiveMax = true
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("lt")
+			if err != nil {
+				slog.Warn("lookup float for lt tag", "error", err)
+				return
+			}
+
+			ctx.Max = &v
+			ctx.ExclusiveMax = true
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("lt")
+			if err != nil {
+				slog.Warn("lookup string for lt tag", "error", err)
+				return
+			}
+
+			ctx.MaxLength = v - 1
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("lt")
+			if err != nil {
+				slog.Warn("lookup string for lt tag", "error", err)
+				return
+			}
+
+			ctx.MaxItems = v - 1
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "lt", "type", ctx.Type.String())
 		}
-		ctx.Required = true
-		ctx.Max = &lt
-		ctx.ExclusiveMax = true
 	},
+
 	"lte": func(ctx *FieldContext) {
-		lte, err := ctx.LookupFloat("lte")
-		if err != nil {
-			return
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("lte")
+			if err != nil {
+				slog.Warn("lookup string for lte tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for lte tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Max = &conv
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("lte")
+			if err != nil {
+				slog.Warn("lookup float for lte tag", "error", err)
+				return
+			}
+
+			ctx.Max = &v
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("lte")
+			if err != nil {
+				slog.Warn("lookup string for lte tag", "error", err)
+				return
+			}
+
+			ctx.MaxLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("lte")
+			if err != nil {
+				slog.Warn("lookup string for lte tag", "error", err)
+				return
+			}
+
+			ctx.MaxItems = v
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "lte", "type", ctx.Type.String())
 		}
-		ctx.Required = true
-		ctx.Max = &lte
-		ctx.ExclusiveMax = false
 	},
+
 	"gt": func(ctx *FieldContext) {
-		ctx.Required = true
-		gt, err := ctx.LookupFloat("gt")
-		if err != nil {
-			return
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("gt")
+			if err != nil {
+				slog.Warn("lookup string for gt tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for gt tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Min = &conv
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("gt")
+			if err != nil {
+				slog.Warn("lookup float for gt tag", "error", err)
+				return
+			}
+			ctx.Min = &v
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("gt")
+			if err != nil {
+				slog.Warn("lookup string for gt tag", "error", err)
+				return
+			}
+
+			ctx.MaxLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("gt")
+			if err != nil {
+				slog.Warn("lookup string for gt tag", "error", err)
+				return
+			}
+
+			ctx.MinItems = v
+
+		default:
+			slog.Warn("type not supported", "tag", "gt", "type", ctx.Type.String())
 		}
-		ctx.Required = true
-		ctx.Min = &gt
-		ctx.ExclusiveMin = true
 	},
 	"gte": func(ctx *FieldContext) {
 		ctx.Required = true
@@ -504,26 +783,110 @@ var Formats = map[string]TagFn{
 		}
 		ctx.Required = true
 		ctx.Min = &gte
-		ctx.ExclusiveMin = false
 	},
 
 	"eq": func(ctx *FieldContext) {
-		floatType := reflect.TypeOf(float64(0))
-		stringType := reflect.TypeOf("")
-		if ctx.Type.ConvertibleTo(floatType) {
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			eq, err := ctx.LookupString("eq")
+			if err != nil {
+				slog.Warn("lookup string for eq tag", "error", err)
+				return
+			}
 
-		} else if ctx.Type.ConvertibleTo(stringType) {
+			d, err := time.ParseDuration(eq)
+			if err != nil {
+				slog.Warn("parse duration for eq tag", "error", err)
+				return
+			}
 
+			ctx.Required = true
+			conv := float64(d)
+			ctx.Min = &conv
+			ctx.Max = &conv
+			ctx.ExclusiveMin = true
+			ctx.ExclusiveMax = true
+
+		case ctx.Type.ConvertibleTo(floatType):
+			eq, err := ctx.LookupFloat("eq")
+			if err != nil {
+				slog.Warn("lookup float for eq tag", "error", err)
+				return
+			}
+
+			ctx.Required = true
+			ctx.Min = &eq
+			ctx.Max = &eq
+
+		case ctx.Type.ConvertibleTo(stringType):
+			eq, err := ctx.LookupString("eq")
+			if err != nil {
+				slog.Warn("lookup string for eq tag", "error", err)
+				return
+			}
+
+			ctx.Required = true
+			ctx.AddPattern(eq)
+
+		case ctx.Type.Kind() == reflect.Slice:
+			eq, err := ctx.LookupUint("eq")
+			if err != nil {
+				slog.Warn("lookup uint for eq tag", "error", err)
+				return
+			}
+
+			ctx.Required = true
+			ctx.MinItems = eq
+			ctx.MaxItems = eq
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "eq", "type", ctx.Type.String())
 		}
+	},
 
-		ctx.Required = true
+	"ne": func(ctx *FieldContext) {
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ne, err := ctx.LookupString("ne")
+			if err != nil {
+				slog.Warn("lookup string for ne tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(ne)
+			if err != nil {
+				slog.Warn("parse duration for ne tag", "error", err)
+				return
+			}
+
+			ctx.Required = true
+			ctx.Not = append(ctx.Not, d)
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ne, err := ctx.LookupFloat("ne")
+			if err != nil {
+				return
+			}
+
+			ctx.Required = true
+			ctx.Not = append(ctx.Not, ne)
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ne, err := ctx.LookupString("ne")
+			if err != nil {
+				return
+			}
+
+			ctx.Required = true
+			ctx.AddPattern(fmt.Sprintf("((?!%s).)*", ne))
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "ne", "type", ctx.Type.String())
+		}
 	},
 
 	"oneof": func(ctx *FieldContext) {
 		ctx.Required = true
-		floatType := reflect.TypeOf(float64(0))
-		stringType := reflect.TypeOf("")
-
 		if ctx.Type.ConvertibleTo(floatType) {
 			v, err := ctx.LookupFloatSlice("oneof")
 			if err != nil {

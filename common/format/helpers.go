@@ -1,29 +1,49 @@
 package format
 
-import (
-	"reflect"
-	"strconv"
-	"strings"
-)
-
-func GetFloatTagValue(tag reflect.StructTag, name string) (float64, bool) {
-	validate := tag.Get("validate")
-	if validate == "" || validate == "-" {
-		return 0, false
-	}
-
-	parts := strings.Split(validate, ",")
-	for _, part := range parts {
-		if strings.Contains(part, name) {
-			lt := strings.Split(part, "=")
-			val := lt[1]
-			v, err := strconv.ParseFloat(val, 64)
-			if err != nil {
-				return 0, false
-			}
-			return v, true
+func splitByDive(rules []string) [][]string {
+	out := make([][]string, 0)
+	start := 0
+	for i, r := range rules {
+		if r == "dive" {
+			out = append(out, rules[start:i])
+			start = i + 1
 		}
 	}
+	out = append(out, rules[start:])
+	return out
+}
 
-	return 0, false
+func filterEmpty(rules []string) []string {
+	out := make([]string, 0, len(rules))
+	for _, r := range rules {
+		if r != "" && r != "dive" {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func stripKeysBlock(rules []string) []string {
+	out := make([]string, 0, len(rules))
+	skipping := false
+
+	for _, r := range rules {
+		if r == "keys" {
+			skipping = true
+			continue
+		}
+
+		if r == "endkeys" {
+			skipping = false
+			continue
+		}
+
+		if skipping {
+			continue
+		}
+
+		out = append(out, r)
+	}
+
+	return out
 }

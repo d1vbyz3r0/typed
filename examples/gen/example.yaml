@@ -81,6 +81,9 @@ components:
     multipart.FileHeader:
       format: binary
       nullable: true
+      required:
+        - Filename
+        - Size
       type: string
 info:
   title: Example api
@@ -225,6 +228,10 @@ paths:
           schema:
             format: uuid
             type: string
+        - in: header
+          name: User-ID
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -232,6 +239,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/dto.User'
           description: OK
+          headers:
+            X-Custom-Header1:
+              schema:
+                type: string
+            X-Custom-Header2:
+              schema:
+                type: string
         default:
           description: ""
       tags:
@@ -288,6 +302,14 @@ paths:
           description: ""
       tags:
         - Nocontent
+  /api/v1/sse:
+    get:
+      operationId: sse
+      responses:
+        default:
+          description: ""
+      tags:
+        - Sse
   /api/v1/xml/:
     get:
       operationId: getUserXML

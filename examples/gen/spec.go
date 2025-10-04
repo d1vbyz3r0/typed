@@ -15,15 +15,15 @@ import (
 )
 
 var UsedTypes = map[string]any{
+	"dto.User":            new(dto.User),
+	"server.Builder":      new(server.Builder),
+	"server.FormsHandler": new(server.FormsHandler),
+	"server.Server":       new(server.Server),
+	"string":              new(string),
+	"echo.Map":            new(echo.Map),
 	"dto.Form":            new(dto.Form),
 	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.Status":          new(dto.Status),
-	"dto.User":            new(dto.User),
-	"echo.Map":            new(echo.Map),
-	"server.Builder":      new(server.Builder),
-	"server.FormsHandler": new(server.FormsHandler),
-	"string":              new(string),
-	"server.Server":       new(server.Server),
 }
 
 var Enums = map[string][]any{
@@ -77,6 +77,7 @@ func Generate(opts GenerateOpts) error {
 		typed.AddPathParams(operation, handler, opts.Generator, UsedTypes)
 		typed.AddQueryParams(operation, handler, opts.Generator, UsedTypes)
 		typed.AddRequestBody(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
+		typed.AddHeaders(operation, handler, opts.Generator, UsedTypes)
 		typed.AddResponses(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
 		typed.AddOperationId(operation, handler)
 		if opts.UseTags {

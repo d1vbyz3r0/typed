@@ -82,11 +82,14 @@ func (m StatusCodeMapping) extractResponses(
 			return true
 		}
 
+		respHeaders := findHeaders(funcDecl, call.Pos(), typesInfo)
+		slog.Debug("extracted response headers", "headers", respHeaders)
+
 		m[statusCode] = append(m[statusCode], Response{
 			ContentType: contentType,
 			TypeName:    typeName,
 			TypePkgPath: pkgPath,
-			// Headers:     findHeaders(funcDecl, call.Pos(), typesInfo),
+			Headers:     respHeaders,
 		})
 
 		return true

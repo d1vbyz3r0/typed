@@ -196,6 +196,11 @@ func AddResponses(
 	registry map[string]any,
 ) {
 	statusCodeMapping := h.Responses()
+	if len(statusCodeMapping) == 0 {
+		// TODO: better solution ?
+		op.AddResponse(0, &openapi3.Response{Description: new(string)})
+		return
+	}
 
 	for status, responses := range statusCodeMapping {
 		content := make(openapi3.Content, len(responses))
@@ -239,19 +244,21 @@ func AddResponses(
 
 		resp.Headers = make(openapi3.Headers, len(mergedHeaders))
 		for _, header := range mergedHeaders {
-			param := openapi3.NewHeaderParameter(header.Name).WithRequired(header.Required)
 			schema, err := openapiGen.GenerateSchemaRef(header.Type)
 			if err != nil {
 				slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
 				continue
 			}
 
-			param.Schema = &openapi3.SchemaRef{
-				Value: schema.Value,
-			}
-
 			resp.Headers[header.Name] = &openapi3.HeaderRef{
-				Value: &openapi3.Header{Parameter: *param},
+				Value: &openapi3.Header{
+					Parameter: openapi3.Parameter{
+						Required: header.Required,
+						Schema: &openapi3.SchemaRef{
+							Value: schema.Value,
+						},
+					},
+				},
 			}
 		}
 

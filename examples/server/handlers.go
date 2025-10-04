@@ -20,6 +20,9 @@ import (
 // Also docstrings are supported to document your handlers
 func getUserJSON(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
+	req := c.Request()
+	req.Header.Get("User-ID")
+
 	c.Response().Header().Set("X-Custom-Header1", "1")
 	c.Response().Header().Add("X-Custom-Header2", "2")
 	return c.JSON(http.StatusOK, dto.User{
@@ -194,4 +197,24 @@ func (h FormsHandler) structForm(c echo.Context) error {
 		"file_name":      req.File.Filename,
 		"file_array_len": len(req.FileArray),
 	})
+}
+
+func sse(c echo.Context) error {
+	w := c.Response()
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.Request().Context().Done():
+			return nil
+
+		case <-ticker.C:
+			w.Write([]byte("data\n"))
+			w.Flush()
+		}
+	}
 }

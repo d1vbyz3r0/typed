@@ -28,6 +28,7 @@ type Form struct {
 	Name      *string                 `form:"Name"`
 	Age       int                     `form:"Age"`
 	FileArray []*multipart.FileHeader `form:"FileArray"`
+	// HeaderParam uuid.UUID               `header:"headerParam"`
 }
 
 type FormUploadResp struct {

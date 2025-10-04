@@ -44,6 +44,8 @@ func (s *Server) mapRoutes() {
 	h := FormsHandler{}
 	forms.POST("/inline", h.inlineForm)
 	forms.POST("/struct/:pathParam", h.structForm)
+
+	api.GET("/sse", sse)
 }
 
 func (s *Server) Start(addr string) error {

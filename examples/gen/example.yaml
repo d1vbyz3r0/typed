@@ -81,6 +81,9 @@ components:
     multipart.FileHeader:
       format: binary
       nullable: true
+      required:
+        - Filename
+        - Size
       type: string
 info:
   title: Example api
@@ -182,10 +185,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/dto.Form'
-          application/xml:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/dto.Form'
       responses:

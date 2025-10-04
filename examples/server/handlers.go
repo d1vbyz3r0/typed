@@ -112,8 +112,6 @@ func (h FormsHandler) inlineForm(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	c.Response().Header().Set("", "")
-
 	timestamp, err := time.Parse(time.RFC3339, c.FormValue("Timestamp"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())

@@ -3,6 +3,7 @@ package request
 import (
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/binding"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/form"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
@@ -28,7 +29,7 @@ var echoParamsBindTags = []string{
 type ContentTypeMapping map[string]Body
 
 type Body struct {
-	// Form contains reflect.Struct, build from inline form usages with form.NewInlineForm
+	// Form contains reflect.Struct, built from inline form usages with form.NewInlineForm
 	Form reflect.Type
 }
 
@@ -41,6 +42,7 @@ type Request struct {
 	ContentTypeMapping ContentTypeMapping
 	PathParams         []path.Param
 	QueryParams        []query.Param
+	Headers            []headers.Header
 }
 
 func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
@@ -53,6 +55,7 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 		ContentTypeMapping: make(ContentTypeMapping),
 		PathParams:         nil,
 		QueryParams:        nil,
+		Headers:            nil,
 	}
 
 	if parseOpts.parseInlinePathParams {

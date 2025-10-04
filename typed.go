@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/handlers"
+	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -167,12 +168,12 @@ func AddRequestBody(
 				continue
 			}
 
-			//typeName := TypeNameGenerator(reflect.TypeOf(obj))
-			//err = OverrideFieldNames(ref, schemas, typeName, contentType)
-			//if err != nil {
+			// typeName := TypeNameGenerator(reflect.TypeOf(obj))
+			// err = OverrideFieldNames(ref, schemas, typeName, contentType)
+			// if err != nil {
 			//	slog.Error("override field names", "error", err)
 			//	continue
-			//}
+			// }
 
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
@@ -195,8 +196,11 @@ func AddResponses(
 	registry map[string]any,
 ) {
 	statusCodeMapping := h.Responses()
+
 	for status, responses := range statusCodeMapping {
 		content := make(openapi3.Content, len(responses))
+		mergedHeaders := make([]headers.Header, 0, len(responses))
+
 		for _, resp := range responses {
 			mediaType := openapi3.NewMediaType()
 			if resp.TypeName != "" {
@@ -212,14 +216,15 @@ func AddResponses(
 					continue
 				}
 
-				//typeName := TypeNameGenerator(reflect.TypeOf(val))
-				//err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
-				//if err != nil {
+				// typeName := TypeNameGenerator(reflect.TypeOf(val))
+				// err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
+				// if err != nil {
 				//	slog.Error("override field names", "error", err)
 				//	continue
-				//}
+				// }
 
 				mediaType = mediaType.WithSchemaRef(ref)
+				mergedHeaders = append(mergedHeaders, resp.Headers...)
 			}
 
 			if resp.ContentType != "" {
@@ -227,8 +232,87 @@ func AddResponses(
 			}
 		}
 
-		resp := openapi3.NewResponse().WithContent(content).WithDescription(http.StatusText(status))
+		resp := openapi3.
+			NewResponse().
+			WithContent(content).
+			WithDescription(http.StatusText(status))
+
+		resp.Headers = make(openapi3.Headers, len(mergedHeaders))
+		for _, header := range mergedHeaders {
+			param := openapi3.NewHeaderParameter(header.Name).WithRequired(header.Required)
+			schema, err := openapiGen.GenerateSchemaRef(header.Type)
+			if err != nil {
+				slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
+				continue
+			}
+
+			param.Schema = &openapi3.SchemaRef{
+				Value: schema.Value,
+			}
+
+			resp.Headers[header.Name] = &openapi3.HeaderRef{
+				Value: &openapi3.Header{Parameter: *param},
+			}
+		}
+
 		op.AddResponse(status, resp)
+	}
+}
+
+func AddHeaders(
+	op *openapi3.Operation,
+	h handlers.Handler,
+	openapiGen *openapi3gen.Generator,
+	registry map[string]any,
+) {
+	model := h.BindModel()
+	params := make(map[string]struct{}, len(h.Request().Headers))
+
+	if model != "" {
+		obj, ok := registry[model]
+		if ok {
+			typedParams, err := headers.NewStructHeaders(typing.DerefReflectPtr(reflect.TypeOf(obj)))
+			if err != nil {
+				slog.Error("get header params from bind model", "error", err)
+			}
+
+			for _, p := range typedParams {
+				param := openapi3.NewHeaderParameter(p.Name).WithRequired(p.Required)
+
+				schema, err := openapiGen.GenerateSchemaRef(p.Type)
+				if err != nil {
+					slog.Error("generate schema ref for header param", "param", p.Name, "error", err)
+					continue
+				}
+
+				param.Schema = &openapi3.SchemaRef{
+					Value: schema.Value,
+				}
+				params[p.Name] = struct{}{}
+				op.AddParameter(param)
+			}
+		} else {
+			slog.Warn("bind model not found in provided registry", "model", model)
+		}
+	}
+
+	for _, header := range h.Request().Headers {
+		_, ok := params[header.Name]
+		if ok {
+			continue
+		}
+
+		param := openapi3.NewHeaderParameter(header.Name).WithRequired(header.Required)
+		schema, err := openapiGen.GenerateSchemaRef(header.Type)
+		if err != nil {
+			slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
+			continue
+		}
+
+		param.Schema = &openapi3.SchemaRef{
+			Value: schema.Value,
+		}
+		op.AddParameter(param)
 	}
 }
 

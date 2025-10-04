@@ -10,10 +10,11 @@ type parserOpts struct {
 	parseInlinePathParams  bool
 	parseInlineQueryParams bool
 	parseInlineForms       bool
+	parseInlineHeaders     bool
 }
 
 func (o *parserOpts) RequestParseOpts() []request.ParseOpt {
-	opts := make([]request.ParseOpt, 0, 3)
+	opts := make([]request.ParseOpt, 0, 4)
 	if o.parseInlineQueryParams {
 		opts = append(opts, request.ParseInlineQueryParams())
 	}
@@ -24,6 +25,10 @@ func (o *parserOpts) RequestParseOpts() []request.ParseOpt {
 
 	if o.parseInlinePathParams {
 		opts = append(opts, request.ParseInlinePathParams())
+	}
+
+	if o.parseInlineQueryParams {
+		opts = append(opts, request.ParseInlineHeaders())
 	}
 
 	return opts
@@ -57,5 +62,11 @@ func ParseInlineQueryParams() ParseOpt {
 func ParseInlineForms() ParseOpt {
 	return func(p *parserOpts) {
 		p.parseInlineForms = true
+	}
+}
+
+func ParseInlineHeaders() ParseOpt {
+	return func(p *parserOpts) {
+		p.parseInlineHeaders = true
 	}
 }

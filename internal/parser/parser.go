@@ -74,7 +74,7 @@ type Result struct {
 	Enums    map[string][]any
 	Handlers []Handler
 	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
-	//It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
+	// It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
 	AdditionalModels []Model
 }
 

@@ -27,7 +27,7 @@ func (o *parserOpts) RequestParseOpts() []request.ParseOpt {
 		opts = append(opts, request.ParseInlinePathParams())
 	}
 
-	if o.parseInlineQueryParams {
+	if o.parseInlineHeaders {
 		opts = append(opts, request.ParseInlineHeaders())
 	}
 

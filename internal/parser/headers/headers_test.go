@@ -50,7 +50,7 @@ func Test_NewInlineHeaders(t *testing.T) {
 			return true
 		}
 
-		got := NewInlineHeaders(decl, typesInfo)
+		got := NewInlineRequestHeaders(decl, typesInfo)
 		require.ElementsMatch(t, want, got)
 		return true
 	})
@@ -65,7 +65,7 @@ func Test_NewStructQueryParams(t *testing.T) {
 		Opt  *bool  `header:"opt"`
 	}
 
-	got, err := NewStructHeaders(reflect.TypeOf(Struct{}))
+	got, err := NewStructRequestHeaders(reflect.TypeOf(Struct{}))
 	require.NoError(t, err)
 
 	want := []Header{

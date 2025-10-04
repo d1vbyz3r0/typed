@@ -271,7 +271,7 @@ func AddHeaders(
 	if model != "" {
 		obj, ok := registry[model]
 		if ok {
-			typedParams, err := headers.NewStructHeaders(typing.DerefReflectPtr(reflect.TypeOf(obj)))
+			typedParams, err := headers.NewStructRequestHeaders(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
 				slog.Error("get header params from bind model", "error", err)
 			}

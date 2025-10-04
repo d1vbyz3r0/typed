@@ -20,6 +20,8 @@ import (
 // Also docstrings are supported to document your handlers
 func getUserJSON(c echo.Context) error {
 	id, _ := uuid.Parse(c.Param("id"))
+	c.Response().Header().Set("X-Custom-Header1", "1")
+	c.Response().Header().Add("X-Custom-Header2", "2")
 	return c.JSON(http.StatusOK, dto.User{
 		ID:     id,
 		Name:   "Alice",

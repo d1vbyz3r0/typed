@@ -16,9 +16,18 @@ func GetTypeName(t types.Type) (string, error) {
 
 func resolveTypeName(t types.Type) (string, error) {
 	switch t := t.(type) {
+	case *types.Interface:
+		return t.String(), nil
+
 	case *types.Named:
 		obj := t.Obj()
-		return obj.Pkg().Name() + "." + obj.Name(), nil
+		pkg := obj.Pkg()
+		pkgName := ""
+		if pkg != nil {
+			pkgName = pkg.Name() + "."
+		}
+
+		return pkgName + obj.Name(), nil
 
 	case *types.Pointer:
 		elem := t.Elem()

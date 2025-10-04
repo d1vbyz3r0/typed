@@ -23,7 +23,12 @@ func IsHttpHeaderMethod(call *ast.CallExpr, typesInfo *types.Info) bool {
 		return false
 	}
 
-	recvTypeName, err := meta.GetTypeName(typesInfo.TypeOf(sel.X))
+	typeInfo := typesInfo.TypeOf(sel.X)
+	if typeInfo == nil {
+		return false
+	}
+
+	recvTypeName, err := meta.GetTypeName(typeInfo)
 	if err != nil {
 		return false
 	}
@@ -31,7 +36,7 @@ func IsHttpHeaderMethod(call *ast.CallExpr, typesInfo *types.Info) bool {
 	return recvTypeName == "http.Header"
 }
 
-func NewInlineHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []Header {
+func NewInlineRequestHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []Header {
 	var headers []Header
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -111,7 +116,7 @@ func NewInlineHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []Header {
 	return headers
 }
 
-func NewStructHeaders(s reflect.Type) ([]Header, error) {
+func NewStructRequestHeaders(s reflect.Type) ([]Header, error) {
 	if s.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("expected struct, got %s", s.Kind())
 	}

@@ -86,7 +86,7 @@ func (m StatusCodeMapping) extractResponses(
 			ContentType: contentType,
 			TypeName:    typeName,
 			TypePkgPath: pkgPath,
-			Headers:     findHeaders(funcDecl, call.Pos(), typesInfo),
+			// Headers:     findHeaders(funcDecl, call.Pos(), typesInfo),
 		})
 
 		return true

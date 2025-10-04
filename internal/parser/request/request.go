@@ -82,6 +82,10 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 		}
 	}
 
+	if parseOpts.parseInlineHeaders {
+		r.Headers = headers.NewInlineRequestHeaders(funcDecl, info)
+	}
+
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {

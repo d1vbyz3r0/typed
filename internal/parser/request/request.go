@@ -14,15 +14,16 @@ import (
 	"reflect"
 )
 
-var echoBodyBindTags = []string{
+var bodyBindingTags = []string{
 	"json",
 	"xml",
 	"form",
 }
 
-var echoParamsBindTags = []string{
+var paramBindingTags = []string{
 	"param",
 	"query",
+	"header",
 }
 
 type ContentTypeMapping map[string]Body
@@ -122,12 +123,7 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 		r.BindModel = typeName
 		r.BindModelPkg = pkgPath
 
-		if !binding.HasTags(s, echoBodyBindTags) && !binding.HasTags(s, echoParamsBindTags) {
-			// If no tags provided, echo will try to bind xml + json: https://echo.labstack.com/docs/binding
-			r.ContentTypeMapping[echo.MIMEApplicationJSON] = Body{}
-			r.ContentTypeMapping[echo.MIMEApplicationXML] = Body{}
-			return true
-		}
+		hasUntagged := binding.HasAtLeastOneFieldWithoutBindingTag(s, bodyBindingTags, paramBindingTags)
 
 		if binding.HasTag(s, "form") {
 			if !binding.HasFiles(s) {
@@ -136,11 +132,11 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 			r.ContentTypeMapping[echo.MIMEMultipartForm] = Body{}
 		}
 
-		if binding.HasTag(s, "json") {
+		if binding.HasTag(s, "json") || hasUntagged {
 			r.ContentTypeMapping[echo.MIMEApplicationJSON] = Body{}
 		}
 
-		if binding.HasTag(s, "xml") {
+		if binding.HasTag(s, "xml") || hasUntagged {
 			r.ContentTypeMapping[echo.MIMEApplicationXML] = Body{}
 		}
 

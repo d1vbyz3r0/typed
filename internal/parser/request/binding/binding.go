@@ -36,6 +36,46 @@ func HasTags(s *types.Struct, tags []string) bool {
 	return false
 }
 
+func HasAtLeastOneFieldWithoutBindingTag(s *types.Struct, tags []string, skip []string) bool {
+	requiredSet := make(map[string]struct{}, len(tags))
+	for _, n := range tags {
+		requiredSet[n] = struct{}{}
+	}
+
+	skipSet := make(map[string]struct{}, len(skip))
+	for _, n := range skip {
+		skipSet[n] = struct{}{}
+	}
+
+	for i := 0; i < s.NumFields(); i++ {
+		f := s.Field(i)
+		if !f.Exported() {
+			continue
+		}
+
+		tag := reflect.StructTag(s.Tag(i))
+		if hasAnyOf(tag, skipSet) {
+			continue
+		}
+
+		if !hasAnyOf(tag, requiredSet) {
+			return true
+		}
+	}
+
+	return false
+
+}
+
+func hasAnyOf(st reflect.StructTag, names map[string]struct{}) bool {
+	for name := range names {
+		if _, ok := st.Lookup(name); ok {
+			return true
+		}
+	}
+	return false
+}
+
 func HasFiles(s *types.Struct) bool {
 	const (
 		mimePkgPath = "mime/multipart"

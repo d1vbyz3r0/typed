@@ -17,13 +17,13 @@ import (
 var UsedTypes = map[string]any{
 	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.Status":          new(dto.Status),
-	"string":              new(string),
-	"echo.Map":            new(echo.Map),
+	"server.FormsHandler": new(server.FormsHandler),
 	"server.Server":       new(server.Server),
 	"dto.Form":            new(dto.Form),
 	"dto.User":            new(dto.User),
+	"string":              new(string),
+	"echo.Map":            new(echo.Map),
 	"server.Builder":      new(server.Builder),
-	"server.FormsHandler": new(server.FormsHandler),
 }
 
 var Enums = map[string][]any{

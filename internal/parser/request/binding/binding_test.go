@@ -30,6 +30,16 @@ func TestHasTags(t *testing.T) {
 	field1 := types.NewVar(token.NoPos, nil, "A", types.Typ[types.String])
 	field2 := types.NewVar(token.NoPos, nil, "B", types.Typ[types.Int])
 
+	t.Run("single form tag", func(t *testing.T) {
+		s := types.NewStruct([]*types.Var{field1}, []string{`form:"name"`})
+		assert.True(t, HasTags(s, []string{"form"}))
+	})
+
+	t.Run("known tag with unknown tag", func(t *testing.T) {
+		s := types.NewStruct([]*types.Var{field1, field2}, []string{`form:"name"`, `test:"qwe"`})
+		assert.True(t, HasTags(s, []string{"form"}))
+	})
+
 	t.Run("all fields contain at least one of the tags", func(t *testing.T) {
 		s := types.NewStruct(
 			[]*types.Var{field1, field2},
@@ -43,7 +53,7 @@ func TestHasTags(t *testing.T) {
 			[]*types.Var{field1, field2},
 			[]string{`form:"x"`, `json:"z"`}, // second field has neither form nor query
 		)
-		assert.False(t, HasTags(s, []string{"form", "query"}))
+		assert.True(t, HasTags(s, []string{"form", "query"}))
 	})
 
 	t.Run("tags are present but dash", func(t *testing.T) {

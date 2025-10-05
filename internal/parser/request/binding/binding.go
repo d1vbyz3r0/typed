@@ -28,12 +28,12 @@ func HasTags(s *types.Struct, tags []string) bool {
 			return tagVal != "" && tagVal != "-"
 		})
 
-		if !contains {
-			return false
+		if contains {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 func HasFiles(s *types.Struct) bool {

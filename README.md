@@ -502,8 +502,6 @@ If you encounter any issues or have questions:
 
 
 ## 🔮 Roadmap
-- [ ] Add support for form and xml tags
 - [ ] Write doc for configuration
 - [ ] Enhanced comment parsing for OpenAPI descriptions
-- [ ] Headers support
 - [ ] Add more std hooks 

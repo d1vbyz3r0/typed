@@ -24,12 +24,11 @@ func TestProcessStruct(t *testing.T) {
 	}
 
 	schema := openapi3.NewObjectSchema()
-	schema.Required = []string{"req", "omit"} // Изначально required both
+	schema.Required = []string{"req", "omit"}
 
 	err := processStruct("TestStruct", reflect.TypeOf(TestStruct{}), reflect.StructTag(""), schema)
 	assert.NoError(t, err)
 
-	// Required: added RequiredField, removed OmitField
 	assert.Contains(t, schema.Required, "req")
 	assert.NotContains(t, schema.Required, "omit")
 	assert.NotContains(t, schema.Required, "normal")
@@ -52,7 +51,7 @@ func TestProcessStruct_Complex(t *testing.T) {
 	err := processStruct("TestStruct", reflect.TypeOf(TestStruct{}), reflect.StructTag(""), schema)
 	assert.NoError(t, err)
 
-	assert.Empty(t, schema.Required) // No top-level required
+	assert.Empty(t, schema.Required)
 }
 
 func TestProcessStruct_NoChanges(t *testing.T) {

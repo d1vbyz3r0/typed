@@ -476,8 +476,7 @@ var Formats = map[string]TagFn{
 		if ctx.Type.ConvertibleTo(floatType) {
 			ctx.Required = true
 			ctx.Not = append(ctx.Not, 0)
-		} else if ctx.Type.Kind() == reflect.Slice ||
-			ctx.Type.Kind() == reflect.Map {
+		} else if ctx.Type.Kind() == reflect.Slice || ctx.Type.Kind() == reflect.Map {
 			ctx.Required = true
 			ctx.Nullable = false
 		}

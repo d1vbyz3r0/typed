@@ -299,14 +299,6 @@ paths:
           description: ""
       tags:
         - Nocontent
-  /api/v1/sse:
-    get:
-      operationId: sse
-      responses:
-        default:
-          description: ""
-      tags:
-        - Sse
   /api/v1/xml/:
     get:
       operationId: getUserXML

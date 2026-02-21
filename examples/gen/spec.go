@@ -15,12 +15,12 @@ import (
 )
 
 var UsedTypes = map[string]any{
-	"dto.FormUploadResp":  new(dto.FormUploadResp),
-	"dto.Status":          new(dto.Status),
-	"server.FormsHandler": new(server.FormsHandler),
 	"server.Server":       new(server.Server),
-	"dto.Form":            new(dto.Form),
+	"dto.FormUploadResp":  new(dto.FormUploadResp),
 	"dto.User":            new(dto.User),
+	"server.FormsHandler": new(server.FormsHandler),
+	"dto.Form":            new(dto.Form),
+	"dto.Status":          new(dto.Status),
 	"string":              new(string),
 	"echo.Map":            new(echo.Map),
 	"server.Builder":      new(server.Builder),
@@ -77,6 +77,7 @@ func Generate(opts GenerateOpts) error {
 		typed.AddPathParams(operation, handler, opts.Generator, UsedTypes)
 		typed.AddQueryParams(operation, handler, opts.Generator, UsedTypes)
 		typed.AddRequestBody(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
+		typed.AddHeaders(operation, handler, opts.Generator, UsedTypes)
 		typed.AddResponses(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
 		typed.AddOperationId(operation, handler)
 		if opts.UseTags {

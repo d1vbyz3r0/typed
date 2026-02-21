@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type SpecFormat string
@@ -18,7 +19,7 @@ const (
 )
 
 func getSpecFormat(path string) SpecFormat {
-	ext := filepath.Ext(path)
+	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".yaml", ".yml":
 		return YamlFormat

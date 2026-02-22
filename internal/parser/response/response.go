@@ -25,7 +25,9 @@ type Response struct {
 	TypeName string
 	// TypePkgPath is a full pkg path for type. Field is empty for responses with empty body
 	TypePkgPath string
-	Headers     []headers.Header
+	// TypeArgPkgPaths contains package paths used by type arguments (excluding TypePkgPath).
+	TypeArgPkgPaths []string
+	Headers         []headers.Header
 }
 
 // NewStatusCodeMapping builds StatusCodeMapping from provided handler function declaration
@@ -82,14 +84,21 @@ func (m StatusCodeMapping) extractResponses(
 			return true
 		}
 
+		typeArgPkgPaths, err := resp.TypeArgPkgPaths(pkgPath)
+		if err != nil {
+			slog.Error("failed to get type arg package paths", "error", err)
+			return true
+		}
+
 		respHeaders := findHeaders(funcDecl, call.Pos(), typesInfo)
 		slog.Debug("extracted response headers", "headers", respHeaders)
 
 		m[statusCode] = append(m[statusCode], Response{
-			ContentType: contentType,
-			TypeName:    typeName,
-			TypePkgPath: pkgPath,
-			Headers:     respHeaders,
+			ContentType:     contentType,
+			TypeName:        typeName,
+			TypePkgPath:     pkgPath,
+			TypeArgPkgPaths: typeArgPkgPaths,
+			Headers:         respHeaders,
 		})
 
 		return true

@@ -210,3 +210,30 @@ func (t ContextResponseType) TypePkgPath() (string, error) {
 
 	return path, nil
 }
+
+func (t ContextResponseType) TypeArgPkgPaths(primaryPkgPath string) ([]string, error) {
+	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
+		return nil, nil
+	}
+
+	argType := t.types.TypeOf(t.call.Args[1])
+	all := meta.GetPkgPaths(argType)
+	if len(all) == 0 {
+		return nil, nil
+	}
+
+	result := make([]string, 0, len(all))
+	for _, p := range all {
+		if p == "" || p == primaryPkgPath {
+			continue
+		}
+
+		result = append(result, p)
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return result, nil
+}

@@ -39,6 +39,8 @@ type Request struct {
 	BindModel string
 	// Full path to BindModel package
 	BindModelPkg string
+	// BindModelTypeArgPkgs contains package paths used by bind model type arguments (excluding BindModelPkg).
+	BindModelTypeArgPkgs []string
 	// ContentTypeMapping contains mapping of content-type to request body
 	ContentTypeMapping ContentTypeMapping
 	PathParams         []path.Param
@@ -129,6 +131,21 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 
 		r.BindModel = typeName
 		r.BindModelPkg = pkgPath
+		allPkgPaths := meta.GetPkgPaths(argType)
+		if len(allPkgPaths) > 0 {
+			extra := make([]string, 0, len(allPkgPaths))
+			for _, p := range allPkgPaths {
+				if p == "" || p == pkgPath {
+					continue
+				}
+
+				extra = append(extra, p)
+			}
+
+			if len(extra) > 0 {
+				r.BindModelTypeArgPkgs = extra
+			}
+		}
 
 		hasUntagged := binding.HasAtLeastOneFieldWithoutBindingTag(s, bodyBindingTags, paramBindingTags)
 

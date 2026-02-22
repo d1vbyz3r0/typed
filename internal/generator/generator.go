@@ -134,6 +134,9 @@ func (g *Generator) Generate() error {
 						mtx.Lock()
 						types[h.Request.BindModel] = struct{}{}
 						imports[h.Request.BindModelPkg] = struct{}{}
+						for _, imp := range h.Request.BindModelTypeArgPkgs {
+							imports[imp] = struct{}{}
+						}
 						mtx.Unlock()
 					}
 				}
@@ -146,11 +149,15 @@ func (g *Generator) Generate() error {
 							mtx.Unlock()
 						}
 
+						mtx.Lock()
 						if resp.TypePkgPath != "" {
-							mtx.Lock()
 							imports[resp.TypePkgPath] = struct{}{}
-							mtx.Unlock()
 						}
+
+						for _, imp := range resp.TypeArgPkgPaths {
+							imports[imp] = struct{}{}
+						}
+						mtx.Unlock()
 					}
 				}
 			}

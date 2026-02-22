@@ -3,6 +3,7 @@ package meta
 import (
 	"github.com/stretchr/testify/require"
 	"go/types"
+	"reflect"
 	"testing"
 )
 
@@ -110,4 +111,55 @@ func TestGetPkgPath(t *testing.T) {
 			require.Equal(t, tc.Pkg, p)
 		})
 	}
+}
+
+func TestGetTypeName_InstantiatedGeneric(t *testing.T) {
+	constraint := types.NewInterfaceType(nil, nil)
+	constraint.Complete()
+
+	pkgDTO := types.NewPackage("example.com/dto", "dto")
+	pkgShared := types.NewPackage("example.com/shared", "shared")
+
+	sharedUser := types.NewNamed(types.NewTypeName(0, pkgShared, "User", nil), nil, nil)
+
+	page := types.NewNamed(
+		types.NewTypeName(0, pkgDTO, "Page", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	page.SetTypeParams([]*types.TypeParam{
+		types.NewTypeParam(types.NewTypeName(0, nil, "T", nil), constraint),
+	})
+
+	inst, err := types.Instantiate(nil, page, []types.Type{sharedUser}, false)
+	require.NoError(t, err)
+
+	got, err := GetTypeName(inst)
+	require.NoError(t, err)
+	require.Equal(t, "dto.Page[shared.User]", got)
+}
+
+func TestGetPkgPaths(t *testing.T) {
+	constraint := types.NewInterfaceType(nil, nil)
+	constraint.Complete()
+
+	pkgDTO := types.NewPackage("example.com/dto", "dto")
+	pkgShared := types.NewPackage("example.com/shared", "shared")
+
+	sharedUser := types.NewNamed(types.NewTypeName(0, pkgShared, "User", nil), nil, nil)
+
+	page := types.NewNamed(
+		types.NewTypeName(0, pkgDTO, "Page", nil),
+		types.NewStruct(nil, nil),
+		nil,
+	)
+	page.SetTypeParams([]*types.TypeParam{
+		types.NewTypeParam(types.NewTypeName(0, nil, "T", nil), constraint),
+	})
+
+	inst, err := types.Instantiate(nil, page, []types.Type{sharedUser}, false)
+	require.NoError(t, err)
+
+	got := GetPkgPaths(types.NewMap(types.Typ[types.String], inst))
+	require.True(t, reflect.DeepEqual([]string{"example.com/dto", "example.com/shared"}, got), "unexpected pkg paths: %#v", got)
 }

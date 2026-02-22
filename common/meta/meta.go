@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/types"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -28,7 +29,13 @@ func resolveTypeName(t types.Type) (string, error) {
 			pkgName = pkg.Name() + "."
 		}
 
-		return pkgName + obj.Name(), nil
+		name := pkgName + obj.Name()
+		withArgs, err := appendTypeArgs(name, getTypeArgs(t))
+		if err != nil {
+			return "", fmt.Errorf("append type args for named type: %w", err)
+		}
+
+		return withArgs, nil
 
 	case *types.Pointer:
 		elem := t.Elem()
@@ -56,7 +63,13 @@ func resolveTypeName(t types.Type) (string, error) {
 			pkgName = pkg.Name() + "."
 		}
 
-		return pkgName + obj.Name(), nil
+		name := pkgName + obj.Name()
+		withArgs, err := appendTypeArgs(name, getTypeArgs(t))
+		if err != nil {
+			return "", fmt.Errorf("append type args for alias type: %w", err)
+		}
+
+		return withArgs, nil
 
 	case *types.Map:
 		k, err := resolveTypeName(t.Key())
@@ -80,6 +93,37 @@ func resolveTypeName(t types.Type) (string, error) {
 	}
 }
 
+func appendTypeArgs(base string, args *types.TypeList) (string, error) {
+	if args == nil || args.Len() == 0 {
+		return base, nil
+	}
+
+	values := make([]string, 0, args.Len())
+	for i := 0; i < args.Len(); i++ {
+		v, err := resolveTypeName(args.At(i))
+		if err != nil {
+			return "", fmt.Errorf("resolve type arg: %w", err)
+		}
+
+		values = append(values, v)
+	}
+
+	return fmt.Sprintf("%s[%s]", base, strings.Join(values, ", ")), nil
+}
+
+func getTypeArgs(t types.Type) *types.TypeList {
+	type argsProvider interface {
+		TypeArgs() *types.TypeList
+	}
+
+	v, ok := t.(argsProvider)
+	if !ok {
+		return nil
+	}
+
+	return v.TypeArgs()
+}
+
 // GetPkgPath returns full package path for type. Underlying type should be types.Named
 func GetPkgPath(t types.Type) (string, error) {
 	switch t := t.(type) {
@@ -93,6 +137,61 @@ func GetPkgPath(t types.Type) (string, error) {
 
 	default:
 		return "", fmt.Errorf("unsupported type: %T", t)
+	}
+}
+
+// GetPkgPaths returns unique package paths used by a type expression.
+// It includes package paths from named types and all instantiated type arguments.
+func GetPkgPaths(t types.Type) []string {
+	if t == nil {
+		return nil
+	}
+
+	result := make(map[string]struct{})
+	visitPkgPaths(t, result)
+	if len(result) == 0 {
+		return nil
+	}
+
+	paths := make([]string, 0, len(result))
+	for p := range result {
+		paths = append(paths, p)
+	}
+
+	sort.Strings(paths)
+	return paths
+}
+
+func visitPkgPaths(t types.Type, result map[string]struct{}) {
+	t = types.Unalias(t)
+	switch v := t.(type) {
+	case *types.Named:
+		obj := v.Obj()
+		if obj != nil && obj.Pkg() != nil {
+			result[obj.Pkg().Path()] = struct{}{}
+		}
+
+		if args := v.TypeArgs(); args != nil {
+			for i := 0; i < args.Len(); i++ {
+				visitPkgPaths(args.At(i), result)
+			}
+		}
+
+	case *types.Pointer:
+		visitPkgPaths(v.Elem(), result)
+
+	case *types.Slice:
+		visitPkgPaths(v.Elem(), result)
+
+	case *types.Array:
+		visitPkgPaths(v.Elem(), result)
+
+	case *types.Map:
+		visitPkgPaths(v.Key(), result)
+		visitPkgPaths(v.Elem(), result)
+
+	case *types.Chan:
+		visitPkgPaths(v.Elem(), result)
 	}
 }
 

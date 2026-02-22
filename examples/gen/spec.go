@@ -16,20 +16,20 @@ import (
 
 var UsedTypes = map[string]any{
 	"dto.ErrorResponse":              new(dto.ErrorResponse),
-	"echo.Map":                       new(echo.Map),
-	"dto.CreateValidatedUserRequest": new(dto.CreateValidatedUserRequest),
+	"dto.FormUploadResp":             new(dto.FormUploadResp),
 	"dto.SearchUsersRequest":         new(dto.SearchUsersRequest),
+	"dto.UserContact":                new(dto.UserContact),
+	"dto.BulkCreateUsersRequest":     new(dto.BulkCreateUsersRequest),
+	"string":                         new(string),
+	"dto.CreateValidatedUserRequest": new(dto.CreateValidatedUserRequest),
+	"dto.Form":                       new(dto.Form),
 	"dto.User":                       new(dto.User),
 	"dto.UserAddress":                new(dto.UserAddress),
-	"dto.BulkCreateUsersRequest":     new(dto.BulkCreateUsersRequest),
+	"echo.Map":                       new(echo.Map),
 	"dto.BulkCreateUsersResponse":    new(dto.BulkCreateUsersResponse),
-	"dto.FormUploadResp":             new(dto.FormUploadResp),
 	"dto.Status":                     new(dto.Status),
 	"dto.UpdateUserStatusRequest":    new(dto.UpdateUserStatusRequest),
-	"string":                         new(string),
 	"[]dto.User":                     new([]dto.User),
-	"dto.Form":                       new(dto.Form),
-	"dto.UserContact":                new(dto.UserContact),
 }
 
 var Enums = map[string][]any{

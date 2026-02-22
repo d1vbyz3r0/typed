@@ -410,3 +410,38 @@ func TestNewRequest_InlineFormWithFiles(t *testing.T) {
 		return false
 	})
 }
+
+func TestNewRequest_GenericBindModel(t *testing.T) {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
+	pkgs, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
+	}, "../../../testdata/request/generic")
+	require.NoError(t, err)
+
+	want := &Request{
+		BindModel:    "generic.Page[shared.User]",
+		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/generic",
+		BindModelTypeArgPkgs: []string{
+			"github.com/d1vbyz3r0/typed/testdata/request/generic/shared",
+		},
+		ContentTypeMapping: ContentTypeMapping{
+			echo.MIMEApplicationJSON: Body{},
+		},
+		PathParams:  nil,
+		QueryParams: nil,
+	}
+
+	pkg := pkgs[0]
+	file := pkg.Syntax[0]
+	ast.Inspect(file, func(n ast.Node) bool {
+		decl, ok := n.(*ast.FuncDecl)
+		if !ok {
+			return true
+		}
+
+		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
+		require.Equal(t, want, req)
+		return false
+	})
+}

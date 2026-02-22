@@ -331,3 +331,41 @@ func Handler(c *Ctx) error {
 		})
 	}
 }
+
+func TestStatusCodeMapping_GenericResponseType(t *testing.T) {
+	cr, err := codes.NewResolver()
+	require.NoError(t, err)
+
+	mr, err := mime.NewResolver()
+	require.NoError(t, err)
+
+	pkgs, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
+	}, "../../../testdata/handlers/")
+	require.NoError(t, err)
+
+	pkg := pkgs[0]
+	for _, file := range pkg.Syntax {
+		ast.Inspect(file, func(n ast.Node) bool {
+			funcDecl, ok := n.(*ast.FuncDecl)
+			if !ok {
+				return true
+			}
+
+			if funcDecl.Name.Name != "GenericHandler" {
+				return true
+			}
+
+			mapping := NewStatusCodeMapping(funcDecl, cr, mr, pkg.TypesInfo)
+			require.Contains(t, mapping, http.StatusOK)
+			require.Len(t, mapping[http.StatusOK], 1)
+
+			got := mapping[http.StatusOK][0]
+			require.Equal(t, "application/json", got.ContentType)
+			require.Equal(t, "handlers.Page[shared.Item]", got.TypeName)
+			require.Equal(t, "github.com/d1vbyz3r0/typed/testdata/handlers", got.TypePkgPath)
+			require.Equal(t, []string{"github.com/d1vbyz3r0/typed/testdata/handlers/shared"}, got.TypeArgPkgPaths)
+			return false
+		})
+	}
+}

@@ -1505,6 +1505,7 @@ func TestNewFieldContext(t *testing.T) {
 				Type:            reflect.TypeOf(float64(0)),
 				Required:        true,
 				Nullable:        false,
+				Not:             []any{0},
 				validationRules: []string{"required"},
 			},
 			wantErr: false,

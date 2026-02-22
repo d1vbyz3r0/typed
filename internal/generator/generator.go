@@ -14,8 +14,8 @@ import (
 
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/internal/parser"
-	"golang.org/x/exp/maps"
 	"golang.org/x/tools/go/packages"
+	"maps"
 
 	_ "embed"
 )
@@ -178,7 +178,7 @@ func (g *Generator) Generate() error {
 
 	err = tmpl.Execute(result, TemplateArgs{
 		ApiPrefix:              g.cfg.Input.ApiPrefix,
-		Types:                  maps.Keys(types),
+		Types:                  slices.Collect(maps.Keys(types)),
 		Imports:                validImports,
 		Enums:                  enums,
 		Title:                  g.cfg.Input.Title,

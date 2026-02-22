@@ -10,12 +10,13 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"golang.org/x/exp/maps"
 	"golang.org/x/tools/go/packages"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -318,5 +319,5 @@ func TestParserAllModels(t *testing.T) {
 		unique[m] = struct{}{}
 	}
 
-	require.ElementsMatch(t, want.AdditionalModels, maps.Keys(unique))
+	require.ElementsMatch(t, want.AdditionalModels, slices.Collect(maps.Keys(unique)))
 }

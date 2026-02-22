@@ -475,6 +475,10 @@ var Formats = map[string]TagFn{
 
 	"required": func(ctx *FieldContext) {
 		ctx.Required = true
+		if ctx.Type.ConvertibleTo(floatType) {
+			ctx.Not = append(ctx.Not, 0)
+		}
+
 		if ctx.Type.Kind() == reflect.Slice || ctx.Type.Kind() == reflect.Map || ctx.Type.Kind() == reflect.Pointer {
 			ctx.Nullable = false
 		}

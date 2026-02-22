@@ -157,6 +157,26 @@ func IsConstOrGlobal(obj types.Object) bool {
 	}
 }
 
+// HasTypeParams returns true if t declares type parameters (generic declaration).
+func HasTypeParams(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+
+	// Keep this via interface assertion to support both *types.Named and *types.Alias.
+	type typeParamsProvider interface {
+		TypeParams() *types.TypeParamList
+	}
+
+	v, ok := t.(typeParamsProvider)
+	if !ok {
+		return false
+	}
+
+	params := v.TypeParams()
+	return params != nil && params.Len() > 0
+}
+
 // DerefReflectPtr returns t, if it's kind is not reflect.Ptr, otherwise recursively gets t.Elem(), while it's pointer
 func DerefReflectPtr(t reflect.Type) reflect.Type {
 	for t.Kind() == reflect.Ptr {

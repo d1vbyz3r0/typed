@@ -319,5 +319,14 @@ func TestParserAllModels(t *testing.T) {
 		unique[m] = struct{}{}
 	}
 
-	require.ElementsMatch(t, want.AdditionalModels, slices.Collect(maps.Keys(unique)))
+	got := slices.Collect(maps.Keys(unique))
+	require.ElementsMatch(t, want.AdditionalModels, got)
+	require.NotContains(t, got, Model{
+		Name:    "allmodels.Page",
+		PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+	})
+	require.NotContains(t, got, Model{
+		Name:    "allmodels.KV",
+		PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
+	})
 }

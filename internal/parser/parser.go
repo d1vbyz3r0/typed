@@ -205,6 +205,11 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 					continue
 				}
 
+				if typing.HasTypeParams(obj.Type()) {
+					slog.Debug("skipping generic declaration", "pkg", pkg.PkgPath, "name", name)
+					continue
+				}
+
 				if typing.IsInterface(obj.Type()) {
 					slog.Debug("skipping interface object", "pkg", pkg.PkgPath, "name", name)
 					continue

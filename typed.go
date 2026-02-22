@@ -168,13 +168,6 @@ func AddRequestBody(
 				continue
 			}
 
-			// typeName := TypeNameGenerator(reflect.TypeOf(obj))
-			// err = OverrideFieldNames(ref, schemas, typeName, contentType)
-			// if err != nil {
-			//	slog.Error("override field names", "error", err)
-			//	continue
-			// }
-
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
 			slog.Debug("request contains empty bind model", "handler", h.HandlerName())
@@ -220,13 +213,6 @@ func AddResponses(
 					slog.Error("generate ref for value", "type", resp.TypeName, "error", err)
 					continue
 				}
-
-				// typeName := TypeNameGenerator(reflect.TypeOf(val))
-				// err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
-				// if err != nil {
-				//	slog.Error("override field names", "error", err)
-				//	continue
-				// }
 
 				mediaType = mediaType.WithSchemaRef(ref)
 				mergedHeaders = append(mergedHeaders, resp.Headers...)

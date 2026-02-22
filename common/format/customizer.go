@@ -52,6 +52,11 @@ func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 		if err != nil {
 			return fmt.Errorf("process struct: %w", err)
 		}
+
+		// Field-level validator tags are represented on the parent property schema
+		// (required, min/max, etc.). Applying them directly to struct schema causes
+		// noisy "unsupported type" warnings (e.g. min on dto.StructType).
+		return nil
 	}
 
 	ctx := NewFieldContext(t, tag)

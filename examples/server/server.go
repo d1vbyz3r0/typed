@@ -44,6 +44,13 @@ func (s *Server) mapRoutes() {
 	h := FormsHandler{}
 	forms.POST("/inline", h.inlineForm)
 	forms.POST("/struct/:pathParam", h.structForm)
+
+	validation := api.Group("/validation")
+	vh := ValidationHandler{}
+	validation.POST("/users", vh.createUser)
+	validation.POST("/users/bulk", vh.bulkCreate)
+	validation.PATCH("/users/:id/status", vh.updateStatus)
+	validation.GET("/users", vh.search)
 }
 
 func (s *Server) Start(addr string) error {

@@ -1,6 +1,7 @@
 package typed
 
 import (
+	"github.com/d1vbyz3r0/typed/common/format"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 	"reflect"
@@ -11,6 +12,7 @@ var customizers = []openapi3gen.SchemaCustomizerFn{
 	uuidCustomizer,
 	excludeNonBodyFieldsFromGeneration,
 	makeFieldsRequired,
+	format.Customizer,
 }
 
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
@@ -118,6 +120,7 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 }
 
 func getFieldNameByTag(field reflect.StructField) string {
+	// TODO: strip omitempty and omitnil
 	if v := field.Tag.Get("json"); v != "" && v != "-" {
 		return v
 	}

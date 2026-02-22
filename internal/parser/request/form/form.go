@@ -2,20 +2,22 @@ package form
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 )
 
 var multipartType = reflect.TypeOf(new(multipart.FileHeader))
 
 // NewInlineForm builds reflect.Struct from inline form usages and reports if form contains files and any fields found
 func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, found bool) {
+	// TODO: implement deduplication for field names
 	fields := make([]reflect.StructField, 0)
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)

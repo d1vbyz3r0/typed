@@ -15,6 +15,7 @@ type Header struct {
 	Name     string
 	Type     reflect.Type
 	Required bool // TODO: determine if required or not
+	Tag      reflect.StructTag
 }
 
 func IsHttpHeaderMethod(call *ast.CallExpr, typesInfo *types.Info) bool {
@@ -133,6 +134,7 @@ func NewStructRequestHeaders(s reflect.Type) ([]Header, error) {
 			Name:     tag,
 			Type:     field.Type,
 			Required: field.Type.Kind() != reflect.Ptr,
+			Tag:      field.Tag,
 		})
 
 		slog.Debug(

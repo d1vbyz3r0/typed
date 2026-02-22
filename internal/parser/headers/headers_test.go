@@ -73,16 +73,19 @@ func Test_NewStructQueryParams(t *testing.T) {
 			Name:     "name",
 			Type:     reflect.TypeOf(""),
 			Required: true,
+			Tag:      reflect.StructTag(`header:"name"`),
 		},
 		{
 			Name:     "age",
 			Type:     reflect.TypeOf(int(0)),
 			Required: true,
+			Tag:      reflect.StructTag(`header:"age"`),
 		},
 		{
 			Name:     "opt",
 			Type:     reflect.TypeOf(new(bool)),
 			Required: false,
+			Tag:      reflect.StructTag(`header:"opt"`),
 		},
 	}
 

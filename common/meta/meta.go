@@ -140,6 +140,7 @@ func GetPkgName(pkgPath string) string {
 }
 
 func IsSubPkg(parent string, child string) bool {
+	// TODO: filtering on last segment can cause wrong package matching
 	return GetPkgName(parent) == GetPkgName(child)
 }
 

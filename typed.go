@@ -2,6 +2,7 @@ package typed
 
 import (
 	"fmt"
+	"github.com/d1vbyz3r0/typed/common/format"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/handlers"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
@@ -14,6 +15,22 @@ import (
 	"reflect"
 	"strings"
 )
+
+func applyParamValidationSchema(t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) {
+	if schema == nil {
+		return
+	}
+
+	// Reuse validator tag mapping for non-body params without running body-oriented
+	// customizers that intentionally exclude query/header/path fields from schemas.
+	if err := format.Customizer("", t, tag, schema); err != nil {
+		slog.Warn("apply validator constraints to parameter schema", "error", err)
+	}
+
+	if err := uuidCustomizer("", t, tag, schema); err != nil {
+		slog.Warn("apply uuid customizer to parameter schema", "error", err)
+	}
+}
 
 func AddPathParams(
 	op *openapi3.Operation,
@@ -45,6 +62,7 @@ func AddPathParams(
 				param.Schema = &openapi3.SchemaRef{
 					Value: schema.Value,
 				}
+				applyParamValidationSchema(p.Type, p.Tag, param.Schema.Value)
 				params[p.Name] = p
 				op.AddParameter(param)
 			}
@@ -70,6 +88,7 @@ func AddPathParams(
 		param.Schema = &openapi3.SchemaRef{
 			Value: schema.Value,
 		}
+		applyParamValidationSchema(p.Type, p.Tag, param.Schema.Value)
 		op.AddParameter(param)
 	}
 }
@@ -104,6 +123,7 @@ func AddQueryParams(
 				param.Schema = &openapi3.SchemaRef{
 					Value: schema.Value,
 				}
+				applyParamValidationSchema(p.Type, p.Tag, param.Schema.Value)
 				params[p.Name] = p
 				op.AddParameter(param)
 			}
@@ -130,6 +150,7 @@ func AddQueryParams(
 		param.Schema = &openapi3.SchemaRef{
 			Value: schema.Value,
 		}
+		applyParamValidationSchema(p.Type, p.Tag, param.Schema.Value)
 		op.AddParameter(param)
 	}
 }
@@ -200,6 +221,7 @@ func AddResponses(
 		mergedHeaders := make([]headers.Header, 0, len(responses))
 
 		for _, resp := range responses {
+			mergedHeaders = append(mergedHeaders, resp.Headers...)
 			mediaType := openapi3.NewMediaType()
 			if resp.TypeName != "" {
 				val, ok := registry[resp.TypeName]
@@ -215,7 +237,6 @@ func AddResponses(
 				}
 
 				mediaType = mediaType.WithSchemaRef(ref)
-				mergedHeaders = append(mergedHeaders, resp.Headers...)
 			}
 
 			if resp.ContentType != "" {
@@ -281,6 +302,7 @@ func AddHeaders(
 				param.Schema = &openapi3.SchemaRef{
 					Value: schema.Value,
 				}
+				applyParamValidationSchema(p.Type, p.Tag, param.Schema.Value)
 				params[p.Name] = struct{}{}
 				op.AddParameter(param)
 			}
@@ -305,6 +327,7 @@ func AddHeaders(
 		param.Schema = &openapi3.SchemaRef{
 			Value: schema.Value,
 		}
+		applyParamValidationSchema(header.Type, header.Tag, param.Schema.Value)
 		op.AddParameter(param)
 	}
 }

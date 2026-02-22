@@ -13,6 +13,7 @@ import (
 type Param struct {
 	Name string
 	Type reflect.Type
+	Tag  reflect.StructTag
 }
 
 func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
@@ -106,6 +107,7 @@ func NewStructPathParams(s reflect.Type) ([]Param, error) {
 		params = append(params, Param{
 			Name: tag,
 			Type: field.Type,
+			Tag:  field.Tag,
 		})
 
 		slog.Debug(

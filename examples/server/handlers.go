@@ -198,3 +198,111 @@ func (h FormsHandler) structForm(c echo.Context) error {
 		"file_array_len": len(req.FileArray),
 	})
 }
+
+type ValidationHandler struct{}
+
+// createUser demonstrates request body validation tags for nested structs, arrays and maps.
+func (h ValidationHandler) createUser(c echo.Context) error {
+	var req dto.CreateValidatedUserRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Message: "bad request",
+			Details: map[string]string{
+				"bind": err.Error(),
+			},
+		})
+	}
+
+	created := dto.User{
+		ID:     uuid.New(),
+		Name:   req.Name,
+		Age:    req.Age,
+		Status: dto.StatusActive,
+	}
+
+	return c.JSON(http.StatusCreated, created)
+}
+
+// bulkCreate demonstrates dive validation for arrays of nested DTOs and UUID format tag.
+func (h ValidationHandler) bulkCreate(c echo.Context) error {
+	var req dto.BulkCreateUsersRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Message: "bad request",
+			Details: map[string]string{
+				"bind": err.Error(),
+			},
+		})
+	}
+
+	ids := make([]uuid.UUID, len(req.Users))
+	for i := range req.Users {
+		ids[i] = uuid.New()
+	}
+
+	return c.JSON(http.StatusCreated, dto.BulkCreateUsersResponse{
+		RequestID: req.RequestID,
+		Created:   len(req.Users),
+		UserIDs:   ids,
+	})
+}
+
+// updateStatus demonstrates path+body model extraction with optional fields.
+func (h ValidationHandler) updateStatus(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Message: "invalid id",
+		})
+	}
+
+	var req dto.UpdateUserStatusRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Message: "bad request",
+			Details: map[string]string{
+				"bind": err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, dto.User{
+		ID:     id,
+		Name:   "Updated User",
+		Age:    30,
+		Status: req.Status,
+	})
+}
+
+// search demonstrates query DTO parsing with validation tags.
+func (h ValidationHandler) search(c echo.Context) error {
+	var req dto.SearchUsersRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Message: "bad request",
+			Details: map[string]string{
+				"bind": err.Error(),
+			},
+		})
+	}
+
+	users := []dto.User{
+		{
+			ID:     uuid.New(),
+			Name:   "Alice",
+			Age:    30,
+			Status: dto.StatusActive,
+		},
+	}
+
+	if req.IncludeInactive {
+		users = append(users, dto.User{
+			ID:     uuid.New(),
+			Name:   "Bob",
+			Age:    25,
+			Status: dto.StatusInactive,
+		})
+	}
+
+	return c.JSON(http.StatusOK, users)
+}

@@ -40,6 +40,7 @@ func IsEchoContextMethodCall(call *ast.CallExpr) bool {
 		return false
 	}
 
+	// TODO: Can be false-positive or skip when import is aliased
 	return declXIdent.Name == "echo" && declSel.Sel.Name == "Context"
 }
 

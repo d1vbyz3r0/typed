@@ -15,15 +15,25 @@ import (
 )
 
 var UsedTypes = map[string]any{
-	"server.FormsHandler": new(server.FormsHandler),
-	"dto.FormUploadResp":  new(dto.FormUploadResp),
-	"server.Builder":      new(server.Builder),
-	"server.Server":       new(server.Server),
-	"dto.Form":            new(dto.Form),
-	"dto.Status":          new(dto.Status),
-	"dto.User":            new(dto.User),
-	"string":              new(string),
-	"echo.Map":            new(echo.Map),
+	"dto.SearchUsersRequest":         new(dto.SearchUsersRequest),
+	"dto.UserContact":                new(dto.UserContact),
+	"server.Builder":                 new(server.Builder),
+	"dto.ErrorResponse":              new(dto.ErrorResponse),
+	"dto.Form":                       new(dto.Form),
+	"string":                         new(string),
+	"echo.Map":                       new(echo.Map),
+	"dto.BulkCreateUsersRequest":     new(dto.BulkCreateUsersRequest),
+	"dto.FormUploadResp":             new(dto.FormUploadResp),
+	"dto.Status":                     new(dto.Status),
+	"dto.UpdateUserStatusRequest":    new(dto.UpdateUserStatusRequest),
+	"dto.User":                       new(dto.User),
+	"dto.UserAddress":                new(dto.UserAddress),
+	"server.ValidationHandler":       new(server.ValidationHandler),
+	"dto.BulkCreateUsersResponse":    new(dto.BulkCreateUsersResponse),
+	"dto.CreateValidatedUserRequest": new(dto.CreateValidatedUserRequest),
+	"[]dto.User":                     new([]dto.User),
+	"server.FormsHandler":            new(server.FormsHandler),
+	"server.Server":                  new(server.Server),
 }
 
 var Enums = map[string][]any{
@@ -121,7 +131,7 @@ func main() {
 	}
 
 	var routes []handlers.EchoRoute
-	routesProvider := server.NewBuilder()
+	var routesProvider typed.RoutesProvider = server.NewBuilder()
 	routesProvider.OnRouteAdded(func(
 		host string,
 		route echo.Route,

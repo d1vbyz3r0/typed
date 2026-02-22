@@ -71,10 +71,12 @@ func Test_NewStructPathParams(t *testing.T) {
 		{
 			Name: "name",
 			Type: reflect.TypeOf(""),
+			Tag:  reflect.StructTag(`param:"name"`),
 		},
 		{
 			Name: "age",
 			Type: reflect.TypeOf(int(0)),
+			Tag:  reflect.StructTag(`param:"age"`),
 		},
 	}
 

@@ -15,9 +15,95 @@ components:
         - Active
         - Timestamp
       type: object
+    dto.BulkCreateUsersRequest:
+      properties:
+        dryRun:
+          type: boolean
+        requestId:
+          format: uuid
+          type: string
+        users:
+          items:
+            $ref: '#/components/schemas/dto.CreateValidatedUserRequest'
+          minItems: 1
+          type: array
+      required:
+        - requestId
+        - dryRun
+        - users
+      type: object
+    dto.BulkCreateUsersResponse:
+      properties:
+        created:
+          type: integer
+        requestId:
+          type: string
+        userIds:
+          items:
+            format: uuid
+            type: string
+          type: array
+      required:
+        - requestId
+        - created
+      type: object
+    dto.CreateValidatedUserRequest:
+      properties:
+        address:
+          $ref: '#/components/schemas/dto.UserAddress'
+        age:
+          maximum: 120
+          minimum: 18
+          type: integer
+        contact:
+          $ref: '#/components/schemas/dto.UserContact'
+        metadata:
+          additionalProperties:
+            pattern: ^([ -~]*)$
+            type: string
+          nullable: true
+          type: object
+        name:
+          maxLength: 64
+          minLength: 3
+          type: string
+        role:
+          enum:
+            - admin
+            - member
+            - guest
+          type: string
+        skills:
+          items:
+            minLength: 1
+            pattern: ^([a-zA-Z]+)$
+            type: string
+          minItems: 1
+          type: array
+      required:
+        - name
+        - age
+        - role
+        - contact
+        - address
+        - skills
+      type: object
+    dto.ErrorResponse:
+      properties:
+        details:
+          additionalProperties:
+            type: string
+          type: object
+        message:
+          type: string
+      required:
+        - message
+      type: object
     dto.Form:
       properties:
         Age:
+          maximum: 130
+          minimum: 0
           type: integer
         File:
           $ref: '#/components/schemas/multipart.FileHeader'
@@ -26,15 +112,15 @@ components:
             format: binary
             type: string
           type: array
-          minItems: 5
-
         Name:
-          nullable: true
+          maxLength: 64
+          minLength: 2
           type: string
         Timestamp:
           format: date-time
           type: string
       required:
+        - PathParam
         - Timestamp
         - Age
       type: object
@@ -58,14 +144,35 @@ components:
         - timestamp
         - filename
       type: object
+    dto.UpdateUserStatusRequest:
+      properties:
+        notify:
+          type: boolean
+        reason:
+          maxLength: 128
+          minLength: 3
+          type: string
+        status:
+          enum:
+            - active
+            - inactive
+          type: string
+      required:
+        - status
+        - notify
+      type: object
     dto.User:
       properties:
         age:
+          maximum: 130
+          minimum: 0
           type: integer
         id:
           format: uuid
           type: string
         name:
+          maxLength: 80
+          minLength: 2
           type: string
         status:
           enum:
@@ -77,6 +184,36 @@ components:
         - name
         - age
         - status
+      type: object
+    dto.UserAddress:
+      properties:
+        city:
+          maxLength: 64
+          minLength: 2
+          type: string
+        countryCode:
+          maxLength: 2
+          minLength: 2
+          pattern: ^([a-zA-Z]+)$
+          type: string
+        postCode:
+          pattern: ^([a-zA-Z0-9]+)$
+          type: string
+      required:
+        - countryCode
+        - city
+        - postCode
+      type: object
+    dto.UserContact:
+      properties:
+        email:
+          format: email
+          type: string
+        website:
+          format: uri
+          type: string
+      required:
+        - email
       type: object
     multipart.FileHeader:
       format: binary
@@ -182,6 +319,8 @@ paths:
           name: q
           required: true
           schema:
+            maxLength: 64
+            minLength: 2
             type: string
       requestBody:
         content:
@@ -299,6 +438,147 @@ paths:
           description: ""
       tags:
         - Nocontent
+  /api/v1/validation/users:
+    get:
+      description: search demonstrates query DTO parsing with validation tags.
+      operationId: search
+      parameters:
+        - in: query
+          name: query
+          schema:
+            maxLength: 64
+            minLength: 2
+            type: string
+        - in: query
+          name: page
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+        - in: query
+          name: limit
+          required: true
+          schema:
+            maximum: 100
+            minimum: 1
+            type: integer
+        - in: query
+          name: sortBy
+          required: true
+          schema:
+            enum:
+              - name
+              - age
+              - status
+            type: string
+        - in: query
+          name: includeInactive
+          required: true
+          schema:
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/dto.User'
+                type: array
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.ErrorResponse'
+          description: Bad Request
+        default:
+          description: ""
+      tags:
+        - Validation
+    post:
+      description: createUser demonstrates request body validation tags for nested structs, arrays and maps.
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dto.CreateValidatedUserRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.User'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.ErrorResponse'
+          description: Bad Request
+        default:
+          description: ""
+      tags:
+        - Validation
+  /api/v1/validation/users/{id}/status:
+    patch:
+      description: updateStatus demonstrates path+body model extraction with optional fields.
+      operationId: updateStatus
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dto.UpdateUserStatusRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.User'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.ErrorResponse'
+          description: Bad Request
+        default:
+          description: ""
+      tags:
+        - Validation
+  /api/v1/validation/users/bulk:
+    post:
+      description: bulkCreate demonstrates dive validation for arrays of nested DTOs and UUID format tag.
+      operationId: bulkCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dto.BulkCreateUsersRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.BulkCreateUsersResponse'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.ErrorResponse'
+          description: Bad Request
+        default:
+          description: ""
+      tags:
+        - Validation
   /api/v1/xml/:
     get:
       operationId: getUserXML

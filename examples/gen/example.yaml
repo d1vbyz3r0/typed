@@ -218,9 +218,6 @@ components:
     multipart.FileHeader:
       format: binary
       nullable: true
-      required:
-        - Filename
-        - Size
       type: string
 info:
   title: Example api

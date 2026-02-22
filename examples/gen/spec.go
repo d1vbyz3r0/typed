@@ -15,25 +15,25 @@ import (
 )
 
 var UsedTypes = map[string]any{
-	"dto.SearchUsersRequest":         new(dto.SearchUsersRequest),
-	"dto.UserContact":                new(dto.UserContact),
-	"server.Builder":                 new(server.Builder),
+	"dto.CreateValidatedUserRequest": new(dto.CreateValidatedUserRequest),
 	"dto.ErrorResponse":              new(dto.ErrorResponse),
 	"dto.Form":                       new(dto.Form),
-	"string":                         new(string),
-	"echo.Map":                       new(echo.Map),
-	"dto.BulkCreateUsersRequest":     new(dto.BulkCreateUsersRequest),
-	"dto.FormUploadResp":             new(dto.FormUploadResp),
-	"dto.Status":                     new(dto.Status),
-	"dto.UpdateUserStatusRequest":    new(dto.UpdateUserStatusRequest),
 	"dto.User":                       new(dto.User),
-	"dto.UserAddress":                new(dto.UserAddress),
 	"server.ValidationHandler":       new(server.ValidationHandler),
-	"dto.BulkCreateUsersResponse":    new(dto.BulkCreateUsersResponse),
-	"dto.CreateValidatedUserRequest": new(dto.CreateValidatedUserRequest),
-	"[]dto.User":                     new([]dto.User),
+	"dto.FormUploadResp":             new(dto.FormUploadResp),
+	"dto.UserAddress":                new(dto.UserAddress),
+	"dto.UserContact":                new(dto.UserContact),
+	"echo.Map":                       new(echo.Map),
 	"server.FormsHandler":            new(server.FormsHandler),
+	"dto.BulkCreateUsersRequest":     new(dto.BulkCreateUsersRequest),
+	"dto.SearchUsersRequest":         new(dto.SearchUsersRequest),
+	"dto.Status":                     new(dto.Status),
+	"string":                         new(string),
+	"[]dto.User":                     new([]dto.User),
 	"server.Server":                  new(server.Server),
+	"dto.BulkCreateUsersResponse":    new(dto.BulkCreateUsersResponse),
+	"dto.UpdateUserStatusRequest":    new(dto.UpdateUserStatusRequest),
+	"server.Builder":                 new(server.Builder),
 }
 
 var Enums = map[string][]any{

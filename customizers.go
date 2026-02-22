@@ -35,6 +35,7 @@ func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema
 		schema.Type = &openapi3.Types{openapi3.TypeString}
 		schema.Format = "binary"
 		schema.Properties = make(openapi3.Schemas)
+		schema.Required = nil
 	}
 
 	if t.Kind() == reflect.Slice && isFileHeader(t.Elem()) {
@@ -100,6 +101,12 @@ func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect
 
 func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
 	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// multipart.FileHeader is represented as string/binary in OpenAPI.
+	// Marking its internal struct fields as required produces invalid noise.
+	if isFileHeader(t) {
 		return nil
 	}
 

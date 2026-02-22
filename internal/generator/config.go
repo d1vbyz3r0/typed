@@ -86,8 +86,8 @@ type Server struct {
 type ModelsConfig struct {
 	Path          string   `yaml:"path"`
 	Recursive     bool     `yaml:"recursive"`
-	IncludeModels []string `yaml:"include-models"`
-	ExcludeModels []string `yaml:"exclude-models"`
+	IncludeModels []string `yaml:"include"`
+	ExcludeModels []string `yaml:"exclude"`
 }
 
 func (c *ModelsConfig) Validate() error {

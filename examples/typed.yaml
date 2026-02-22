@@ -19,9 +19,13 @@ input:
     - path: ../dto
       recursive: false
       # You can exclude models from schema generation
-      exclude-models:
+      exclude:
         - "dto.ShouldBeExcluded"
-#      include-models:
+        - "server.Server"
+        - "server.FormsHandler"
+        - "server.Builder"
+        - "server.ValidationHandler"
+#      include:
 #        - "dto.ShouldBeExcluded"
 
 

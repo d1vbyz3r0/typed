@@ -25,8 +25,9 @@ func processStruct(name string, t reflect.Type, tag reflect.StructTag, schema *o
 		fieldName := meta.GetFieldNameByTag(field)
 		markedRequired := slices.Contains(schema.Required, fieldName)
 
-		if ctx.shouldOmit && markedRequired {
+		if ctx.shouldOmit {
 			excludeFromRequired[fieldName] = struct{}{}
+			continue
 		}
 
 		if ctx.Required && !markedRequired {

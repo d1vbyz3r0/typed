@@ -5,6 +5,7 @@ import (
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"log/slog"
 	"reflect"
+	"regexp"
 	"time"
 )
 
@@ -473,11 +474,8 @@ var Formats = map[string]TagFn{
 	},
 
 	"required": func(ctx *FieldContext) {
-		if ctx.Type.ConvertibleTo(floatType) {
-			ctx.Required = true
-			ctx.Not = append(ctx.Not, 0)
-		} else if ctx.Type.Kind() == reflect.Slice || ctx.Type.Kind() == reflect.Map {
-			ctx.Required = true
+		ctx.Required = true
+		if ctx.Type.Kind() == reflect.Slice || ctx.Type.Kind() == reflect.Map || ctx.Type.Kind() == reflect.Pointer {
 			ctx.Nullable = false
 		}
 	},
@@ -740,6 +738,7 @@ var Formats = map[string]TagFn{
 
 			conv := float64(d)
 			ctx.Min = &conv
+			ctx.ExclusiveMin = true
 
 		case ctx.Type.ConvertibleTo(floatType):
 			ctx.Required = true
@@ -749,6 +748,7 @@ var Formats = map[string]TagFn{
 				return
 			}
 			ctx.Min = &v
+			ctx.ExclusiveMin = true
 
 		case ctx.Type.ConvertibleTo(stringType):
 			ctx.Required = true
@@ -758,7 +758,7 @@ var Formats = map[string]TagFn{
 				return
 			}
 
-			ctx.MaxLength = v
+			ctx.MinLength = v + 1
 
 		case ctx.Type.Kind() == reflect.Slice:
 			ctx.Required = true
@@ -768,20 +768,63 @@ var Formats = map[string]TagFn{
 				return
 			}
 
-			ctx.MinItems = v
+			ctx.MinItems = v + 1
 
 		default:
 			slog.Warn("type not supported", "tag", "gt", "type", ctx.Type.String())
 		}
 	},
 	"gte": func(ctx *FieldContext) {
-		ctx.Required = true
-		gte, err := ctx.LookupFloat("gte")
-		if err != nil {
-			return
+		switch {
+		case ctx.Type.AssignableTo(durationType):
+			ctx.Required = true
+			v, err := ctx.LookupString("gte")
+			if err != nil {
+				slog.Warn("lookup string for gte tag", "error", err)
+				return
+			}
+
+			d, err := time.ParseDuration(v)
+			if err != nil {
+				slog.Warn("parse duration for gte tag", "error", err)
+				return
+			}
+
+			conv := float64(d)
+			ctx.Min = &conv
+
+		case ctx.Type.ConvertibleTo(floatType):
+			ctx.Required = true
+			v, err := ctx.LookupFloat("gte")
+			if err != nil {
+				slog.Warn("lookup float for gte tag", "error", err)
+				return
+			}
+			ctx.Min = &v
+
+		case ctx.Type.ConvertibleTo(stringType):
+			ctx.Required = true
+			v, err := ctx.LookupUint("gte")
+			if err != nil {
+				slog.Warn("lookup string for gte tag", "error", err)
+				return
+			}
+
+			ctx.MinLength = v
+
+		case ctx.Type.Kind() == reflect.Slice:
+			ctx.Required = true
+			v, err := ctx.LookupUint("gte")
+			if err != nil {
+				slog.Warn("lookup string for gte tag", "error", err)
+				return
+			}
+
+			ctx.MinItems = v
+
+		default:
+			slog.Warn("type not supported, skipping", "tag", "gte", "type", ctx.Type.String())
 		}
-		ctx.Required = true
-		ctx.Min = &gte
 	},
 
 	"eq": func(ctx *FieldContext) {
@@ -803,8 +846,6 @@ var Formats = map[string]TagFn{
 			conv := float64(d)
 			ctx.Min = &conv
 			ctx.Max = &conv
-			ctx.ExclusiveMin = true
-			ctx.ExclusiveMax = true
 
 		case ctx.Type.ConvertibleTo(floatType):
 			eq, err := ctx.LookupFloat("eq")
@@ -825,7 +866,7 @@ var Formats = map[string]TagFn{
 			}
 
 			ctx.Required = true
-			ctx.AddPattern(eq)
+			ctx.AddPattern(regexp.QuoteMeta(eq))
 
 		case ctx.Type.Kind() == reflect.Slice:
 			eq, err := ctx.LookupUint("eq")
@@ -877,7 +918,7 @@ var Formats = map[string]TagFn{
 			}
 
 			ctx.Required = true
-			ctx.AddPattern(fmt.Sprintf("((?!%s).)*", ne))
+			ctx.AddPattern(fmt.Sprintf("((?!%s).)*", regexp.QuoteMeta(ne)))
 
 		default:
 			slog.Warn("type not supported, skipping", "tag", "ne", "type", ctx.Type.String())

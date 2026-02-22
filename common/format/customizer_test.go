@@ -14,7 +14,9 @@ import (
 func TestProcessStruct(t *testing.T) {
 	type TestStruct struct {
 		RequiredField string `validate:"required" json:"req"`
+		RequiredBool  bool   `validate:"required" json:"requiredBool"`
 		OmitField     string `validate:"omitempty" json:"omit"`
+		OptionalEmail string `validate:"omitempty,email" json:"optEmail"`
 		NormalField   int    `json:"normal"`
 		unexported    bool
 		Email         string   `validate:"email" json:"email"`
@@ -24,20 +26,21 @@ func TestProcessStruct(t *testing.T) {
 	}
 
 	schema := openapi3.NewObjectSchema()
-	schema.Required = []string{"req", "omit"}
+	schema.Required = []string{"req", "omit", "optEmail"}
 
 	err := processStruct("TestStruct", reflect.TypeOf(TestStruct{}), reflect.StructTag(""), schema)
 	assert.NoError(t, err)
 
 	assert.Contains(t, schema.Required, "req")
+	assert.Contains(t, schema.Required, "requiredBool")
 	assert.NotContains(t, schema.Required, "omit")
+	assert.NotContains(t, schema.Required, "optEmail")
 	assert.NotContains(t, schema.Required, "normal")
 	assert.NotContains(t, schema.Required, "unexported")
 	assert.Contains(t, schema.Required, "email")
 	assert.Contains(t, schema.Required, "oneof")
 	assert.Contains(t, schema.Required, "minmax")
 	assert.Contains(t, schema.Required, "slicemin")
-	fmt.Printf("%+v\n", schema)
 }
 
 func TestProcessStruct_Complex(t *testing.T) {

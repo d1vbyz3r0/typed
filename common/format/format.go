@@ -19,6 +19,7 @@ var known = map[string]struct{}{
 	Hostname: {},
 	IPv4:     {},
 	IPv6:     {},
+	URI:      {},
 	Email:    {},
 	UUID:     {},
 	Binary:   {},

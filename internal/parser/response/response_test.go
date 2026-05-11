@@ -1,19 +1,20 @@
 package response
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser/headers"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/d1vbyz3r0/typed/internal/parser/headers"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/packages"
 )
 
 func TestStatusCodeMapping_extractResponses(t *testing.T) {

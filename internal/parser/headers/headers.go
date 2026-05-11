@@ -2,13 +2,14 @@ package headers
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
 	"go/types"
-	"log/slog"
 	"reflect"
 	"strconv"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 type Header struct {
@@ -59,7 +60,7 @@ func NewInlineRequestHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []He
 
 		lit, ok := call.Args[0].(*ast.BasicLit)
 		if !ok {
-			slog.Debug("skipping non BasicLit value")
+			logging.Debug("skipping non BasicLit value")
 			return true
 		}
 
@@ -75,13 +76,13 @@ func NewInlineRequestHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []He
 			if typing.IsParamUsage(call, "Get", paramName) {
 				funcName, ok := meta.GetCalledFuncName(call)
 				if !ok {
-					slog.Debug("failed to get func name", "param", paramName)
+					logging.Debug("failed to get func name", "param", paramName)
 					return false
 				}
 
 				pkgName, ok := meta.GetCalledFuncPkg(call)
 				if !ok {
-					slog.Debug("failed to get func pkg", "param", paramName)
+					logging.Debug("failed to get func pkg", "param", paramName)
 					return false
 				}
 
@@ -103,7 +104,7 @@ func NewInlineRequestHeaders(funcDecl *ast.FuncDecl, typesInfo *types.Info) []He
 			Required: false,
 		})
 
-		slog.Debug(
+		logging.Debug(
 			"found inline header usage",
 			"handler", funcDecl.Name.Name,
 			"param", paramName,
@@ -135,7 +136,7 @@ func NewStructRequestHeaders(s reflect.Type) ([]Header, error) {
 			Required: field.Type.Kind() != reflect.Ptr,
 		})
 
-		slog.Debug(
+		logging.Debug(
 			"found struct header param",
 			"param", tag,
 			"type", field.Type,

@@ -1,19 +1,17 @@
 package query
 
 import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log/slog"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_NewInlineQuery(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	want := []Param{
 		{
 			Name: "q1",
@@ -61,8 +59,6 @@ func Handler(c echo.Context) error {
 }
 
 func Test_NewStructQueryParams(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	type Struct struct {
 		Name string `query:"name"`
 		Age  int    `query:"age"`

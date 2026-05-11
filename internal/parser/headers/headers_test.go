@@ -1,18 +1,16 @@
 package headers
 
 import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"go/ast"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/packages"
 )
 
 func Test_NewInlineHeaders(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	want := []Header{
 		{
 			Name:     "h1",
@@ -57,8 +55,6 @@ func Test_NewInlineHeaders(t *testing.T) {
 }
 
 func Test_NewStructQueryParams(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	type Struct struct {
 		Name string `header:"name"`
 		Age  int    `header:"age"`

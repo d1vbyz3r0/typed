@@ -1,22 +1,21 @@
 package parser
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"net/http"
+	"reflect"
+	"testing"
+
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"golang.org/x/exp/maps"
 	"golang.org/x/tools/go/packages"
-	"log/slog"
-	"net/http"
-	"os"
-	"reflect"
-	"testing"
 )
 
 func TestIsEchoHandler_NormalHandler(t *testing.T) {
@@ -124,14 +123,6 @@ func main() {
 }
 
 func TestParser(t *testing.T) {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../testdata/parser/c1/")
@@ -258,14 +249,6 @@ func TestParser(t *testing.T) {
 }
 
 func TestParserAllModels(t *testing.T) {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../testdata/parser/allmodels/")

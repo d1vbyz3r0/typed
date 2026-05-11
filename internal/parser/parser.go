@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"go/ast"
+
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/enums"
@@ -9,9 +11,8 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
-	"go/ast"
+	"github.com/d1vbyz3r0/typed/logging"
 	"golang.org/x/tools/go/packages"
-	"log/slog"
 )
 
 // isWrapperFunction checks if func has signature: func(...) echo.HandlerFunc {}
@@ -145,7 +146,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 				return true
 			}
 
-			slog.Debug("found echo handler", "pkg", pkg, "file", file.Name, "name", decl.Name.Name)
+			logging.Debug("found echo handler", "pkg", pkg, "file", file.Name, "name", decl.Name.Name)
 
 			req := request.New(decl, pkg.TypesInfo, parseOpts.RequestParseOpts()...)
 			responses := response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo)
@@ -189,27 +190,27 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 			for _, name := range scope.Names() {
 				obj := scope.Lookup(name)
 				if obj == nil {
-					slog.Warn("object not found in scope", "pkg", pkg.PkgPath, "name", name)
+					logging.Warn("object not found in scope", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if !obj.Exported() {
-					slog.Debug("skipping non-exported object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping non-exported object", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsFunc(obj.Type()) {
-					slog.Debug("skipping function object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping function object", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsInterface(obj.Type()) {
-					slog.Debug("skipping interface object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping interface object", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsConstOrGlobal(obj) {
-					slog.Debug("skipping const/global object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping const/global object", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 

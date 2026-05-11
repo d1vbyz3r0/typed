@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/d1vbyz3r0/typed/internal/parser"
+	"github.com/d1vbyz3r0/typed/logging"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/tools/go/packages"
 )
 
 type SearchPattern struct {
@@ -58,7 +59,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 		return fmt.Errorf("build search patterns: %w", err)
 	}
 
-	slog.Debug("loaded search patterns", "patterns", sp)
+	logging.Debug("loaded search patterns", "patterns", sp)
 
 	pkgs, err := packages.Load(cfg, sp...)
 	if err != nil {
@@ -82,7 +83,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 
 			if len(pkg.Errors) > 0 {
 				for _, err := range pkg.Errors {
-					slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
+					logging.Error("failed to process package", "path", pkg.PkgPath, "error", err)
 				}
 				return
 			}
@@ -95,7 +96,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 				parser.ParseInlineHeaders(),
 			)
 			if err != nil {
-				slog.Error("failed to parse package", "path", pkg.PkgPath)
+				logging.Error("failed to parse package", "path", pkg.PkgPath)
 				return
 			}
 
@@ -105,7 +106,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 				v, ok := f.handlers[h.Name]
 				if ok {
 					// workaround...
-					slog.Warn(
+					logging.Warn(
 						"handler already found in map, use unique names for your handlers",
 						"old_pkg", v.Pkg,
 						"new_pkg", h.Pkg,
@@ -130,7 +131,7 @@ func (f *Finder) Match(routes []EchoRoute) []Handler {
 		handlerName := f.getHandlerName(route.Route)
 		h, ok := f.handlers[handlerName]
 		if !ok {
-			slog.Warn("matched handler not found, skipping", "handler", handlerName)
+			logging.Warn("matched handler not found, skipping", "handler", handlerName)
 			continue
 		}
 

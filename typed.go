@@ -2,17 +2,18 @@ package typed
 
 import (
 	"fmt"
+	"net/http"
+	"reflect"
+	"strings"
+
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/handlers"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
+	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"log/slog"
-	"net/http"
-	"reflect"
-	"strings"
 )
 
 func AddPathParams(
@@ -29,7 +30,7 @@ func AddPathParams(
 		if ok {
 			typedParams, err := path.NewStructPathParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
-				slog.Error("get path params from bind model", "error", err)
+				logging.Error("get path params from bind model", "error", err)
 			}
 
 			for _, p := range typedParams {
@@ -38,7 +39,7 @@ func AddPathParams(
 
 				schema, err := openapiGen.GenerateSchemaRef(p.Type)
 				if err != nil {
-					slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
+					logging.Error("generate schema ref for path param", "param", p.Name, "error", err)
 					continue
 				}
 
@@ -49,7 +50,7 @@ func AddPathParams(
 				op.AddParameter(param)
 			}
 		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
+			logging.Warn("bind model not found in provided registry", "model", model)
 		}
 	}
 
@@ -63,7 +64,7 @@ func AddPathParams(
 		param.Required = true
 		schema, err := openapiGen.GenerateSchemaRef(p.Type)
 		if err != nil {
-			slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
+			logging.Error("generate schema ref for path param", "param", p.Name, "error", err)
 			continue
 		}
 
@@ -88,7 +89,7 @@ func AddQueryParams(
 		if ok {
 			typedParams, err := query.NewStructQueryParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
-				slog.Error("get query params from bind model", "error", err)
+				logging.Error("get query params from bind model", "error", err)
 			}
 
 			for _, p := range typedParams {
@@ -97,7 +98,7 @@ func AddQueryParams(
 
 				schema, err := openapiGen.GenerateSchemaRef(p.Type)
 				if err != nil {
-					slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
+					logging.Error("generate schema ref for query param", "param", p.Name, "error", err)
 					continue
 				}
 
@@ -108,7 +109,7 @@ func AddQueryParams(
 				op.AddParameter(param)
 			}
 		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
+			logging.Warn("bind model not found in provided registry", "model", model)
 		}
 	}
 
@@ -123,7 +124,7 @@ func AddQueryParams(
 
 		schema, err := openapiGen.GenerateSchemaRef(p.Type)
 		if err != nil {
-			slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
+			logging.Error("generate schema ref for query param", "param", p.Name, "error", err)
 			continue
 		}
 
@@ -148,7 +149,7 @@ func AddRequestBody(
 		if reqBody.Form != nil {
 			ref, err := openapiGen.GenerateSchemaRef(reqBody.Form)
 			if err != nil {
-				slog.Error("generate schema ref for request form", "form", reqBody.Form, "error", err)
+				logging.Error("generate schema ref for request form", "form", reqBody.Form, "error", err)
 				continue
 			}
 
@@ -158,19 +159,19 @@ func AddRequestBody(
 		if request.BindModel != "" {
 			obj, ok := registry[request.BindModel]
 			if !ok {
-				slog.Warn("bind model not found in provided registry", "model", request.BindModel)
+				logging.Warn("bind model not found in provided registry", "model", request.BindModel)
 				continue
 			}
 
 			ref, err := openapiGen.NewSchemaRefForValue(obj, schemas)
 			if err != nil {
-				slog.Error("generate schema ref for bind model", "model", request.BindModel, "error", err)
+				logging.Error("generate schema ref for bind model", "model", request.BindModel, "error", err)
 				continue
 			}
 
 			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 		} else {
-			slog.Debug("request contains empty bind model", "handler", h.HandlerName())
+			logging.Debug("request contains empty bind model", "handler", h.HandlerName())
 		}
 	}
 
@@ -204,13 +205,13 @@ func AddResponses(
 			if resp.TypeName != "" {
 				val, ok := registry[resp.TypeName]
 				if !ok {
-					slog.Warn("type not found in registry", "type", resp.TypeName, "pkg", resp.TypePkgPath)
+					logging.Warn("type not found in registry", "type", resp.TypeName, "pkg", resp.TypePkgPath)
 					continue
 				}
 
 				ref, err := openapiGen.NewSchemaRefForValue(val, schemas)
 				if err != nil {
-					slog.Error("generate ref for value", "type", resp.TypeName, "error", err)
+					logging.Error("generate ref for value", "type", resp.TypeName, "error", err)
 					continue
 				}
 
@@ -232,7 +233,7 @@ func AddResponses(
 		for _, header := range mergedHeaders {
 			schema, err := openapiGen.GenerateSchemaRef(header.Type)
 			if err != nil {
-				slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
+				logging.Error("generate schema ref for header param", "param", header.Name, "error", err)
 				continue
 			}
 
@@ -266,7 +267,7 @@ func AddHeaders(
 		if ok {
 			typedParams, err := headers.NewStructRequestHeaders(typing.DerefReflectPtr(reflect.TypeOf(obj)))
 			if err != nil {
-				slog.Error("get header params from bind model", "error", err)
+				logging.Error("get header params from bind model", "error", err)
 			}
 
 			for _, p := range typedParams {
@@ -274,7 +275,7 @@ func AddHeaders(
 
 				schema, err := openapiGen.GenerateSchemaRef(p.Type)
 				if err != nil {
-					slog.Error("generate schema ref for header param", "param", p.Name, "error", err)
+					logging.Error("generate schema ref for header param", "param", p.Name, "error", err)
 					continue
 				}
 
@@ -285,7 +286,7 @@ func AddHeaders(
 				op.AddParameter(param)
 			}
 		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
+			logging.Warn("bind model not found in provided registry", "model", model)
 		}
 	}
 
@@ -298,7 +299,7 @@ func AddHeaders(
 		param := openapi3.NewHeaderParameter(header.Name).WithRequired(header.Required)
 		schema, err := openapiGen.GenerateSchemaRef(header.Type)
 		if err != nil {
-			slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
+			logging.Error("generate schema ref for header param", "param", header.Name, "error", err)
 			continue
 		}
 

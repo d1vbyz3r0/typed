@@ -2,12 +2,13 @@ package path
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
-	"log/slog"
 	"reflect"
 	"strconv"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 type Param struct {
@@ -34,7 +35,7 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 
 		lit, ok := call.Args[0].(*ast.BasicLit)
 		if !ok {
-			slog.Debug("skipping non BasicLit value")
+			logging.Debug("skipping non BasicLit value")
 			return true
 		}
 
@@ -50,13 +51,13 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 			if typing.IsParamUsage(call, "Param", paramName) {
 				funcName, ok := meta.GetCalledFuncName(call)
 				if !ok {
-					slog.Debug("failed to get func name", "param", paramName)
+					logging.Debug("failed to get func name", "param", paramName)
 					return false
 				}
 
 				pkgName, ok := meta.GetCalledFuncPkg(call)
 				if !ok {
-					slog.Debug("failed to get func pkg", "param", paramName)
+					logging.Debug("failed to get func pkg", "param", paramName)
 					return false
 				}
 
@@ -77,7 +78,7 @@ func NewInlinePathParams(funcDecl *ast.FuncDecl) []Param {
 			Type: paramType,
 		})
 
-		slog.Debug(
+		logging.Debug(
 			"found inline path param usage",
 			"handler", funcDecl.Name.Name,
 			"param", paramName,
@@ -108,7 +109,7 @@ func NewStructPathParams(s reflect.Type) ([]Param, error) {
 			Type: field.Type,
 		})
 
-		slog.Debug(
+		logging.Debug(
 			"found struct path param",
 			"param", tag,
 			"type", field.Type,

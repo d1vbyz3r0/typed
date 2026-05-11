@@ -1,13 +1,14 @@
 package binding
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHasTag(t *testing.T) {

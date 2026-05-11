@@ -3,18 +3,19 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/internal/parser"
 	"go/format"
-	"golang.org/x/exp/maps"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"text/template"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/internal/parser"
+	"github.com/d1vbyz3r0/typed/logging"
+	"golang.org/x/exp/maps"
+	"golang.org/x/tools/go/packages"
 
 	_ "embed"
 )
@@ -71,7 +72,7 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("build load patterns: %w", err)
 	}
 
-	slog.Debug("built packages load patterns", "patterns", patterns)
+	logging.Debug("built packages load patterns", "patterns", patterns)
 
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
@@ -110,14 +111,14 @@ func (g *Generator) Generate() error {
 
 			if len(pkg.Errors) > 0 {
 				for _, err := range pkg.Errors {
-					slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
+					logging.Error("failed to process package", "path", pkg.PkgPath, "error", err)
 				}
 				return
 			}
 
 			res, err := g.parser.Parse(pkg, parser.ParseAllModels(), parser.ParseEnums())
 			if err != nil {
-				slog.Error("failed to parse package", "path", pkg.PkgPath)
+				logging.Error("failed to parse package", "path", pkg.PkgPath)
 				return
 			}
 
@@ -227,12 +228,12 @@ func (g *Generator) filterModels(models []parser.Model) []parser.Model {
 	for _, model := range models {
 		hasIncludeFilter := len(g.includeFilters[model.PkgPath]) > 0
 		if hasIncludeFilter && !slices.Contains(g.includeFilters[model.PkgPath], model.Name) {
-			slog.Debug("model excluded from generation", "model", model.Name)
+			logging.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
 		if slices.Contains(g.excludeFilters[model.PkgPath], model.Name) {
-			slog.Debug("model excluded from generation", "model", model.Name)
+			logging.Debug("model excluded from generation", "model", model.Name)
 			continue
 		}
 
@@ -277,8 +278,8 @@ func (g *Generator) initModelsFilter(pkgs []*packages.Package) error {
 		}
 	}
 
-	slog.Debug("include filters", "filters", g.includeFilters)
-	slog.Debug("exclude filters", "filters", g.excludeFilters)
+	logging.Debug("include filters", "filters", g.includeFilters)
+	logging.Debug("exclude filters", "filters", g.excludeFilters)
 	return nil
 }
 

@@ -1,19 +1,17 @@
 package request
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/require"
 	"go/ast"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"testing"
+
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/packages"
 )
 
 func TestNewRequest_JSON(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/jsontest")
@@ -44,8 +42,6 @@ func TestNewRequest_JSON(t *testing.T) {
 }
 
 func TestNewRequest_XML(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/xmltest")
@@ -76,8 +72,6 @@ func TestNewRequest_XML(t *testing.T) {
 }
 
 func TestNewRequest_EmptyTags(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/emptytest")
@@ -109,8 +103,6 @@ func TestNewRequest_EmptyTags(t *testing.T) {
 }
 
 func TestNewRequest_FormTagsNoFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/formtest/nofile")
@@ -142,8 +134,6 @@ func TestNewRequest_FormTagsNoFiles(t *testing.T) {
 }
 
 func TestNewRequest_FormWithFile(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/formtest/file")
@@ -174,8 +164,6 @@ func TestNewRequest_FormWithFile(t *testing.T) {
 }
 
 func TestNewRequest_FormWithFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/formtest/files")
@@ -206,8 +194,6 @@ func TestNewRequest_FormWithFiles(t *testing.T) {
 }
 
 func TestNewRequest_NoBody(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/nobody")
@@ -235,8 +221,6 @@ func TestNewRequest_NoBody(t *testing.T) {
 }
 
 func TestNewRequest_NoBinds(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/nobind")
@@ -264,8 +248,6 @@ func TestNewRequest_NoBinds(t *testing.T) {
 }
 
 func TestNewRequest_MultipleTags(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/multiple")
@@ -299,8 +281,6 @@ func TestNewRequest_MultipleTags(t *testing.T) {
 }
 
 func TestNewRequest_InlineFormNoFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/formtest/inline")
@@ -356,8 +336,6 @@ func TestNewRequest_InlineFormNoFiles(t *testing.T) {
 }
 
 func TestNewRequest_InlineFormWithFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
 	}, "../../../testdata/request/formtest/inlinefiles")

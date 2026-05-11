@@ -1,19 +1,17 @@
 package path
 
 import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log/slog"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_NewInlinePathParams(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	want := []Param{
 		{
 			Name: "p1",
@@ -57,8 +55,6 @@ func Handler(c echo.Context) error {
 }
 
 func Test_NewStructPathParams(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	type Struct struct {
 		Name string `param:"name"`
 		Age  int    `param:"age"`
@@ -82,7 +78,6 @@ func Test_NewStructPathParams(t *testing.T) {
 }
 
 func Test_NewStructPathParamsWrongArg(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
 	_, err := NewStructPathParams(reflect.TypeOf(map[string]interface{}{}))
 	require.Error(t, err)
 }

@@ -1,17 +1,18 @@
 package handlers
 
 import (
+	"log/slog"
+	"net/http"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
-	"log/slog"
-	"net/http"
-	"os"
-	"reflect"
-	"testing"
 )
 
 func TestFinder_getHandlerFullPath(t *testing.T) {

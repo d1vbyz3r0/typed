@@ -1,18 +1,17 @@
 package form
 
 import (
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_NewInlineFormNoFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
 	want := reflect.StructOf([]reflect.StructField{
 		{
 			Name:      "V1",
@@ -68,7 +67,6 @@ func Handler(c echo.Context) error {
 }
 
 func Test_NewInlineFormWithFiles(t *testing.T) {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
 	want := reflect.StructOf([]reflect.StructField{
 		{
 			Name:      "V1",

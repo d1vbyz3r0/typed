@@ -2,17 +2,18 @@ package response
 
 import (
 	"fmt"
+	"go/ast"
+	"go/token"
+	"go/types"
+	"slices"
+	"strconv"
+
 	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/labstack/echo/v4"
-	"go/ast"
-	"go/token"
-	"go/types"
-	"slices"
-	"strconv"
 )
 
 const (

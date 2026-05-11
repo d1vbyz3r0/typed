@@ -1,9 +1,10 @@
 package typed
 
 import (
+	"reflect"
+
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"reflect"
 )
 
 var customizers = []openapi3gen.SchemaCustomizerFn{

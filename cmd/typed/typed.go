@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/generator"
 	"log"
-	"log/slog"
 	"os"
 	"runtime/debug"
+
+	"github.com/d1vbyz3r0/typed/internal/generator"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 var (
@@ -42,13 +43,7 @@ func main() {
 	}
 
 	if cfg.Debug {
-		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			AddSource:   true,
-			Level:       slog.LevelDebug,
-			ReplaceAttr: nil,
-		})
-		logger := slog.New(handler)
-		slog.SetDefault(logger)
+		logging.SetDefault(logging.NewStdLogger(os.Stderr, logging.LevelDebug))
 	}
 
 	g, err := generator.New(cfg)

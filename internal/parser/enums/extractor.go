@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"log/slog"
 	"strconv"
+
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 func Extract(pkg string, file *ast.File) (map[string][]any, error) {
@@ -46,7 +47,7 @@ func Extract(pkg string, file *ast.File) (map[string][]any, error) {
 
 							k := pkg + "." + ident.Name
 							res[k] = append(res[k], lit)
-							slog.Debug("added enum type", "name", k)
+							logging.Debug("added enum type", "name", k)
 						}
 					}
 
@@ -60,7 +61,7 @@ func Extract(pkg string, file *ast.File) (map[string][]any, error) {
 
 							k := pkg + "." + funIdent.Name
 							res[k] = append(res[k], parsedLit)
-							slog.Debug("added enum type", "name", k)
+							logging.Debug("added enum type", "name", k)
 						}
 					}
 				}

@@ -1,6 +1,8 @@
 module github.com/d1vbyz3r0/typed
 
-go 1.24.2
+go 1.24.0
+
+toolchain go1.26.2
 
 require (
 	github.com/getkin/kin-openapi v0.133.0

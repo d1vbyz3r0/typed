@@ -8,13 +8,13 @@ framework.
 It uses a sophisticated two-stage approach combining AST (Abstract Syntax Tree) parsing and reflection to analyze your
 code and produce accurate, comprehensive API documentation.
 
-## 🎯 Why Typed?
+## Why Typed?
 
 Most of existing code-first OpenAPI generators for Go require extensive manual annotations.
 Typed solves this by automatically analyzing your Echo handlers and generating accurate OpenAPI specifications without
 large code modifications.
 
-## 🚀 Features
+## Features
 
 - **Two-Stage Generation Process**: Combines AST analysis with runtime reflection for maximum accuracy
 - **Code-first OpenAPI Generation approach**: Generates OpenAPI 3.0 specifications from your echo server, no magic
@@ -30,7 +30,7 @@ large code modifications.
 
 
 
-## 📦 Installation
+## Installation
 
 ```bash
 go install github.com/d1vbyz3r0/typed/cmd/typed@latest
@@ -42,7 +42,7 @@ You can find demo swagger [here](https://petstore.swagger.io/?url=https://raw.gi
 Used openapi spec was generated with typed, you can find it in [examples](./examples)
 
 
-## 🛠️ Usage
+## Usage
 
 ### Basic Usage
 
@@ -93,7 +93,7 @@ The tool automatically detects the output format based on file extension:
 - **JSON**: `.json` extension
 
 
-## 🧠 Intelligent Parameter Detection
+## Intelligent Parameter Detection
 
 One of Typed's most powerful features is its ability to automatically detect and analyze parameter usage from your Echo
 handlers:
@@ -192,7 +192,7 @@ Typed automatically infers parameter types from common conversion functions:
 | `time`    | `Parse`              | `time.Time`   |
 
 
-## 📋 Enum Support
+## Enum Support
 
 Typed automatically detects and extracts Go enums (constants with custom types) and includes them in the OpenAPI
 specification as enum values. This ensures your API documentation accurately reflects the allowed values for enum
@@ -264,7 +264,7 @@ Typed supports various enum value types:
 | `bool`    | `Flag(true)`    | `boolean` with enum values |
 
 
-## 🔧 Extensibility
+## Extensibility
 
 ### Custom Type Providers
 
@@ -303,7 +303,7 @@ func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
 ```
 
 
-## 🔌 Handler Processing Hooks
+## Handler Processing Hooks
 
 Typed provides a hook system that allows you to customize OpenAPI specification generation based on handler analysis.
 This is particularly useful for automatically detecting and documenting middleware-specific behavior.
@@ -437,7 +437,7 @@ This hook system makes Typed highly extensible and allows it to automatically do
 without manual specification.
 
 
-## 🏗️ How It Works
+## How It Works
 
 Typed uses a sophisticated two-stage approach to overcome the limitations of pure AST analysis:
 
@@ -474,12 +474,12 @@ The two-stage approach is necessary because:
 - **Go Reflection**: For runtime type information access
 
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! This project was created because similar tools weren't available for Echo framework projects.
 
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -492,7 +492,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Go AST & Reflection** - Powerful code analysis and runtime type inspection capabilities
 
 
-## 🐛 Issues & Support
+## Issues & Support
 
 If you encounter any issues or have questions:
 
@@ -501,7 +501,7 @@ If you encounter any issues or have questions:
 3. Include code examples and error messages
 
 
-## 🔮 Roadmap
+## Roadmap
 - [ ] Write doc for configuration
 - [ ] Enhanced comment parsing for OpenAPI descriptions
-- [ ] Add more std hooks 
+- [ ] Add more std hooks

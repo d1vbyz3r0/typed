@@ -1,89 +1,173 @@
 package typing
 
 import (
-	"github.com/google/uuid"
-	"reflect"
-	"time"
+	"errors"
+	"fmt"
+	"go/types"
 )
 
-// TODO: add context func call arguments
-type Provider func(pkg string, funcName string) (reflect.Type, bool)
+var ErrTypeUnsupported = errors.New("unsupported type")
 
-var providers = []Provider{
-	strconvProvider,
-	uuidProvider,
-	dateTimeProvider,
-}
+type TypeKind int
 
-var (
-	IntType     = reflect.TypeOf(int(0))
-	Int64Type   = reflect.TypeOf(int64(0))
-	UintType    = reflect.TypeOf(uint(0))
-	Float64Type = reflect.TypeOf(float64(0))
-	BoolType    = reflect.TypeOf(false)
-	UuidType    = reflect.TypeOf(uuid.UUID{})
-	TimeType    = reflect.TypeOf(time.Time{})
+const (
+	TypeKindUndefined TypeKind = iota
+	TypeKindNamed
+	TypeKindBasic
+	TypeKindPointer
+	TypeKindSlice
+	TypeKindArray
+	TypeKindMap
 )
 
-func RegisterTypeProvider(p Provider) {
-	providers = append(providers, p)
+type Type struct {
+	kind TypeKind
+	// name is a type name as it was used with type XXX ... declaration.
+	// It will be empty for TypeKindPointer, TypeKindSlice, TypeKindArray and TypeKindMap
+	name string
+	// pkg holds full package path for type.
+	// It will be empty for TypeKindBasic, TypeKindPointer, TypeKindSlice and TypeKindArray
+	pkg string
+	// elem holds type info for pointers, slices and arrays recursively
+	elem *Type
+	// size holds array size for TypeKindArray, otherwise 0
+	size int64
+	// params holds type infos for generic type params.
+	// For maps it stores key type first and value type as second elem
+	params []*Type
 }
 
-func GetTypeFromUsageContext(pkg string, funcName string) (reflect.Type, bool) {
-	for _, provider := range providers {
-		t, ok := provider(pkg, funcName)
-		if ok {
-			return t, ok
+func fillType(t types.Type, _type *Type) error {
+	switch tt := t.(type) {
+	case *types.Pointer:
+		_type.kind = TypeKindPointer
+		_type.elem = new(Type)
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Alias:
+		return fillType(types.Unalias(tt), _type)
+
+	case *types.Slice:
+		_type.kind = TypeKindSlice
+		_type.elem = new(Type)
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Array:
+		_type.kind = TypeKindArray
+		_type.elem = new(Type)
+		_type.size = tt.Len()
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Map:
+		_type.kind = TypeKindMap
+		_type.params = make([]*Type, 2)
+		_type.params[0] = new(Type)
+		_type.params[1] = new(Type)
+		if err := fillType(tt.Key(), _type.params[0]); err != nil {
+			return err
 		}
+		if err := fillType(tt.Elem(), _type.params[1]); err != nil {
+			return err
+		}
+		return nil
+
+	case *types.Basic:
+		_type.kind = TypeKindBasic
+		_type.name = tt.Name()
+		return nil
+
+	case *types.Named:
+		obj := tt.Obj()
+		pkgPath := ""
+		if pkg := obj.Pkg(); pkg != nil {
+			pkgPath = pkg.Path()
+		}
+
+		_type.kind = TypeKindNamed
+		_type.name = obj.Name()
+		_type.pkg = pkgPath
+
+		if params := tt.TypeArgs(); params != nil {
+			_type.params = make([]*Type, params.Len())
+			i := 0
+			for param := range params.Types() {
+				_type.params[i] = new(Type)
+				err := fillType(param, _type.params[i])
+				if err != nil {
+					return err
+				}
+				i++
+			}
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("%w: %T", ErrTypeUnsupported, tt)
 	}
-	return nil, false
 }
 
-func strconvProvider(pkg string, name string) (reflect.Type, bool) {
-	if pkg != "strconv" {
-		return nil, false
-	}
-
-	switch name {
-	case "Atoi":
-		return IntType, true
-
-	case "ParseInt":
-		return Int64Type, true
-
-	case "ParseUint":
-		return UintType, true
-
-	case "ParseFloat":
-		return Float64Type, true
-
-	case "ParseBool":
-		return BoolType, true
-	}
-
-	return nil, false
+func NewType(t types.Type) (*Type, error) {
+	_type := new(Type)
+	err := fillType(t, _type)
+	return _type, err
 }
 
-func uuidProvider(pkg string, funcName string) (reflect.Type, bool) {
-	if pkg != "uuid" {
-		return nil, false
-	}
-
-	if funcName != "MustParse" && funcName != "Parse" {
-		return nil, false
-	}
-
-	return UuidType, true
+func NewTypeFromValue(v any) (*Type, error) {
+	return nil, nil
 }
 
-func dateTimeProvider(pkg string, funcName string) (reflect.Type, bool) {
-	if pkg != "time" {
-		return nil, false
-	}
+// Name returns type name
+func (t *Type) Name() string {
+	return t.name
+}
 
-	if funcName != "Parse" {
-		return nil, false
-	}
+// Pkg returns full package path for type
+func (t *Type) Pkg() string {
+	return t.pkg
+}
 
-	return TimeType, true
+func (t *Type) IsMap() bool {
+	return t.kind == TypeKindMap
+}
+
+func (t *Type) IsSlice() bool {
+	return t.kind == TypeKindSlice
+}
+
+func (t *Type) IsArray() bool {
+	return t.kind == TypeKindArray
+}
+
+func (t *Type) IsGeneric() bool {
+	return len(t.params) > 0
+}
+
+func (t *Type) IsPointer() bool {
+	return t.kind == TypeKindPointer
+}
+
+// KeyType returns type descriptor for key if current type is map, otherwise nil
+func (t *Type) KeyType() *Type {
+	if t.kind != TypeKindMap {
+		return nil
+	}
+	return t.params[0]
+}
+
+// ValueType returns type descriptor for value if current type is map, otherwise nil
+func (t *Type) ValueType() *Type {
+	if t.kind != TypeKindMap {
+		return nil
+	}
+	return t.params[1]
+}
+
+// ElemType returns type descriptor for elem if current type is pointer, slice or array, otherwise nil
+func (t *Type) ElemType() *Type {
+	switch t.kind {
+	case TypeKindPointer, TypeKindArray, TypeKindSlice:
+		return t.elem
+	default:
+		return nil
+	}
 }

@@ -35,6 +35,9 @@ type Body struct {
 	Form reflect.Type
 }
 
+// TODO:
+// 1. We need raw model string like map[dto.SomeType]dto.OtherType to use with new(map[dto.SomeType]dto.OtherType)
+// 2. Also we need raw type descriptor, which will contain base type name, type parameters for generics + full package path
 type Request struct {
 	// BindModel as it's used in code: pkg.TypeName
 	BindModel string

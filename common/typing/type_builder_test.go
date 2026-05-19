@@ -139,3 +139,72 @@ func TestDeepNesting(t *testing.T) {
 	assert.Equal(t, TypeKindBasic, cur.kind)
 	assert.Equal(t, "int", cur.name)
 }
+
+func TestWalkStringTree(t *testing.T) {
+	cases := []struct {
+		name  string
+		_type *Type
+		want  string
+	}{
+		{
+			name:  "basic type",
+			_type: Basic("string"),
+			want:  `t.Basic("string")`,
+		},
+		{
+			name:  "array of basic types",
+			_type: Array(Basic("int"), 10),
+			want:  `t.Array(t.Basic("int"), 10)`,
+		},
+		{
+			name:  "slice of basic types",
+			_type: Slice(Basic("string")),
+			want:  `t.Slice(t.Basic("string"))`,
+		},
+		{
+			name:  "map of basic types",
+			_type: Map(Basic("string"), Basic("int")),
+			want:  `t.Map(t.Basic("string"), t.Basic("int"))`,
+		},
+		{
+			name:  "pointer to basic type",
+			_type: Pointer(Basic("int")),
+			want:  `t.Pointer(t.Basic("int"))`,
+		},
+		{
+			name:  "named type",
+			_type: Named("github.com/example/foo", "Named"),
+			want:  `t.Named("github.com/example/foo", "Named")`,
+		},
+		{
+			name:  "named generic type with basic generic args",
+			_type: Named("github.com/example/foo", "Generic", Basic("int"), Basic("string")),
+			want:  `t.Named("github.com/example/foo", "Generic", t.Basic("int"), t.Basic("string"))`,
+		},
+		{
+			name: "named generic type with named generic args",
+			_type: Named(
+				"github.com/example/foo", "Generic",
+				Named("github.com/example/bar", "Arg1"),
+				Named("github.com/example/baz", "Arg2"),
+			),
+			want: `t.Named("github.com/example/foo", "Generic", t.Named("github.com/example/bar", "Arg1"), t.Named("github.com/example/baz", "Arg2"))`,
+		},
+		{
+			name: "named generic type with map and pointer to slice of pointers",
+			_type: Named(
+				"github.com/example/foo", "Generic",
+				Map(Basic("int"), Named("github.com/example/bar", "MapVal")),
+				Pointer(Slice(Pointer(Basic("string")))),
+			),
+			want: `t.Named("github.com/example/foo", "Generic", t.Map(t.Basic("int"), t.Named("github.com/example/bar", "MapVal")), t.Pointer(t.Slice(t.Pointer(t.Basic("string")))))`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := StringTree("t", tc._type)
+			require.Equal(t, tc.want, got, "got unexpected result")
+		})
+	}
+}

@@ -4,9 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"strings"
 )
 
 var ErrTypeUnsupported = errors.New("unsupported type")
+
+var TypeNamer = func(t *Type) (string, string) {
+	return t.pkg, t.name
+}
 
 type TypeKind int
 
@@ -126,24 +131,12 @@ func (t *Type) Pkg() string {
 	return t.pkg
 }
 
-func (t *Type) IsMap() bool {
-	return t.kind == TypeKindMap
-}
-
-func (t *Type) IsSlice() bool {
-	return t.kind == TypeKindSlice
-}
-
-func (t *Type) IsArray() bool {
-	return t.kind == TypeKindArray
+func (t *Type) Kind() TypeKind {
+	return t.kind
 }
 
 func (t *Type) IsGeneric() bool {
 	return len(t.params) > 0
-}
-
-func (t *Type) IsPointer() bool {
-	return t.kind == TypeKindPointer
 }
 
 // KeyType returns type descriptor for key if current type is map, otherwise nil
@@ -170,4 +163,45 @@ func (t *Type) ElemType() *Type {
 	default:
 		return nil
 	}
+}
+
+func (t *Type) String() string {
+	switch t.kind {
+	case TypeKindPointer:
+		return "*" + t.elem.String()
+
+	case TypeKindArray:
+		return fmt.Sprintf("[%d]%s", t.size, t.elem)
+
+	case TypeKindSlice:
+		return "[]" + t.elem.String()
+
+	case TypeKindMap:
+		return fmt.Sprintf("map[%s]%s", t.params[0], t.params[1])
+
+	case TypeKindBasic:
+		return t.name
+
+	case TypeKindNamed:
+		pkg, name := TypeNamer(t)
+		res := pkg + "." + name
+		if t.IsGeneric() {
+			res += "["
+			res += strings.Join(forEach(t.params, func(t *Type) string {
+				return t.String()
+			}), ",")
+			res += "]"
+		}
+		return res
+	}
+
+	return ""
+}
+
+func forEach[T any](s []T, fn func(t T) string) []string {
+	res := make([]string, 0, len(s))
+	for _, v := range s {
+		res = append(res, fn(v))
+	}
+	return res
 }

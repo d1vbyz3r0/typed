@@ -342,3 +342,72 @@ func TestFillType_NestedGenericInstantiation(t *testing.T) {
 	require.NotNil(t, got.params[1].elem)
 	assert.Equal(t, "int", got.params[1].elem.name)
 }
+
+func TestTypeString(t *testing.T) {
+	cases := []struct {
+		name  string
+		_type *Type
+		want  string
+	}{
+		{
+			name:  "basic type",
+			_type: Basic("string"),
+			want:  "string",
+		},
+		{
+			name:  "array of basic types",
+			_type: Array(Basic("int"), 10),
+			want:  "[10]int",
+		},
+		{
+			name:  "slice of basic types",
+			_type: Slice(Basic("string")),
+			want:  "[]string",
+		},
+		{
+			name:  "map of basic types",
+			_type: Map(Basic("string"), Basic("int")),
+			want:  "map[string]int",
+		},
+		{
+			name:  "pointer to basic type",
+			_type: Pointer(Basic("int")),
+			want:  "*int",
+		},
+		{
+			name:  "named type",
+			_type: Named("github.com/example/foo", "Named"),
+			want:  "github.com/example/foo.Named",
+		},
+		{
+			name:  "named generic type with basic generic args",
+			_type: Named("github.com/example/foo", "Generic", Basic("int"), Basic("string")),
+			want:  "github.com/example/foo.Generic[int,string]",
+		},
+		{
+			name: "named generic type with named generic args",
+			_type: Named(
+				"github.com/example/foo", "Generic",
+				Named("github.com/example/bar", "Arg1"),
+				Named("github.com/example/baz", "Arg2"),
+			),
+			want: "github.com/example/foo.Generic[github.com/example/bar.Arg1,github.com/example/baz.Arg2]",
+		},
+		{
+			name: "named generic type with map and pointer to slice of pointers",
+			_type: Named(
+				"github.com/example/foo", "Generic",
+				Map(Basic("int"), Named("github.com/example/bar", "MapVal")),
+				Pointer(Slice(Pointer(Basic("string")))),
+			),
+			want: "github.com/example/foo.Generic[map[int]github.com/example/bar.MapVal,*[]*string]",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc._type.String()
+			require.Equal(t, tc.want, got, "got unexpected result")
+		})
+	}
+}

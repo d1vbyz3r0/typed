@@ -1,5 +1,10 @@
 package typing
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Name will create named type from provided descriptor.
 // Type itself can be generic with arbitrary args, described as *Type
 func Named(pkg string, name string, args ...*Type) *Type {
@@ -50,4 +55,50 @@ func Pointer(elem *Type) *Type {
 		kind: TypeKindPointer,
 		elem: elem,
 	}
+}
+
+func StringTree(pkg string, t *Type) string {
+	var walkFn func(t *Type) string
+	walkFn = func(t *Type) string {
+		switch t.kind {
+		case TypeKindPointer:
+			elem := walkFn(t.elem)
+			next := fmt.Sprintf("%s.Pointer(%s)", pkg, elem)
+			return next
+
+		case TypeKindArray:
+			elem := walkFn(t.elem)
+			next := fmt.Sprintf("%s.Array(%s, %d)", pkg, elem, t.size)
+			return next
+
+		case TypeKindSlice:
+			elem := walkFn(t.elem)
+			next := fmt.Sprintf("%s.Slice(%s)", pkg, elem)
+			return next
+
+		case TypeKindMap:
+			key := walkFn(t.params[0])
+			value := walkFn(t.params[1])
+			next := fmt.Sprintf("%s.Map(%s, %s)", pkg, key, value)
+			return next
+
+		case TypeKindBasic:
+			return fmt.Sprintf(`%s.Basic("%s")`, pkg, t.name)
+
+		case TypeKindNamed:
+			tpkg, tname := TypeNamer(t)
+			if t.IsGeneric() {
+				params := forEach(t.params, func(t *Type) string {
+					return walkFn(t)
+				})
+				return fmt.Sprintf(`%s.Named("%s", "%s", %s)`, pkg, tpkg, tname, strings.Join(params, ", "))
+			}
+			return fmt.Sprintf(`%s.Named("%s", "%s")`, pkg, tpkg, tname)
+
+		default:
+			return "UnsupportedType"
+		}
+	}
+
+	return walkFn(t)
 }

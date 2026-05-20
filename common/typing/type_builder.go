@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// Name will create named type from provided descriptor.
-// Type itself can be generic with arbitrary args, described as *Type
+// Named will create named type from provided descriptor.
+// Type itself can be generic with arbitrary args described with *Type
 func Named(pkg string, name string, args ...*Type) *Type {
 	return &Type{
 		kind:   TypeKindNamed,
@@ -16,7 +16,7 @@ func Named(pkg string, name string, args ...*Type) *Type {
 	}
 }
 
-// Basic should create basic type descriptor,
+// Basic will create basic type descriptor,
 // it does no validation on provided name, so it's up to caller to ensure that name is basic type name
 func Basic(name string) *Type {
 	return &Type{
@@ -25,6 +25,7 @@ func Basic(name string) *Type {
 	}
 }
 
+// Slice will create slice with elem type of provided type descriptor
 func Slice(elem *Type) *Type {
 	return &Type{
 		kind: TypeKindSlice,
@@ -32,6 +33,7 @@ func Slice(elem *Type) *Type {
 	}
 }
 
+// Array will create array with elem type of provided type descriptor and specified size
 func Array(elem *Type, size int64) *Type {
 	return &Type{
 		kind: TypeKindArray,
@@ -40,6 +42,7 @@ func Array(elem *Type, size int64) *Type {
 	}
 }
 
+// Map will create map with provided key and value types
 func Map(key *Type, value *Type) *Type {
 	return &Type{
 		kind: TypeKindMap,
@@ -50,6 +53,7 @@ func Map(key *Type, value *Type) *Type {
 	}
 }
 
+// Pointer will create pointer for provided type
 func Pointer(elem *Type) *Type {
 	return &Type{
 		kind: TypeKindPointer,
@@ -57,7 +61,9 @@ func Pointer(elem *Type) *Type {
 	}
 }
 
-func StringTree(pkg string, t *Type) string {
+// TypeTreeToString traverses provided type and builds a chain of constructors ready to use for templates in string format.
+// pkg specifes package prefix for generated calls
+func TypeTreeToString(pkg string, t *Type) string {
 	var walkFn func(t *Type) string
 	walkFn = func(t *Type) string {
 		switch t.kind {
@@ -86,7 +92,7 @@ func StringTree(pkg string, t *Type) string {
 			return fmt.Sprintf(`%s.Basic("%s")`, pkg, t.name)
 
 		case TypeKindNamed:
-			tpkg, tname := TypeNamer(t)
+			tpkg, tname := Namer(t)
 			if t.IsGeneric() {
 				params := forEach(t.params, func(t *Type) string {
 					return walkFn(t)

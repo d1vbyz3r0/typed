@@ -140,7 +140,7 @@ func TestDeepNesting(t *testing.T) {
 	assert.Equal(t, "int", cur.name)
 }
 
-func TestWalkStringTree(t *testing.T) {
+func TestTypeTreeToString(t *testing.T) {
 	cases := []struct {
 		name  string
 		_type *Type
@@ -203,7 +203,7 @@ func TestWalkStringTree(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := StringTree("t", tc._type)
+			got := TypeTreeToString("t", tc._type)
 			require.Equal(t, tc.want, got, "got unexpected result")
 		})
 	}

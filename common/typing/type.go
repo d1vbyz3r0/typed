@@ -9,7 +9,11 @@ import (
 
 var ErrTypeUnsupported = errors.New("unsupported type")
 
-var TypeNamer = func(t *Type) (string, string) {
+type NamerFunc func(t *Type) (string, string)
+
+// Namer describes how to name type in string representation.
+// Default namer returns <full_pkg_path>.<TypeName>
+var Namer = func(t *Type) (string, string) {
 	return t.pkg, t.name
 }
 
@@ -117,10 +121,6 @@ func NewType(t types.Type) (*Type, error) {
 	return _type, err
 }
 
-func NewTypeFromValue(v any) (*Type, error) {
-	return nil, nil
-}
-
 // Name returns type name
 func (t *Type) Name() string {
 	return t.name
@@ -183,7 +183,7 @@ func (t *Type) String() string {
 		return t.name
 
 	case TypeKindNamed:
-		pkg, name := TypeNamer(t)
+		pkg, name := Namer(t)
 		res := pkg + "." + name
 		if t.IsGeneric() {
 			res += "["

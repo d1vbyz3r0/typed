@@ -140,6 +140,16 @@ func TestDeepNesting(t *testing.T) {
 	assert.Equal(t, "int", cur.name)
 }
 
+func TestEnumType(t *testing.T) {
+	base := Named("github.com/acme/user", "Role")
+	typ := Enum(base, []any{"admin", "user", "guest"})
+	require.NotNil(t, typ)
+
+	require.Equal(t, TypeKindEnum, typ.kind, "unexpected kind")
+	require.Equal(t, base, typ.elem, "unexpected elem")
+	require.ElementsMatch(t, []any{"admin", "user", "guest"}, typ.values, "unexpected values")
+}
+
 func TestTypeTreeToString(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -198,6 +208,11 @@ func TestTypeTreeToString(t *testing.T) {
 				Pointer(Slice(Pointer(Basic("string")))),
 			),
 			want: `t.Named("github.com/example/foo", "Generic", t.Map(t.Basic("int"), t.Named("github.com/example/bar", "MapVal")), t.Pointer(t.Slice(t.Pointer(t.Basic("string")))))`,
+		},
+		{
+			name:  "enum",
+			_type: Enum(Named("github.com/acme/user", "Role"), []any{"admin", "user", "guest"}),
+			want:  `t.Enum(t.Named("github.com/acme/user", "Role"), []any{"admin", "user", "guest"})`,
 		},
 	}
 

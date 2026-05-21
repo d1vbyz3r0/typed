@@ -61,6 +61,15 @@ func Pointer(elem *Type) *Type {
 	}
 }
 
+// Enum creates enum for provided type descriptor
+func Enum(elem *Type, values []any) *Type {
+	return &Type{
+		kind:   TypeKindEnum,
+		elem:   elem,
+		values: values,
+	}
+}
+
 // TypeTreeToString traverses provided type and builds a chain of constructors ready to use for templates in string format.
 // pkg specifes package prefix for generated calls
 func TypeTreeToString(pkg string, t *Type) string {
@@ -100,6 +109,10 @@ func TypeTreeToString(pkg string, t *Type) string {
 				return fmt.Sprintf(`%s.Named("%s", "%s", %s)`, pkg, tpkg, tname, strings.Join(params, ", "))
 			}
 			return fmt.Sprintf(`%s.Named("%s", "%s")`, pkg, tpkg, tname)
+
+		case TypeKindEnum:
+			elem := walkFn(t.elem)
+			return fmt.Sprintf("%s.Enum(%s, %#v)", pkg, elem, t.values)
 
 		default:
 			return "UnsupportedType"

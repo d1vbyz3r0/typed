@@ -27,6 +27,7 @@ const (
 	TypeKindSlice
 	TypeKindArray
 	TypeKindMap
+	TypeKindEnum
 )
 
 type Type struct {
@@ -44,6 +45,8 @@ type Type struct {
 	// params holds type infos for generic type params.
 	// For maps it stores key type first and value type as second elem
 	params []*Type
+	// values holds possible values for TypeKindEnum
+	values []any
 }
 
 func fillType(t types.Type, _type *Type) error {
@@ -165,6 +168,11 @@ func (t *Type) ElemType() *Type {
 	}
 }
 
+// Params returns slice of params, if type is generic, otherwise slice will be nil
+func (t *Type) Params() []*Type {
+	return t.params
+}
+
 func (t *Type) String() string {
 	switch t.kind {
 	case TypeKindPointer:
@@ -193,9 +201,12 @@ func (t *Type) String() string {
 			res += "]"
 		}
 		return res
+
+	case TypeKindEnum:
+		return t.elem.String()
 	}
 
-	return ""
+	return "UnsupportedType"
 }
 
 func forEach[T any](s []T, fn func(t T) string) []string {

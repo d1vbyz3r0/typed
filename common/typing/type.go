@@ -195,9 +195,10 @@ func (t *Type) String() string {
 		res := pkg + "." + name
 		if t.IsGeneric() {
 			res += "["
-			res += strings.Join(forEach(t.params, func(t *Type) string {
+			params := forEach(t.params, func(t *Type) string {
 				return t.String()
-			}), ",")
+			})
+			res += strings.Join(params, ",")
 			res += "]"
 		}
 		return res

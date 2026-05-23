@@ -66,17 +66,11 @@ type Handler struct {
 	Responses response.StatusCodeMapping
 }
 
-type Model struct {
-	Name    string
-	PkgPath string
-}
-
 type Result struct {
-	Enums    map[string][]any
 	Handlers []Handler
 	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
 	// It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
-	AdditionalModels []Model
+	AdditionalModels []*typing.Type
 }
 
 type Parser struct {
@@ -101,16 +95,6 @@ func New() (*Parser, error) {
 	}, nil
 }
 
-func combineEnums(dst map[string][]any, src map[string][]any) {
-	for k, v := range src {
-		if _, ok := dst[k]; ok {
-			dst[k] = append(dst[k], v...)
-		} else {
-			dst[k] = v
-		}
-	}
-}
-
 // Parse parses package and returns all found enums and handlers
 func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) {
 	parseOpts := new(parserOpts)
@@ -118,22 +102,14 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 		opt(parseOpts)
 	}
 
-	result := Result{
-		Enums: nil,
-	}
-
+	var result Result
 	for _, file := range pkg.Syntax {
 		if parseOpts.parseEnums {
-			foundEnums, err := enums.Extract(pkg.Name, file)
+			foundEnums, err := enums.Extract(pkg.Types, file, pkg.TypesInfo)
 			if err != nil {
 				return Result{}, fmt.Errorf("extract enums: %w", err)
 			}
-
-			if result.Enums == nil {
-				result.Enums = foundEnums
-			} else {
-				combineEnums(result.Enums, foundEnums)
-			}
+			result.AdditionalModels = append(result.AdditionalModels, foundEnums...)
 		}
 
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -152,23 +128,16 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 			responses := response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo)
 
 			if parseOpts.parseAllModels {
-				if req.BindModel != "" && req.BindModelPkg != "" {
-					result.AdditionalModels = append(result.AdditionalModels, Model{
-						Name:    req.BindModel,
-						PkgPath: req.BindModelPkg,
-					})
+				if req.ModelType != nil {
+					result.AdditionalModels = append(result.AdditionalModels, req.ModelType)
 				}
 
 				for _, resp := range responses {
 					for _, r := range resp {
-						if r.TypeName == "" && r.TypePkgPath == "" {
+						if r.ModelType == nil {
 							continue
 						}
-
-						result.AdditionalModels = append(result.AdditionalModels, Model{
-							Name:    r.TypeName,
-							PkgPath: r.TypePkgPath,
-						})
+						result.AdditionalModels = append(result.AdditionalModels, req.ModelType)
 					}
 				}
 			}
@@ -214,12 +183,13 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 					continue
 				}
 
-				pkgName := obj.Pkg().Name()
-				pkgPath := obj.Pkg().Path()
-				result.AdditionalModels = append(result.AdditionalModels, Model{
-					Name:    pkgName + "." + name,
-					PkgPath: pkgPath,
-				})
+				model, err := typing.NewType(obj.Type())
+				if err != nil {
+					logging.Error("failed to create typing.Type from type object", "err", err)
+					continue
+				}
+
+				result.AdditionalModels = append(result.AdditionalModels, model)
 			}
 		}
 	}

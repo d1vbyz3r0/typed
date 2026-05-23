@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/calls"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
@@ -38,7 +37,7 @@ type ContextResponseType struct {
 	types    *types.Info
 }
 
-var supportedFunctions = []string{
+var supportedFuns = []string{
 	jsonContextFunc, jsonPrettyContextFunc, jsonBlobContextFunc,
 	xmlContextFunc, xmlPrettyContextFunc, xmlBlobContextFunc,
 	stringContextFunc,
@@ -76,7 +75,7 @@ func newContextResponseType(
 		types:    typesInfo,
 	}
 
-	supported = slices.Contains(supportedFunctions, t.funcName)
+	supported = slices.Contains(supportedFuns, t.funcName)
 	return t, supported
 }
 
@@ -155,59 +154,10 @@ func (t ContextResponseType) getContentTypeFromArg(arg ast.Expr) (string, error)
 	}
 }
 
-func (t ContextResponseType) TypeName() (string, error) {
-	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
-		return "", nil
+func (t ContextResponseType) ModelType() (*typing.Type, error) {
+	if slices.Contains(rawBodyFuncs, t.funcName) ||
+		slices.Contains(noBodyFuncs, t.funcName) {
+		return nil, nil
 	}
-
-	name, err := meta.GetTypeName(t.types.TypeOf(t.call.Args[1]))
-	if err != nil {
-		return "", fmt.Errorf("get type name for %s: %w", t.funcName, err)
-	}
-
-	return name, nil
-}
-
-func (t ContextResponseType) TypePkgPath() (string, error) {
-	if slices.Contains(rawBodyFuncs, t.funcName) || slices.Contains(noBodyFuncs, t.funcName) {
-		return "", nil
-	}
-
-	argType := t.types.TypeOf(t.call.Args[1])
-	if typing.IsAnyType(argType) {
-		return "", nil
-	}
-
-	if typing.IsBasicType(argType) {
-		return "", nil
-	}
-
-	if typing.IsMap(argType) || typing.IsSlice(argType) {
-		elemType, ok := typing.GetUnderlyingElemType(argType)
-		if !ok {
-			return "", fmt.Errorf("failed to get underlying elem type for %s", argType)
-		}
-
-		if typing.IsAnyType(elemType) {
-			return "", nil
-		}
-
-		if typing.IsBasicType(elemType) {
-			return "", nil
-		}
-
-		path, err := meta.GetPkgPath(elemType)
-		if err != nil {
-			return "", fmt.Errorf("get package path for %s: %w", argType, err)
-		}
-
-		return path, nil
-	}
-
-	path, err := meta.GetPkgPath(argType)
-	if err != nil {
-		return "", fmt.Errorf("get pkg path for %s: %w", argType, err)
-	}
-
-	return path, nil
+	return typing.NewType(t.types.TypeOf(t.call.Args[1]))
 }

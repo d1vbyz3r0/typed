@@ -8,24 +8,21 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"github.com/d1vbyz3r0/typed/logging"
 )
 
-var stringType = reflect.TypeOf("")
+var stringType = reflect.TypeFor[string]()
 
 type StatusCodeMapping map[int][]Response
 
 type Response struct {
 	// ContentType is a content type retrieved from func usage context. It's empty for Redirect and NoContent
 	ContentType string
-	// TypeName is a type name like it's used in code, with package name as prefix (except for std types).
-	// Field is empty for responses with empty body
-	TypeName string
-	// TypePkgPath is a full pkg path for type. Field is empty for responses with empty body
-	TypePkgPath string
+	ModelType   *typing.Type
 	Headers     []headers.Header
 }
 
@@ -71,15 +68,9 @@ func (m StatusCodeMapping) extractResponses(
 			return true
 		}
 
-		typeName, err := resp.TypeName()
+		model, err := resp.ModelType()
 		if err != nil {
-			logging.Error("failed to get type name", "error", err)
-			return true
-		}
-
-		pkgPath, err := resp.TypePkgPath()
-		if err != nil {
-			logging.Error("failed to get type package path", "error", err)
+			logging.Error("failed to get model type info", "error", err)
 			return true
 		}
 
@@ -88,8 +79,7 @@ func (m StatusCodeMapping) extractResponses(
 
 		m[statusCode] = append(m[statusCode], Response{
 			ContentType: contentType,
-			TypeName:    typeName,
-			TypePkgPath: pkgPath,
+			ModelType:   model,
 			Headers:     respHeaders,
 		})
 

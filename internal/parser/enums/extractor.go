@@ -3,14 +3,20 @@ package enums
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/token"
-	"strconv"
+	"go/types"
 
-	"github.com/d1vbyz3r0/typed/logging"
+	"github.com/d1vbyz3r0/typed/common/typing"
 )
 
-func Extract(pkg string, file *ast.File) (map[string][]any, error) {
-	res := make(map[string][]any)
+type descriptor struct {
+	pkg  string
+	name string
+}
+
+func Extract(pkg *types.Package, file *ast.File, info *types.Info) ([]*typing.Type, error) {
+	enums := make(map[descriptor][]any)
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.CONST {
@@ -23,71 +29,68 @@ func Extract(pkg string, file *ast.File) (map[string][]any, error) {
 				continue
 			}
 
-			exprCount := len(valSpec.Values)
-			for i := range valSpec.Names {
-				var expr ast.Expr
-				if exprCount == 1 {
-					expr = valSpec.Values[0]
-				} else if i < exprCount {
-					expr = valSpec.Values[i]
-				}
-
-				if expr == nil {
+			for _, name := range valSpec.Names {
+				c, ok := info.Defs[name].(*types.Const)
+				if !ok {
 					continue
 				}
 
-				switch v := expr.(type) {
-				case *ast.BasicLit:
-					if valSpec.Type != nil {
-						if ident, ok := valSpec.Type.(*ast.Ident); ok {
-							lit, err := parseLiteral(v.Value)
-							if err != nil {
-								return nil, err
-							}
-
-							k := pkg + "." + ident.Name
-							res[k] = append(res[k], lit)
-							logging.Debug("added enum type", "name", k)
-						}
-					}
-
-				case *ast.CallExpr:
-					if funIdent, ok := v.Fun.(*ast.Ident); ok && len(v.Args) == 1 {
-						if lit, ok := v.Args[0].(*ast.BasicLit); ok {
-							parsedLit, err := parseLiteral(lit.Value)
-							if err != nil {
-								return nil, err
-							}
-
-							k := pkg + "." + funIdent.Name
-							res[k] = append(res[k], parsedLit)
-							logging.Debug("added enum type", "name", k)
-						}
-					}
+				named, ok := c.Type().(*types.Named)
+				if !ok {
+					continue
 				}
+
+				obj := named.Obj()
+				if obj == nil || obj.Pkg() == nil || obj.Pkg().Path() != pkg.Path() {
+					continue
+				}
+
+				value, err := constToAny(c.Val())
+				if err != nil {
+					return nil, fmt.Errorf("const %s: %w", name.Name, err)
+				}
+
+				k := descriptor{
+					pkg:  obj.Pkg().Path(),
+					name: obj.Name(),
+				}
+				enums[k] = append(enums[k], value)
 			}
 		}
+	}
+
+	res := make([]*typing.Type, 0, len(enums))
+	for desc, vals := range enums {
+		res = append(res, typing.Enum(
+			typing.Named(desc.pkg, desc.name),
+			vals,
+		))
 	}
 
 	return res, nil
 }
 
-func parseLiteral(lit string) (any, error) {
-	if i, err := strconv.Atoi(lit); err == nil {
-		return i, nil
-	}
-
-	if f, err := strconv.ParseFloat(lit, 64); err == nil {
+func constToAny(v constant.Value) (any, error) {
+	switch v.Kind() {
+	case constant.String:
+		return constant.StringVal(v), nil
+	case constant.Bool:
+		return constant.BoolVal(v), nil
+	case constant.Int:
+		if i, ok := constant.Int64Val(v); ok {
+			return i, nil
+		}
+		if u, ok := constant.Uint64Val(v); ok {
+			return u, nil
+		}
+		return nil, fmt.Errorf("integer out of int64/uint64 range: %s", v)
+	case constant.Float:
+		f, ok := constant.Float64Val(v)
+		if !ok {
+			return nil, fmt.Errorf("float out of float64 range: %s", v)
+		}
 		return f, nil
+	default:
+		return nil, fmt.Errorf("unsupported const kind: %s", v.Kind())
 	}
-
-	if s, err := strconv.Unquote(lit); err == nil {
-		return s, nil
-	}
-
-	if b, err := strconv.ParseBool(lit); err == nil {
-		return b, nil
-	}
-
-	return nil, fmt.Errorf("unknown literal: %s", lit)
 }

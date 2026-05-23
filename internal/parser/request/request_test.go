@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/packages"
@@ -18,8 +19,7 @@ func TestNewRequest_JSON(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "jsontest.JsonDTO",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/jsontest",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/jsontest", "JsonDTO"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 		},
@@ -48,8 +48,7 @@ func TestNewRequest_XML(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "xmltest.XMLDto",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/xmltest",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/xmltest", "XMLDto"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationXML: Body{},
 		},
@@ -78,8 +77,7 @@ func TestNewRequest_EmptyTags(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "emptytest.NoTags",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/emptytest",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/emptytest", "NoTags"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 			echo.MIMEApplicationXML:  Body{},
@@ -109,8 +107,7 @@ func TestNewRequest_FormTagsNoFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "nofile.Form",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/nofile",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/nofile", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationForm: Body{},
 			echo.MIMEMultipartForm:   Body{},
@@ -140,8 +137,7 @@ func TestNewRequest_FormWithFile(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "file.Form",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/file",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/file", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
@@ -170,8 +166,7 @@ func TestNewRequest_FormWithFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "files.Form",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/formtest/files",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/files", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
@@ -200,7 +195,6 @@ func TestNewRequest_NoBody(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:          "",
 		ContentTypeMapping: ContentTypeMapping{},
 		PathParams:         nil,
 		QueryParams:        nil,
@@ -227,7 +221,6 @@ func TestNewRequest_NoBinds(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:          "",
 		ContentTypeMapping: ContentTypeMapping{},
 		PathParams:         nil,
 		QueryParams:        nil,
@@ -254,8 +247,7 @@ func TestNewRequest_MultipleTags(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &Request{
-		BindModel:    "multiple.Data",
-		BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/request/multiple",
+		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/multiple", "Data"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 			echo.MIMEMultipartForm:   Body{},
@@ -308,7 +300,6 @@ func TestNewRequest_InlineFormNoFiles(t *testing.T) {
 	})
 
 	want := &Request{
-		BindModel: "",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationForm: Body{
 				Form: f,
@@ -363,7 +354,6 @@ func TestNewRequest_InlineFormWithFiles(t *testing.T) {
 	})
 
 	want := &Request{
-		BindModel: "",
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{
 				Form: f,
@@ -382,7 +372,7 @@ func TestNewRequest_InlineFormWithFiles(t *testing.T) {
 		}
 
 		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want.BindModel, req.BindModel)
+		require.Equal(t, want.ModelType, req.ModelType)
 		got := req.ContentTypeMapping[echo.MIMEMultipartForm].Form
 		require.Equal(t, f, got)
 		return false

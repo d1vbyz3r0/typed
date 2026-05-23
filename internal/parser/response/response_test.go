@@ -10,11 +10,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
 	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"github.com/d1vbyz3r0/typed/internal/testsuite"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/packages"
 )
 
 func TestStatusCodeMapping_extractResponses(t *testing.T) {
@@ -34,20 +35,17 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 				http.StatusOK: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    "handlers.Example",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
 					},
 					{
 						ContentType: "application/xml",
-						TypeName:    "map[string]any",
-						TypePkgPath: "",
+						ModelType:   typing.Map(typing.Basic("string"), typing.Basic("interface")),
 					},
 				},
 				http.StatusBadRequest: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    "[]map[int]handlers.Example",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
 					},
 				},
 			},
@@ -56,12 +54,7 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pkgs, err := packages.Load(&packages.Config{
-				Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
-			}, "../../../testdata/handlers/")
-			require.NoError(t, err)
-
-			pkg := pkgs[0]
+			pkg := testsuite.LoadPackage(t, "../../../testdata/handlers/")
 			for _, file := range pkg.Syntax {
 				ast.Inspect(file, func(n ast.Node) bool {
 					funcDecl, ok := n.(*ast.FuncDecl)
@@ -176,7 +169,6 @@ func Handler(c *Ctx) error {
 		t.Fatal("Handler not found")
 	}
 
-	// ищем позицию return
 	var returnPos token.Pos
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		if ret, ok := n.(*ast.ReturnStmt); ok {

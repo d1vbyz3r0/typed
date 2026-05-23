@@ -5,7 +5,6 @@ import (
 	"go/types"
 	"reflect"
 
-	"github.com/d1vbyz3r0/typed/common/meta"
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/binding"
@@ -35,15 +34,8 @@ type Body struct {
 	Form reflect.Type
 }
 
-// TODO:
-// 1. We need raw model string like map[dto.SomeType]dto.OtherType to use with new(map[dto.SomeType]dto.OtherType)
-// 2. Also we need raw type descriptor, which will contain base type name, type parameters for generics + full package path
 type Request struct {
-	// BindModel as it's used in code: pkg.TypeName
-	BindModel string
-	// Full path to BindModel package
-	BindModelPkg string
-	// ContentTypeMapping contains mapping of content-type to request body
+	ModelType          *typing.Type
 	ContentTypeMapping ContentTypeMapping
 	PathParams         []path.Param
 	QueryParams        []query.Param
@@ -119,23 +111,15 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 			return true
 		}
 
-		typeName, err := meta.GetTypeName(named)
+		modelType, err := typing.NewType(named)
 		if err != nil {
-			logging.Error("failed to get type", "type", named, "err", err)
+			logging.Error("failed to build typing.Type", "type", named, "err", err)
 			return true
 		}
 
-		pkgPath, err := meta.GetPkgPath(named)
-		if err != nil {
-			logging.Error("failed to get package path", "type", named, "err", err)
-			return true
-		}
-
-		r.BindModel = typeName
-		r.BindModelPkg = pkgPath
+		r.ModelType = modelType
 
 		hasUntagged := binding.HasAtLeastOneFieldWithoutBindingTag(s, bodyBindingTags, paramBindingTags)
-
 		if binding.HasTag(s, "form") {
 			if !binding.HasFiles(s) {
 				r.ContentTypeMapping[echo.MIMEApplicationForm] = Body{}

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
@@ -76,13 +77,11 @@ func TestFinder_Find(t *testing.T) {
 			Name: "GetUser",
 			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
 			Request: &request.Request{
-				BindModel:          "",
-				BindModelPkg:       "",
 				ContentTypeMapping: request.ContentTypeMapping{},
 				PathParams: []path.Param{
 					{
 						Name: "userId",
-						Type: reflect.TypeOf(int(0)),
+						Type: reflect.TypeFor[int](),
 					},
 				},
 				QueryParams: nil,
@@ -90,23 +89,20 @@ func TestFinder_Find(t *testing.T) {
 			Responses: response.StatusCodeMapping{
 				http.StatusBadRequest: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusInternalServerError: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusOK: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "User"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 			},
@@ -116,8 +112,7 @@ func TestFinder_Find(t *testing.T) {
 			Name: "GetUsers",
 			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
 			Request: &request.Request{
-				BindModel:          "dto.UsersFilter",
-				BindModelPkg:       "github.com/d1vbyz3r0/typed/examples/api/dto",
+				ModelType:          typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "UsersFilter"),
 				ContentTypeMapping: request.ContentTypeMapping{},
 				PathParams:         nil,
 				QueryParams:        nil,
@@ -125,23 +120,20 @@ func TestFinder_Find(t *testing.T) {
 			Responses: response.StatusCodeMapping{
 				http.StatusBadRequest: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusInternalServerError: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusOK: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "User"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "[]dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 			},
@@ -151,8 +143,7 @@ func TestFinder_Find(t *testing.T) {
 			Name: "CreateUser",
 			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
 			Request: &request.Request{
-				BindModel:    "dto.User",
-				BindModelPkg: "github.com/d1vbyz3r0/typed/examples/api/dto",
+				ModelType: typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "User"),
 				ContentTypeMapping: request.ContentTypeMapping{
 					echo.MIMEApplicationJSON: {},
 				},
@@ -162,23 +153,20 @@ func TestFinder_Find(t *testing.T) {
 			Responses: response.StatusCodeMapping{
 				http.StatusBadRequest: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusInternalServerError: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "Error"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 				http.StatusOK: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "User"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 			},
@@ -188,8 +176,6 @@ func TestFinder_Find(t *testing.T) {
 			Name: "ReturningMap",
 			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
 			Request: &request.Request{
-				BindModel:          "",
-				BindModelPkg:       "",
 				ContentTypeMapping: request.ContentTypeMapping{},
 				PathParams:         nil,
 				QueryParams:        nil,
@@ -197,9 +183,8 @@ func TestFinder_Find(t *testing.T) {
 			Responses: response.StatusCodeMapping{
 				http.StatusOK: {
 					{
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/examples/api/dto", "User"),
 						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "map[string][]dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
 					},
 				},
 			},
@@ -213,6 +198,5 @@ func TestFinder_Find(t *testing.T) {
 		require.Equal(t, want[k].Doc, got.Doc)
 		require.Equal(t, want[k].Request, got.Request)
 		require.Equal(t, want[k].Responses, got.Responses)
-
 	}
 }

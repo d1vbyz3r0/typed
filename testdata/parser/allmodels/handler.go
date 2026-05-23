@@ -1,10 +1,11 @@
 package allmodels
 
 import (
-	"github.com/labstack/echo/v4"
 	"mime/multipart"
 	"net/http"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Form struct {
@@ -24,6 +25,13 @@ type User struct {
 	Name string `json:"name" form:"name"`
 	Age  int    `json:"age" form:"age"`
 }
+
+type Role string
+
+const (
+	RoleAdmin = Role("admin")
+	RoleUser  = Role("user")
+)
 
 // Handler 1
 func Handler(c echo.Context) error {

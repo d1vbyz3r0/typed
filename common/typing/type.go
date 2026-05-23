@@ -132,6 +132,7 @@ func (t *Type) Name() string {
 }
 
 // Pkg returns full package path for type
+// If type is basic result will be empty string
 func (t *Type) Pkg() string {
 	return t.pkg
 }

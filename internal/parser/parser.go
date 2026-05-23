@@ -68,8 +68,8 @@ type Handler struct {
 
 type Result struct {
 	Handlers []Handler
-	// AdditionalModels will contain array of all type declarations and structs used in c.Bind(), if ParseAllModels was provided as opt.
-	// It can contain duplicates, it's up to you to deduplicate them. Zero objects (with empty Name and PkgPath not added)
+	// AdditionalModels will contain array of all type declarations and structs used in c.Bind() if ParseAllModels was provided as opt.
+	// It can contain duplicates, it's up to you to deduplicate them.
 	AdditionalModels []*typing.Type
 }
 

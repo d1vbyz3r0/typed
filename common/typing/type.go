@@ -12,8 +12,10 @@ var ErrTypeUnsupported = errors.New("unsupported type")
 type NamerFunc func(t *Type) (string, string)
 
 // Namer describes how to name type in string representation.
+var Namer = DefaultNamer
+
 // Default namer returns <full_pkg_path>.<TypeName>
-var Namer = func(t *Type) (string, string) {
+func DefaultNamer(t *Type) (string, string) {
 	return t.pkg, t.name
 }
 
@@ -38,15 +40,15 @@ type Type struct {
 	// pkg holds full package path for type.
 	// It will be empty for TypeKindBasic, TypeKindPointer, TypeKindSlice and TypeKindArray
 	pkg string
-	// elem holds type info for pointers, slices and arrays recursively
+	// elem holds type info for pointers, enums, slices and arrays recursively
 	elem *Type
 	// size holds array size for TypeKindArray, otherwise 0
 	size int64
 	// params holds type infos for generic type params.
 	// For maps it stores key type first and value type as second elem
 	params []*Type
-	// values holds possible values for TypeKindEnum
-	values []any
+	// enumValues holds possible enumValues for TypeKindEnum
+	enumValues []any
 }
 
 func fillType(t types.Type, _type *Type) error {
@@ -140,6 +142,10 @@ func (t *Type) Kind() TypeKind {
 
 func (t *Type) IsGeneric() bool {
 	return len(t.params) > 0
+}
+
+func (t *Type) EnumValues() []any {
+	return t.enumValues
 }
 
 // KeyType returns type descriptor for key if current type is map, otherwise nil

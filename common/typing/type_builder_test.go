@@ -147,7 +147,7 @@ func TestEnumType(t *testing.T) {
 
 	require.Equal(t, TypeKindEnum, typ.kind, "unexpected kind")
 	require.Equal(t, base, typ.elem, "unexpected elem")
-	require.ElementsMatch(t, []any{"admin", "user", "guest"}, typ.values, "unexpected values")
+	require.ElementsMatch(t, []any{"admin", "user", "guest"}, typ.enumValues, "unexpected values")
 }
 
 func TestTypeTreeToString(t *testing.T) {
@@ -218,7 +218,7 @@ func TestTypeTreeToString(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := TypeTreeToString("t", tc._type)
+			got := TypeTreeToString("t", tc._type, Namer)
 			require.Equal(t, tc.want, got, "got unexpected result")
 		})
 	}

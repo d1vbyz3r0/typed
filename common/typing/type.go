@@ -47,7 +47,7 @@ type Type struct {
 	// params holds type infos for generic type params.
 	// For maps it stores key type first and value type as second elem
 	params []*Type
-	// enumValues holds possible enumValues for TypeKindEnum
+	// enumValues holds possible enum values for TypeKindEnum
 	enumValues []any
 }
 
@@ -217,7 +217,7 @@ func (t *Type) String() string {
 	return "UnsupportedType"
 }
 
-func forEach[T any](s []T, fn func(t T) string) []string {
+func forEach(s []*Type, fn func(t *Type) string) []string {
 	res := make([]string, 0, len(s))
 	for _, v := range s {
 		res = append(res, fn(v))

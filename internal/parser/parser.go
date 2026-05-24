@@ -137,7 +137,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 						if r.ModelType == nil {
 							continue
 						}
-						result.AdditionalModels = append(result.AdditionalModels, req.ModelType)
+						result.AdditionalModels = append(result.AdditionalModels, r.ModelType)
 					}
 				}
 			}

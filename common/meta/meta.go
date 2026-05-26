@@ -132,12 +132,9 @@ func GetCalledFuncName(call *ast.CallExpr) (string, bool) {
 	return sel.Sel.Name, true
 }
 
-// GetPkgName returns last part of pkg path
+// GetPkgName returns last part of pkg path.
+// TODO: need to rename to smth like GetLastPkgSegment
 func GetPkgName(pkgPath string) string {
 	parts := strings.Split(pkgPath, "/")
 	return parts[len(parts)-1]
-}
-
-func IsSubPkg(parent string, child string) bool {
-	return GetPkgName(parent) == GetPkgName(child)
 }

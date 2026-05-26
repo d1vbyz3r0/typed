@@ -112,3 +112,34 @@ func TestGetPkgPath(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPkgName(t *testing.T) {
+	cases := []struct {
+		name string
+		pkg  string
+		want string
+	}{
+		{
+			name: "regular path on github",
+			pkg:  "github.com/example/foo",
+			want: "foo",
+		},
+		{
+			name: "local package path",
+			pkg:  "example/foo",
+			want: "foo",
+		},
+		{
+			name: "top-level package",
+			pkg:  "foo",
+			want: "foo",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := GetPkgName(tc.pkg)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}

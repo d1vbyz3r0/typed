@@ -118,7 +118,11 @@ func TypeTreeToString(pkg string, t *Type, namer NamerFunc) string {
 
 		case TypeKindEnum:
 			elem := walkFn(t.elem)
-			return fmt.Sprintf("%s.Enum(%s, %#v)", pkg, elem, t.enumValues)
+			enumVals := make([]string, 0, len(t.enumValues))
+			for _, v := range t.enumValues {
+				enumVals = append(enumVals, fmt.Sprintf("%#v", v))
+			}
+			return fmt.Sprintf(`%s.Enum(%s, []any{%s})`, pkg, elem, strings.Join(enumVals, ", "))
 
 		default:
 			return "UnsupportedType"
@@ -138,27 +142,37 @@ func Traverse(t *Type, fn func(n *Type)) error {
 	switch t.kind {
 	case TypeKindPointer:
 		Traverse(t.elem, fn)
+		return nil
+
 	case TypeKindArray:
 		Traverse(t.elem, fn)
+		return nil
+
 	case TypeKindSlice:
 		Traverse(t.elem, fn)
+		return nil
+
 	case TypeKindMap:
 		Traverse(t.params[0], fn)
 		Traverse(t.params[1], fn)
+		return nil
+
 	case TypeKindBasic:
 		fn(t)
 		return nil
+
 	case TypeKindNamed:
 		fn(t)
 		for _, param := range t.params {
 			Traverse(param, fn)
 		}
-	case TypeKindEnum:
-		Traverse(t, fn)
 		return nil
-	default:
-		return fmt.Errorf("unsupported type kind: %s", t.kind)
-	}
 
-	return nil
+	case TypeKindEnum:
+		Traverse(t.elem, fn)
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported type kind: %v", t.kind)
+	}
 }

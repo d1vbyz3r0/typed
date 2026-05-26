@@ -180,30 +180,35 @@ func (t *Type) Params() []*Type {
 	return t.params
 }
 
+// String formats type using Namer
 func (t *Type) String() string {
+	return t.format(Namer)
+}
+
+func (t *Type) format(namer NamerFunc) string {
 	switch t.kind {
 	case TypeKindPointer:
-		return "*" + t.elem.String()
+		return "*" + t.elem.format(namer)
 
 	case TypeKindArray:
 		return fmt.Sprintf("[%d]%s", t.size, t.elem)
 
 	case TypeKindSlice:
-		return "[]" + t.elem.String()
+		return "[]" + t.elem.format(namer)
 
 	case TypeKindMap:
-		return fmt.Sprintf("map[%s]%s", t.params[0], t.params[1])
+		return fmt.Sprintf("map[%s]%s", t.params[0].format(namer), t.params[1].format(namer))
 
 	case TypeKindBasic:
 		return t.name
 
 	case TypeKindNamed:
-		pkg, name := Namer(t)
+		pkg, name := namer(t)
 		res := pkg + "." + name
 		if t.IsGeneric() {
 			res += "["
 			params := forEach(t.params, func(t *Type) string {
-				return t.String()
+				return t.format(namer)
 			})
 			res += strings.Join(params, ",")
 			res += "]"
@@ -211,10 +216,15 @@ func (t *Type) String() string {
 		return res
 
 	case TypeKindEnum:
-		return t.elem.String()
+		return t.elem.format(namer)
 	}
 
 	return "UnsupportedType"
+}
+
+// ToString converts type to string repr using provided namer
+func ToString(t *Type, namer NamerFunc) string {
+	return t.format(namer)
 }
 
 func forEach(s []*Type, fn func(t *Type) string) []string {

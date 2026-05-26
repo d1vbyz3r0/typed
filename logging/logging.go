@@ -27,7 +27,7 @@ type Logger interface {
 type stdLogger struct {
 	w     io.Writer
 	level Level
-	mu    sync.Mutex
+	mtx   sync.Mutex
 }
 
 var (
@@ -114,9 +114,9 @@ func (l *stdLogger) write(level Level, label string, msg string, attrs ...any) {
 		line += " (" + formatted + ")"
 	}
 
-	l.mu.Lock()
+	l.mtx.Lock()
 	fmt.Fprintln(l.w, line)
-	l.mu.Unlock()
+	l.mtx.Unlock()
 }
 
 func formatAttrs(attrs []any) string {

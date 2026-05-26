@@ -58,7 +58,7 @@ func SaveSpec(spec *openapi3.T, outPath string) error {
 			return fmt.Errorf("encode spec: %w", err)
 		}
 
-	case UndefinedFormat:
+	default:
 		return fmt.Errorf("can't define spec format basing on path, check extension: %s", outPath)
 	}
 

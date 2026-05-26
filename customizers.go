@@ -3,6 +3,7 @@ package typed
 import (
 	"reflect"
 
+	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 )
@@ -69,14 +70,24 @@ func uuidCustomizer(name string, t reflect.Type, tag reflect.StructTag, schema *
 	return nil
 }
 
-func NewEnumsCustomizer(enums map[string][]any) openapi3gen.SchemaCustomizerFn {
+func NewEnumsCustomizer(registry *Registry) openapi3gen.SchemaCustomizerFn {
 	return func(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-		if values, ok := enums[t.String()]; ok {
-			schema.Enum = make([]interface{}, len(values))
-			for i, v := range values {
-				schema.Enum[i] = v
-			}
+		pkgPath := t.PkgPath()
+		typeName := t.Name()
+
+		vals, ok := registry.LookupEnumValues(pkgPath, typeName)
+		if !ok {
+			logging.Debug("enum values not found in registry", "pkg", pkgPath, "typename", typeName)
+			return nil
 		}
+
+		logging.Debug("enum values found in registry", "pkg", pkgPath, "typename", typeName)
+
+		schema.Enum = make([]any, len(vals))
+		for i, v := range vals {
+			schema.Enum[i] = v
+		}
+
 		return nil
 	}
 }

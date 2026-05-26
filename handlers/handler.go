@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"maps"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
@@ -11,7 +13,6 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/exp/maps"
 )
 
 var stringType = reflect.TypeFor[string]()
@@ -60,7 +61,7 @@ func NewHandler(route echo.Route, middlewares []echo.MiddlewareFunc, handler par
 		middlewares: middlewares,
 		handler:     handler,
 		path:        p,
-		pathParams:  pathParams,
+		pathParams:  slices.Collect(pathParams),
 	}
 }
 

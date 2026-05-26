@@ -3,8 +3,10 @@ package generator
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
+	"regexp"
+
+	"gopkg.in/yaml.v3"
 )
 
 func LoadConfig(path string) (Config, error) {
@@ -36,7 +38,7 @@ type Config struct {
 	Concurrency     int          `yaml:"concurrency"`
 }
 
-func (c *Config) Validate() error {
+func (c Config) Validate() error {
 	if c.Input.RoutesProviderCtor == "" && !c.GenerateLib {
 		return errors.New("routes-provider-ctor is required")
 	}
@@ -47,13 +49,13 @@ func (c *Config) Validate() error {
 
 	for i, h := range c.Input.Handlers {
 		if err := h.Validate(); err != nil {
-			return fmt.Errorf("validate handler[%d] config: %w", i, err)
+			return fmt.Errorf("validate handler(n=%d,path=%s) config: %w", i, h.Path, err)
 		}
 	}
 
 	for i, m := range c.Input.Models {
 		if err := m.Validate(); err != nil {
-			return fmt.Errorf("validate model[%d] config: %w", i, err)
+			return fmt.Errorf("validate model(n=%d,path=%s) config: %w", i, m.Path, err)
 		}
 	}
 
@@ -62,7 +64,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.GenerateLib && c.LibPkg == "" {
-		return errors.New("lib_pkg is required when generate_lib is true")
+		return errors.New("lib-pkg is required when generate_lib is true")
 	}
 
 	return nil
@@ -84,18 +86,42 @@ type Server struct {
 }
 
 type ModelsConfig struct {
-	Path          string   `yaml:"path"`
-	Recursive     bool     `yaml:"recursive"`
-	IncludeModels []string `yaml:"include-models"`
-	ExcludeModels []string `yaml:"exclude-models"`
+	Path          string        `yaml:"path"`
+	Recursive     bool          `yaml:"recursive"`
+	IncludeModels []ModelFilter `yaml:"include"`
+	ExcludeModels []ModelFilter `yaml:"exclude"`
 }
 
-func (c *ModelsConfig) Validate() error {
+func (c ModelsConfig) Validate() error {
 	if c.Path == "" {
 		return errors.New("path is required")
 	}
-
 	return nil
+}
+
+type ModelFilter struct {
+	// Path matches package path relative to the configured models.path
+	Path string `yaml:"path"`
+	// ImportPath is a full import path regex
+	ImportPath string `yaml:"import-path"`
+	// Pkg matches Go package name
+	Pkg string `yaml:"pkg"`
+	// Name matches model type name
+	Name string `yaml:"name"`
+}
+
+func (f ModelFilter) Validate() error {
+	if f.Path == "" && f.ImportPath == "" && f.Pkg == "" && f.Name == "" {
+		return errors.New("empty model filter")
+	}
+	return nil
+}
+
+type CompiledModelFilter struct {
+	Path       *regexp.Regexp
+	ImportPath *regexp.Regexp
+	Pkg        *regexp.Regexp
+	Name       *regexp.Regexp
 }
 
 type HandlersConfig struct {
@@ -103,7 +129,7 @@ type HandlersConfig struct {
 	Recursive bool   `yaml:"recursive"`
 }
 
-func (c *HandlersConfig) Validate() error {
+func (c HandlersConfig) Validate() error {
 	if c.Path == "" {
 		return errors.New("path is required")
 	}
@@ -116,7 +142,7 @@ type OutputConfig struct {
 	SpecPath string `yaml:"spec-path"`
 }
 
-func (c *OutputConfig) Validate() error {
+func (c OutputConfig) Validate() error {
 	if c.Path == "" {
 		return errors.New("path is required")
 	}

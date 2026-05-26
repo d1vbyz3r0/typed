@@ -3,19 +3,18 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 	"sync"
 	"text/template"
 
 	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/logging"
-	"golang.org/x/exp/maps"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/imports"
 
 	_ "embed"
 )
@@ -25,26 +24,25 @@ var scriptTemplate string
 
 type TemplateArgs struct {
 	ApiPrefix              *string
-	Types                  []string
-	Imports                []string
-	Enums                  map[string][]any
+	Types                  []*typing.Type
+	Imports                []*importMapping
 	Title                  string
 	Version                string
 	Servers                []Server
 	HandlersPkgs           []HandlersConfig
-	RoutesProviderCtor     string
+	RoutesProviderCtorName string
+	RoutesProviderPkgAlias string
 	GenerateLib            bool
 	LibPkg                 string
 	SpecPath               string
 	HandlerProcessingHooks []string
 	Concurrency            int
+	AliasNamer             typing.NamerFunc
 }
 
 type Generator struct {
-	cfg            Config
-	parser         *parser.Parser
-	includeFilters map[string][]string
-	excludeFilters map[string][]string
+	cfg    Config
+	parser *parser.Parser
 }
 
 func New(cfg Config) (*Generator, error) {
@@ -53,10 +51,12 @@ func New(cfg Config) (*Generator, error) {
 		return nil, fmt.Errorf("init parser: %w", err)
 	}
 
-	return &Generator{
+	g := &Generator{
 		cfg:    cfg,
 		parser: p,
-	}, nil
+	}
+
+	return g, nil
 }
 
 func (g *Generator) Generate() error {
@@ -79,132 +79,100 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
-	err = g.initModelsFilter(pkgs)
-	if err != nil {
-		return fmt.Errorf("init models filter: %w", err)
+	if packages.PrintErrors(pkgs) > 0 {
+		return fmt.Errorf("failed to load one or more packages")
 	}
 
-	types := make(map[string]struct{})
-	imports := map[string]struct{}{
-		g.cfg.Input.RoutesProviderPkg: {},
-	}
-	enums := make(map[string][]any)
-
-	if g.cfg.Concurrency == 0 {
+	if g.cfg.Concurrency <= 0 {
 		g.cfg.Concurrency = 5
 	}
 
 	var (
-		mtx sync.Mutex
-		wg  sync.WaitGroup
-		sem = make(chan struct{}, g.cfg.Concurrency)
+		mtx     sync.Mutex
+		eg      errgroup.Group
+		results []parser.Result
 	)
 
+	eg.SetLimit(g.cfg.Concurrency)
+
 	for _, pkg := range pkgs {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(pkg *packages.Package) {
-			defer func() {
-				wg.Done()
-				<-sem
-			}()
-
-			if len(pkg.Errors) > 0 {
-				for _, err := range pkg.Errors {
-					logging.Error("failed to process package", "path", pkg.PkgPath, "error", err)
-				}
-				return
-			}
-
+		eg.Go(func() error {
+			// TODO: determine if should parse all models and enums based on current package path and filters
 			res, err := g.parser.Parse(pkg, parser.ParseAllModels(), parser.ParseEnums())
 			if err != nil {
-				logging.Error("failed to parse package", "path", pkg.PkgPath)
-				return
+				return fmt.Errorf("parse pkg %s: %w", pkg.PkgPath, err)
 			}
 
-			for k, enum := range res.Enums {
-				mtx.Lock()
-				enums[k] = enum
-				mtx.Unlock()
-			}
-
-			for _, h := range res.Handlers {
-				if h.Request != nil {
-					if h.Request.BindModel != "" {
-						mtx.Lock()
-						types[h.Request.BindModel] = struct{}{}
-						imports[h.Request.BindModelPkg] = struct{}{}
-						mtx.Unlock()
-					}
-				}
-
-				for _, responses := range h.Responses {
-					for _, resp := range responses {
-						if resp.TypeName != "" {
-							mtx.Lock()
-							types[resp.TypeName] = struct{}{}
-							mtx.Unlock()
-						}
-
-						if resp.TypePkgPath != "" {
-							mtx.Lock()
-							imports[resp.TypePkgPath] = struct{}{}
-							mtx.Unlock()
-						}
-					}
-				}
-			}
-
-			for _, model := range g.filterModels(res.AdditionalModels) {
-				mtx.Lock()
-				imports[model.PkgPath] = struct{}{}
-				types[model.Name] = struct{}{}
-				mtx.Unlock()
-			}
-		}(pkg)
+			mtx.Lock()
+			results = append(results, res)
+			mtx.Unlock()
+			return nil
+		})
 	}
 
-	wg.Wait()
-
-	validImports := make([]string, 0)
-	for imp := range imports {
-		if imp != "" {
-			validImports = append(validImports, imp)
-		}
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
-	tmpl := template.Must(template.New("spec").Parse(scriptTemplate))
-	result := bytes.NewBuffer(make([]byte, 0, len(scriptTemplate)))
+	_imports, err := createImportMappings(results, initialMapping(g.cfg.Input.RoutesProviderPkg))
+	if err != nil {
+		return fmt.Errorf("create import mappings: %w", err)
+	}
 
-	err = tmpl.Execute(result, TemplateArgs{
+	_types, err := g.filterModels(collectTypes(results))
+	if err != nil {
+		return fmt.Errorf("filter models: %w", err)
+	}
+
+	return g.execTemplate(_imports, _types)
+}
+
+func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Type) error {
+	tmpl := template.Must(template.
+		New("spec").
+		Funcs(map[string]any{
+			"typeToString":     typing.ToString,
+			"typeTreeToString": typing.TypeTreeToString,
+			"lastSegment":      meta.GetPkgName,
+		}).
+		Parse(scriptTemplate),
+	)
+
+	routesProviderPkgAlias, ok := lookupAlias(_imports, g.cfg.Input.RoutesProviderPkg)
+	if !ok {
+		return fmt.Errorf("alias for routes provider package not found in imports mapping")
+	}
+
+	var result bytes.Buffer
+	err := tmpl.Execute(&result, TemplateArgs{
 		ApiPrefix:              g.cfg.Input.ApiPrefix,
-		Types:                  maps.Keys(types),
-		Imports:                validImports,
-		Enums:                  enums,
+		Types:                  _types,
+		Imports:                _imports,
 		Title:                  g.cfg.Input.Title,
 		Version:                g.cfg.Input.Version,
 		Servers:                g.cfg.Input.Servers,
 		HandlersPkgs:           g.cfg.Input.Handlers,
-		RoutesProviderCtor:     g.buildCtorCall(),
+		RoutesProviderCtorName: g.cfg.Input.RoutesProviderCtor,
+		RoutesProviderPkgAlias: routesProviderPkgAlias,
 		GenerateLib:            g.cfg.GenerateLib,
 		LibPkg:                 g.cfg.LibPkg,
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 		Concurrency:            g.cfg.Concurrency,
+		AliasNamer:             aliasNamer(_imports),
 	})
 	if err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
 	src := result.Bytes()
-	formatted, err := format.Source(src)
+	formatted, err := imports.Process("generated.go", src, nil)
 	if err != nil {
-		fmt.Println(string(src))
 		return fmt.Errorf("run formatter on generated code: %w", err)
 	}
 
 	path := filepath.Dir(g.cfg.Output.Path)
-	err = os.MkdirAll(path, 0644)
+	err = os.MkdirAll(path, 0755)
 	if err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
@@ -223,64 +191,13 @@ func (g *Generator) Generate() error {
 	return nil
 }
 
-func (g *Generator) filterModels(models []parser.Model) []parser.Model {
-	res := make([]parser.Model, 0, len(models))
-	for _, model := range models {
-		hasIncludeFilter := len(g.includeFilters[model.PkgPath]) > 0
-		if hasIncludeFilter && !slices.Contains(g.includeFilters[model.PkgPath], model.Name) {
-			logging.Debug("model excluded from generation", "model", model.Name)
-			continue
-		}
-
-		if slices.Contains(g.excludeFilters[model.PkgPath], model.Name) {
-			logging.Debug("model excluded from generation", "model", model.Name)
-			continue
-		}
-
-		res = append(res, model)
+func (g *Generator) filterModels(models []*typing.Type) ([]*typing.Type, error) {
+	filterSet, err := newFilterSet(g.cfg.Input.Models, getFullPkgPath)
+	if err != nil {
+		return nil, fmt.Errorf("new filter set: %w", err)
 	}
-
-	return res
-}
-
-func (g *Generator) initModelsFilter(pkgs []*packages.Package) error {
-	g.includeFilters = make(map[string][]string)
-	g.excludeFilters = make(map[string][]string)
-	for _, pkg := range pkgs {
-		for _, c := range g.cfg.Input.Models {
-			for _, model := range c.IncludeModels {
-				parts := strings.Split(model, ".")
-				if len(parts) != 2 {
-					return fmt.Errorf("invalid model filter: %s. format should be <pkg>.<Name>", model)
-				}
-
-				modelPkg := parts[0]
-				if !meta.IsSubPkg(pkg.PkgPath, modelPkg) {
-					continue
-				}
-
-				g.includeFilters[pkg.PkgPath] = append(g.includeFilters[pkg.PkgPath], model)
-			}
-
-			for _, model := range c.ExcludeModels {
-				parts := strings.Split(model, ".")
-				if len(parts) != 2 {
-					return fmt.Errorf("invalid model filter: %s. format should be <pkg>.<Name>", model)
-				}
-
-				modelPkg := parts[0]
-				if !meta.IsSubPkg(pkg.PkgPath, modelPkg) {
-					continue
-				}
-
-				g.excludeFilters[pkg.PkgPath] = append(g.excludeFilters[pkg.PkgPath], model)
-			}
-		}
-	}
-
-	logging.Debug("include filters", "filters", g.includeFilters)
-	logging.Debug("exclude filters", "filters", g.excludeFilters)
-	return nil
+	allowed := filterSet.FilterTypes(models)
+	return allowed, nil
 }
 
 func (g *Generator) buildLoadPatterns() ([]string, error) {
@@ -307,13 +224,4 @@ func (g *Generator) buildLoadPatterns() ([]string, error) {
 	}
 
 	return patterns, nil
-}
-
-func (g *Generator) buildCtorCall() string {
-	parts := strings.Split(g.cfg.Input.RoutesProviderPkg, "/")
-	if len(parts) == 0 {
-		return ""
-	}
-
-	return parts[len(parts)-1] + "." + g.cfg.Input.RoutesProviderCtor + "()"
 }

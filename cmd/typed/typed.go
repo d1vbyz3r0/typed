@@ -16,7 +16,7 @@ var (
 	version    = flag.Bool("version", false, "print version and exit")
 )
 
-func GetVersion() (version string) {
+func getVersion() (version string) {
 	if b, ok := debug.ReadBuildInfo(); ok && len(b.Main.Version) > 0 {
 		version = b.Main.Version
 	} else {
@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println(GetVersion())
+		fmt.Println(getVersion())
 		return
 	}
 

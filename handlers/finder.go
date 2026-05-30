@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
+	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -22,6 +23,7 @@ type SearchPattern struct {
 
 type EchoRoute struct {
 	Route       echo.Route
+	HandlerFunc echo.HandlerFunc
 	Middlewares []echo.MiddlewareFunc
 }
 
@@ -92,19 +94,11 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 			}
 
 			for _, h := range res.Handlers {
-				// fullHandlerPath := h.Pkg + "." + h.Name
+				key := h.Pkg + "." + h.Name
 				mtx.Lock()
-				v, ok := f.handlers[h.Name]
-				if ok {
-					// workaround...
-					logging.Warn(
-						"handler already found in map, use unique names for your handlers",
-						"old_pkg", v.Pkg,
-						"new_pkg", h.Pkg,
-						"handler", h.Name,
-					)
+				if _, ok := f.handlers[key]; !ok {
+					f.handlers[key] = h
 				}
-				f.handlers[h.Name] = h
 				mtx.Unlock()
 			}
 			return nil
@@ -117,57 +111,18 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 func (f *Finder) Match(routes []EchoRoute) []Handler {
 	res := make([]Handler, 0, len(routes))
 	for _, route := range routes {
-		// fullPath := f.getHandlerFullPath(route)
 		handlerName := f.getHandlerName(route.Route)
-		h, ok := f.handlers[handlerName]
+		handlerPkg := funcPackagePath(route.HandlerFunc)
+		key := handlerPkg + "." + handlerName
+		h, ok := f.handlers[key]
 		if !ok {
-			logging.Warn("matched handler not found, skipping", "handler", handlerName)
+			logging.Warn("matched handler not found, skipping", "pkg", handlerPkg, "handler", handlerName)
 			continue
 		}
-
 		res = append(res, NewHandler(route.Route, route.Middlewares, h))
 	}
 
 	return res
-}
-
-func (f *Finder) getHandlerFullPath(route echo.Route) string {
-	// TODO: not working in case of direct echo.HandlerFunc usages, last pkg skipped :)
-	closureRegexp := regexp.MustCompile(`^func\d+(\.\d+)?$`)
-	slashParts := strings.Split(route.Name, "/")
-	hasDots := strings.Contains(route.Name, ".")
-	if len(slashParts) == 1 && !hasDots {
-		return route.Name
-	}
-
-	pkgPath := strings.Join(slashParts[:len(slashParts)-1], "/")
-	last := slashParts[len(slashParts)-1]
-
-	dotIdx := strings.IndexByte(last, '.')
-	if dotIdx != -1 {
-		if pkgPath == "" {
-			pkgPath = last[:dotIdx]
-		} else {
-			pkgPath += "/" + last[:dotIdx]
-		}
-	}
-
-	dotParts := strings.Split(last, ".")
-
-	var handler string
-	if len(dotParts) >= 2 {
-		lastPart := dotParts[len(dotParts)-1]
-		secondLast := dotParts[len(dotParts)-2]
-		if closureRegexp.MatchString(lastPart) {
-			handler = secondLast
-		} else {
-			handler = lastPart
-		}
-	} else {
-		handler = dotParts[0]
-	}
-
-	return pkgPath + "." + handler
 }
 
 func (f *Finder) getHandlerName(route echo.Route) string {
@@ -206,4 +161,26 @@ func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error)
 	}
 
 	return res, nil
+}
+
+func funcPackagePath(fn any) string {
+	v := reflect.ValueOf(fn)
+	if v.Kind() != reflect.Func {
+		panic(fmt.Sprintf("not a function: %s", v.Kind()))
+	}
+
+	pc := v.Pointer()
+	f := runtime.FuncForPC(pc)
+	if f == nil {
+		return ""
+	}
+
+	// ex: github.com/acme/project/pkg/service.(*Handler).Serve
+	name := f.Name()
+	lastSlash := strings.LastIndex(name, "/")
+	lastDot := strings.Index(name[lastSlash+1:], ".")
+	if lastDot == -1 {
+		return ""
+	}
+	return name[:lastSlash+1+lastDot]
 }

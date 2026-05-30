@@ -126,6 +126,7 @@ func main() {
     ) {
         routes = append(routes, handlers.EchoRoute{
             Route:       route,
+            HandlerFunc: handler,
             Middlewares: middleware,
         })
     })

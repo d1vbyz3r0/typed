@@ -16,37 +16,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFinder_getHandlerFullPath(t *testing.T) {
-	f := &Finder{}
-	_ = f
-	cases := []struct {
-		name string
-		want string
+func genericTest[I, O any]() {}
+
+type handler struct{}
+
+func (handler) method() {}
+
+func (*handler) method2() {}
+
+func closure() func() {
+	return func() {}
+}
+
+func Test_funcPackagePath(t *testing.T) {
+	tests := []struct {
+		name  string
+		_func any
+		want  string
 	}{
 		{
-			name: "github.com/d1vbyz3r0/typed/internal/api.(*Server).mapUsers.LoginUserHandler.func1",
-			want: "github.com/d1vbyz3r0/typed/internal/api.LoginUserHandler",
+			name:  "anonymous function",
+			_func: func() {},
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "project.LoginUserHandler",
-			want: "project.LoginUserHandler",
+			name:  "generic function",
+			_func: genericTest[int, string],
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "main.main.H.func2",
-			want: "main.H",
+			name:  "struct value method",
+			_func: handler{}.method,
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "github.com/d1vbyz3r0/typed/internal/api.(*Server).mapUsers.LoginUserHandler",
-			want: "github.com/d1vbyz3r0/typed/internal/api.LoginUserHandler",
+			name:  "struct pointer method",
+			_func: (&handler{}).method2,
+			want:  "github.com/d1vbyz3r0/typed/handlers",
+		},
+		{
+			name:  "closure",
+			_func: closure(),
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			got := f.getHandlerFullPath(echo.Route{
-				Name: c.name,
-			})
-			require.Equal(t, c.want, got)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := funcPackagePath(tc._func)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }

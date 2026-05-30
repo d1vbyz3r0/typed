@@ -11,6 +11,7 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -66,28 +67,19 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
+	if packages.PrintErrors(pkgs) > 0 {
+		return fmt.Errorf("failed to load packages")
+	}
+
 	var (
 		mtx sync.Mutex
-		wg  sync.WaitGroup
-		sem = make(chan struct{}, findOpts.concurrency)
+		eg  errgroup.Group
 	)
 
+	eg.SetLimit(findOpts.concurrency)
+
 	for _, pkg := range pkgs {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(pkg *packages.Package) {
-			defer func() {
-				wg.Done()
-				<-sem
-			}()
-
-			if len(pkg.Errors) > 0 {
-				for _, err := range pkg.Errors {
-					logging.Error("failed to process package", "path", pkg.PkgPath, "error", err)
-				}
-				return
-			}
-
+		eg.Go(func() error {
 			res, err := f.parser.Parse(
 				pkg,
 				parser.ParseInlineForms(),
@@ -96,8 +88,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 				parser.ParseInlineHeaders(),
 			)
 			if err != nil {
-				logging.Error("failed to parse package", "path", pkg.PkgPath)
-				return
+				return fmt.Errorf("failed to parse pkg %s: %w", pkg.PkgPath, err)
 			}
 
 			for _, h := range res.Handlers {
@@ -113,15 +104,14 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 						"handler", h.Name,
 					)
 				}
-
 				f.handlers[h.Name] = h
 				mtx.Unlock()
 			}
-		}(pkg)
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return nil
+	return eg.Wait()
 }
 
 func (f *Finder) Match(routes []EchoRoute) []Handler {

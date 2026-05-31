@@ -10,7 +10,7 @@ import (
 
 var registry = typed.MustNewRegistry(
 	{{- range .Types }}
-	typed.T{Val: new({{ typeToString . $.AliasNamer }}), Type: {{ typeTreeToString "typing" . nil }}},
+	typed.T{Val: new({{ typeToString . $.AliasNamer }}), {{ $alias := resolveAlias . }} {{ if $alias }}ImportAlias: "{{ resolveAlias . }}",{{ end }} Type: {{ typeTreeToString "typing" . nil }}},
 	{{- end }}
 )
 

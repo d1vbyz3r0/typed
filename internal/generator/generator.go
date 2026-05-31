@@ -128,12 +128,17 @@ func (g *Generator) Generate() error {
 }
 
 func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Type) error {
+	resolveAlias := aliasNamer(_imports)
 	tmpl := template.Must(template.
 		New("spec").
 		Funcs(map[string]any{
 			"typeToString":     typing.ToString,
 			"typeTreeToString": typing.TypeTreeToString,
 			"lastSegment":      meta.GetPkgName,
+			"resolveAlias": func(t *typing.Type) string {
+				pkg, _ := resolveAlias(t)
+				return pkg
+			},
 		}).
 		Parse(scriptTemplate),
 	)
@@ -159,7 +164,7 @@ func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Typ
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 		Concurrency:            g.cfg.Concurrency,
-		AliasNamer:             aliasNamer(_imports),
+		AliasNamer:             resolveAlias,
 	})
 	if err != nil {
 		return fmt.Errorf("execute template: %w", err)

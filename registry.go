@@ -9,8 +9,9 @@ import (
 
 // T is descriptor of arbitrary type which holds instance of this type in Val and full type descriptor in Type
 type T struct {
-	Val  any
-	Type *typing.Type
+	Val         any
+	Type        *typing.Type
+	ImportAlias string // TODO: fill this shit
 }
 
 type Registry struct {
@@ -47,6 +48,12 @@ func MustNewRegistry(items ...T) *Registry {
 		panic(err)
 	}
 	return r
+}
+
+func (r *Registry) Lookup(pkg string, name string) (T, bool) {
+	k := pkg + "." + name
+	v, ok := r.items[k]
+	return v, ok
 }
 
 func (r *Registry) LookupType(pkg string, name string) (*typing.Type, bool) {

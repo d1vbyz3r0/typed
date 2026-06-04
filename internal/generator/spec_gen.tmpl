@@ -5,6 +5,10 @@ import (
 {{- range .Imports}}
 {{ .Alias }} "{{ .Pkg }}"
 {{- end}}
+
+{{- if .Debug }}
+	logging "github.com/d1vbyz3r0/typed/logging"
+{{- end }}
 )
 
 
@@ -94,6 +98,10 @@ func main() {
     {{- end }}
     )
 
+    {{- if .Debug}}
+    logging.SetDefault(logging.NewStdLogger(os.Stderr, logging.LevelDebug))
+    {{- end }}
+
     typed.RegisterCustomizer(typed.NewEnumsCustomizer(registry))
     {{- range .HandlerProcessingHooks }}
     typed.RegisterHandlerProcessingHook(typed.{{.}})
@@ -107,7 +115,8 @@ func main() {
             ExportGenerics:         false,
         }),
         openapi3gen.SchemaCustomizer(typed.Customizer),
-        openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
+        openapi3gen.CreateTypeNameGenerator(typed.NewTypeNameGenerator(registry)),
+        // openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
     )
 
     err := typed.GenerateRefs(g, Spec.Components.Schemas, registry)

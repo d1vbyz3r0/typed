@@ -8,38 +8,55 @@ import (
 	"github.com/d1vbyz3r0/typed/internal/parser"
 )
 
-func collectTypes(results []parser.Result) []*typing.Type {
+func collectTypes(results []parser.Result) ([]*typing.Type, error) {
 	_types := make(map[string]*typing.Type)
+	processType := func(t *typing.Type) {
+		if t == nil {
+			return
+		}
+
+		k := typing.ToString(t, typing.DefaultNamer)
+		if prev, ok := _types[k]; ok {
+			// enums are special case, because they can be found both as Named type and as Enum type.
+			// In that case we need to save Enum, not Named (Named describes enum value kind only)
+			// TODO: filter that out in parser ?
+			if prev.Kind() != typing.TypeKindEnum && t.Kind() == typing.TypeKindEnum {
+				_types[k] = t
+			}
+
+			return
+		}
+
+		_types[k] = t
+	}
+
 	for _, res := range results {
 		for _, h := range res.Handlers {
 			req := h.Request
-			if req != nil && req.ModelType != nil {
-				k := typing.ToString(req.ModelType, typing.DefaultNamer)
-				_types[k] = req.ModelType
+			if req != nil {
+				processType(req.ModelType)
+				err := typing.Traverse(req.ModelType, processType)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			for _, responses := range h.Responses {
 				for _, resp := range responses {
-					if resp.ModelType == nil {
-						continue
+					processType(resp.ModelType)
+					err := typing.Traverse(resp.ModelType, processType)
+					if err != nil {
+						return nil, err
 					}
-					k := typing.ToString(resp.ModelType, typing.DefaultNamer)
-					_types[k] = resp.ModelType
 				}
 			}
 		}
 
 		for _, model := range res.AdditionalModels {
-			k := typing.ToString(model, typing.DefaultNamer)
-			if prev, ok := _types[k]; ok {
-				// enums are special case, because they can be found both as Named type and as Enum type.
-				// In that case we need to save Enum, not Named (Named describes enum value kind only)
-				// TODO: filter that out in parser ?
-				if prev.Kind() != typing.TypeKindEnum && model.Kind() == typing.TypeKindEnum {
-					_types[k] = model
-				}
-			} else {
-				_types[k] = model
+			processType(model)
+			err := typing.Traverse(model, processType)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -53,5 +70,6 @@ func collectTypes(results []parser.Result) []*typing.Type {
 		}
 		return 0
 	})
-	return res
+
+	return res, nil
 }

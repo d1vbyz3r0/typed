@@ -52,7 +52,7 @@ func (m StatusCodeMapping) extractResponses(
 
 		resp, supported := newContextResponseType(call, cr, mr, typesInfo)
 		if !supported {
-			logging.Debug("skipping function call", "call", call.Fun)
+			logging.Debug("skipping function call since it's not echo context response", "call", types.ExprString(call))
 			return true
 		}
 

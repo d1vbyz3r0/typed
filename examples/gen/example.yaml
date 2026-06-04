@@ -81,9 +81,6 @@ components:
     multipart.FileHeader:
       format: binary
       nullable: true
-      required:
-        - Filename
-        - Size
       type: string
 info:
   title: Example api
@@ -216,7 +213,6 @@ paths:
         - Forms
   /api/v1/json/{id}:
     get:
-      description: Also docstrings are supported to document your handlers
       operationId: getUserJSON
       parameters:
         - in: path

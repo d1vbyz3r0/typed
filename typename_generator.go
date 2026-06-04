@@ -6,14 +6,11 @@ import (
 	"regexp"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/getkin/kin-openapi/openapi3gen"
 )
 
-// TypeNameGenerator is an openapi3gen.TypeNameGenerator to use when generating schema
-var TypeNameGenerator = NewTypeNameGenerator()
-
-// NewTypeNameGenerator creates default typename generator
-func NewTypeNameGenerator() openapi3gen.TypeNameGenerator {
+func NewTypeNameGenerator(registry *Registry) openapi3gen.TypeNameGenerator {
 	anonStructsCount := 1
 	anonStructsIndex := make(map[string]string)
 	anonymousStructRegex := regexp.MustCompile(`^struct\s*{.*}$`)
@@ -33,6 +30,19 @@ func NewTypeNameGenerator() openapi3gen.TypeNameGenerator {
 			return newName
 		}
 
-		return name
+		pkg := t.PkgPath()
+		name = t.Name()
+		_type, ok := registry.Lookup(pkg, name)
+		if !ok {
+			// TODO: need a workaround for nested types, now conflicts can occur
+			logging.Debug("type not found in registry, using reflect string representation", "pkg", pkg, "name", name, "reflect_type", t)
+			return t.String()
+		}
+
+		if _type.Type.Kind() == typing.TypeKindBasic {
+			return t.String()
+		}
+
+		return _type.ImportAlias + "." + t.Name()
 	}
 }

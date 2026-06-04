@@ -156,7 +156,7 @@ func (b *OperationBuilder) AddRequestBody(schemas openapi3.Schemas) *OperationBu
 			if reqBody.Form != nil {
 				ref, err := b.generator.GenerateSchemaRef(reqBody.Form)
 				if err != nil {
-					return fmt.Errorf("failed to generate schema ref for form", err)
+					return fmt.Errorf("failed to generate schema ref for form: %w", err)
 				}
 				content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
 			}

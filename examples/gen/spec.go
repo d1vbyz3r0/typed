@@ -2,36 +2,29 @@
 package main
 
 import (
-	"fmt"
-	"github.com/d1vbyz3r0/typed"
-	"github.com/d1vbyz3r0/typed/examples/dto"
-	"github.com/d1vbyz3r0/typed/examples/server"
-	"github.com/d1vbyz3r0/typed/handlers"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/getkin/kin-openapi/openapi3gen"
-	"github.com/labstack/echo/v4"
-	"log/slog"
-	"os"
+	fmt "fmt"
+	slog "log/slog"
+	os "os"
+
+	typed "github.com/d1vbyz3r0/typed"
+	typing "github.com/d1vbyz3r0/typed/common/typing"
+	dto "github.com/d1vbyz3r0/typed/examples/dto"
+	server "github.com/d1vbyz3r0/typed/examples/server"
+	handlers "github.com/d1vbyz3r0/typed/handlers"
+	logging "github.com/d1vbyz3r0/typed/logging"
+	openapi3 "github.com/getkin/kin-openapi/openapi3"
+	openapi3gen "github.com/getkin/kin-openapi/openapi3gen"
+	echo "github.com/labstack/echo/v4"
 )
 
-var UsedTypes = map[string]any{
-	"server.FormsHandler": new(server.FormsHandler),
-	"dto.FormUploadResp":  new(dto.FormUploadResp),
-	"server.Builder":      new(server.Builder),
-	"server.Server":       new(server.Server),
-	"dto.Form":            new(dto.Form),
-	"dto.Status":          new(dto.Status),
-	"dto.User":            new(dto.User),
-	"string":              new(string),
-	"echo.Map":            new(echo.Map),
-}
-
-var Enums = map[string][]any{
-	"dto.Status": {
-		"active",
-		"inactive",
-	},
-}
+var registry = typed.MustNewRegistry(
+	typed.T{Val: new(dto.Form), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "Form")},
+	typed.T{Val: new(dto.FormUploadResp), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "FormUploadResp")},
+	typed.T{Val: new(dto.Status), ImportAlias: "dto", Type: typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "Status"), []any{"active", "inactive"})},
+	typed.T{Val: new(dto.User), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "User")},
+	typed.T{Val: new(echo.Map), ImportAlias: "echo", Type: typing.Named("github.com/labstack/echo/v4", "Map")},
+	typed.T{Val: new(string), Type: typing.Basic("string")},
+)
 
 var Spec = &openapi3.T{
 	OpenAPI: "3.0.0",
@@ -72,20 +65,22 @@ func Generate(opts GenerateOpts) error {
 
 	matchedHandlers := finder.Match(opts.Routes)
 	for _, handler := range matchedHandlers {
-		operation := openapi3.NewOperation()
-		operation.Description = handler.Description()
-		typed.AddPathParams(operation, handler, opts.Generator, UsedTypes)
-		typed.AddQueryParams(operation, handler, opts.Generator, UsedTypes)
-		typed.AddRequestBody(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
-		typed.AddHeaders(operation, handler, opts.Generator, UsedTypes)
-		typed.AddResponses(operation, handler, opts.Generator, Spec.Components.Schemas, UsedTypes)
-		typed.AddOperationId(operation, handler)
-		if opts.UseTags {
-			err = typed.TagOperation(operation, handler.Path(), opts.ApiPrefix)
-			if err != nil {
-				slog.Error("tag operation", "error", err)
-				continue
-			}
+		operation, err := typed.
+			NewOperationBuilder(
+				opts.Generator,
+				handler,
+				registry,
+			).
+			AddPathParams().
+			AddQueryParams().
+			AddRequestBody(Spec.Components.Schemas).
+			AddResponses(Spec.Components.Schemas).
+			AddHeaders().
+			AddOperationId().
+			AddOperationTag("/api/v1").
+			Build()
+		if err != nil {
+			return err
 		}
 
 		typed.RunHandlerHooks(Spec, operation, handler)
@@ -100,8 +95,9 @@ func main() {
 		apiPrefix = "/api/v1"
 		useTags   = true
 	)
+	logging.SetDefault(logging.NewStdLogger(os.Stderr, logging.LevelDebug))
 
-	typed.RegisterCustomizer(typed.NewEnumsCustomizer(Enums))
+	typed.RegisterCustomizer(typed.NewEnumsCustomizer(registry))
 
 	g := openapi3gen.NewGenerator(
 		openapi3gen.UseAllExportedFields(),
@@ -111,10 +107,11 @@ func main() {
 			ExportGenerics:         false,
 		}),
 		openapi3gen.SchemaCustomizer(typed.Customizer),
-		openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
+		openapi3gen.CreateTypeNameGenerator(typed.NewTypeNameGenerator(registry)),
+		// openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
 	)
 
-	err := typed.GenerateRefs(g, Spec.Components.Schemas, UsedTypes)
+	err := typed.GenerateRefs(g, Spec.Components.Schemas, registry)
 	if err != nil {
 		slog.Error("generate refs for type registry", "error", err)
 		os.Exit(1)
@@ -130,6 +127,7 @@ func main() {
 	) {
 		routes = append(routes, handlers.EchoRoute{
 			Route:       route,
+			HandlerFunc: handler,
 			Middlewares: middleware,
 		})
 	})
@@ -146,7 +144,7 @@ func main() {
 				Recursive: false,
 			},
 		},
-		Concurrency: 5,
+		Concurrency: 2,
 	}
 
 	err = Generate(opts)

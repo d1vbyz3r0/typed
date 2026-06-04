@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-//go:generate typed -config ../typed.yaml
+//go:generate go run ../../cmd/typed/typed.go -config ../typed.yaml
 //go:generate go run ../gen/spec.go
 
 type Server struct {

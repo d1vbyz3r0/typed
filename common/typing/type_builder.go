@@ -132,7 +132,7 @@ func TypeTreeToString(pkg string, t *Type, namer NamerFunc) string {
 	return walkFn(t)
 }
 
-// Traverse traverses type tree recursively, until it reaches TypeKindBasic or TypeKindNamed, then fn will be called for this leaf
+// Traverse traverses type tree recursively, until it reaches TypeKindBasic or TypeKindNamed, then fn will be called for this leaf.
 // If t is nil Traverse exits immidiately
 func Traverse(t *Type, fn func(n *Type)) error {
 	if t == nil {
@@ -141,18 +141,22 @@ func Traverse(t *Type, fn func(n *Type)) error {
 
 	switch t.kind {
 	case TypeKindPointer:
+		fn(t)
 		Traverse(t.elem, fn)
 		return nil
 
 	case TypeKindArray:
+		fn(t)
 		Traverse(t.elem, fn)
 		return nil
 
 	case TypeKindSlice:
+		fn(t)
 		Traverse(t.elem, fn)
 		return nil
 
 	case TypeKindMap:
+		fn(t)
 		Traverse(t.params[0], fn)
 		Traverse(t.params[1], fn)
 		return nil
@@ -169,6 +173,7 @@ func Traverse(t *Type, fn func(n *Type)) error {
 		return nil
 
 	case TypeKindEnum:
+		fn(t)
 		Traverse(t.elem, fn)
 		return nil
 

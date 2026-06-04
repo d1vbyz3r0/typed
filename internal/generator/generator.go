@@ -38,6 +38,7 @@ type TemplateArgs struct {
 	HandlerProcessingHooks []string
 	Concurrency            int
 	AliasNamer             typing.NamerFunc
+	Debug                  bool
 }
 
 type Generator struct {
@@ -84,7 +85,7 @@ func (g *Generator) Generate() error {
 	}
 
 	if g.cfg.Concurrency <= 0 {
-		g.cfg.Concurrency = 5
+		g.cfg.Concurrency = len(pkgs)
 	}
 
 	var (
@@ -119,7 +120,12 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("create import mappings: %w", err)
 	}
 
-	_types, err := g.filterModels(collectTypes(results))
+	_types, err := collectTypes(results)
+	if err != nil {
+		return fmt.Errorf("collect types: %w", err)
+	}
+
+	_types, err = g.filterModels(_types)
 	if err != nil {
 		return fmt.Errorf("filter models: %w", err)
 	}
@@ -165,6 +171,7 @@ func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Typ
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 		Concurrency:            g.cfg.Concurrency,
 		AliasNamer:             resolveAlias,
+		Debug:                  g.cfg.Debug,
 	})
 	if err != nil {
 		return fmt.Errorf("execute template: %w", err)

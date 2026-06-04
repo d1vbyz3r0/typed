@@ -122,7 +122,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 				return true
 			}
 
-			logging.Debug("found echo handler", "pkg", pkg, "file", file.Name, "name", decl.Name.Name)
+			logging.Debug("found echo handler", "pkg", pkg, "filename", file.Name, "name", decl.Name.Name)
 
 			req := request.New(decl, pkg.TypesInfo, parseOpts.RequestParseOpts()...)
 			responses := response.NewStatusCodeMapping(decl, p.codesResolver, p.mimeResolver, pkg.TypesInfo)
@@ -164,22 +164,22 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 				}
 
 				if !obj.Exported() {
-					logging.Debug("skipping non-exported object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping non-exported object, can't be a model", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsFunc(obj.Type()) {
-					logging.Debug("skipping function object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping function object, can't be a model", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsInterface(obj.Type()) {
-					logging.Debug("skipping interface object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping interface object, can't be a model", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 
 				if typing.IsConstOrGlobal(obj) {
-					logging.Debug("skipping const/global object", "pkg", pkg.PkgPath, "name", name)
+					logging.Debug("skipping const/global object, can't be a model", "pkg", pkg.PkgPath, "name", name)
 					continue
 				}
 

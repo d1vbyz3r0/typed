@@ -77,6 +77,7 @@ func Generate(opts GenerateOpts) error {
 			AddResponses(Spec.Components.Schemas).
 			AddHeaders().
 			AddOperationId().
+			AddOperationDescription().
 			AddOperationTag("/api/v1").
 			Build()
 		if err != nil {

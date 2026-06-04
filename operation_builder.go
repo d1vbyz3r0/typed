@@ -332,7 +332,13 @@ func (b *OperationBuilder) AddOperationId() *OperationBuilder {
 	return b
 }
 
-// TODO: add operation description from docstrings
+func (b *OperationBuilder) AddOperationDescription() *OperationBuilder {
+	b.step("add operation description", func() error {
+		b.op.Description = b.handler.Description()
+		return nil
+	})
+	return b
+}
 
 func (b *OperationBuilder) Build() (*openapi3.Operation, error) {
 	return b.op, b.err

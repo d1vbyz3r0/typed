@@ -71,6 +71,7 @@ func Generate(opts GenerateOpts) error {
             AddResponses(Spec.Components.Schemas).
             AddHeaders().
             AddOperationId().
+            AddOperationDescription().
         {{- if ne .ApiPrefix nil }}
             AddOperationTag("{{ .ApiPrefix }}").
         {{- end }}

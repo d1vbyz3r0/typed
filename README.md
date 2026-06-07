@@ -1,507 +1,279 @@
-# Typed - OpenAPI Specification Generator for Echo Framework
+# typed
 
-[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.24-blue)](https://golang.org/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/d1vbyz3r0/typed.svg)](https://pkg.go.dev/github.com/d1vbyz3r0/typed)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Typed** is a Go tool that automatically generates OpenAPI 3.0 specifications for projects using the Echo web
-framework.
-It uses a sophisticated two-stage approach combining AST (Abstract Syntax Tree) parsing and reflection to analyze your
-code and produce accurate, comprehensive API documentation.
+`typed` generates an OpenAPI 3.0 document from an Echo application's Go
+source and registered routes.
 
-## Why Typed?
+The generator parses handler source with `go/ast`, generates a Go program
+containing a runtime type registry, and runs that program to build the
+OpenAPI document with reflection. It does not require annotation comments,
+but its output is based on recognizable source-code patterns and should be
+reviewed before it is treated as an API contract.
 
-Most of existing code-first OpenAPI generators for Go require extensive manual annotations.
-Typed solves this by automatically analyzing your Echo handlers and generating accurate OpenAPI specifications without
-large code modifications.
+See the generated [example specification](./examples/gen/example.yaml) or
+open it in [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/gen/example.yaml).
 
-## Features
+## Requirements
 
-- **Two-Stage Generation Process**: Combines AST analysis with runtime reflection for maximum accuracy
-- **Code-first OpenAPI Generation approach**: Generates OpenAPI 3.0 specifications from your echo server, no magic
-  comments required
-- **Intelligent Parameter Detection**: Automatically detects path, query, and form parameters from inline usage
-- **Type Inference**: Determines parameter types from usage context (e.g. `strconv.Atoi`, `uuid.Parse`)
-- **Extensible Architecture**: Customizable type providers and schema customizers
-- **Multiple Parameter Sources**: Supports path parameters, query parameters, and form data (including file uploads)
-- **Type Registry Generation**: Creates Go code with type registry for reflection-based analysis
-- **Multiple Output Formats**: Supports both YAML and JSON output formats
-- **Echo Framework Integration**: Specifically designed for Echo-based projects
-- **Library Mode**: Generated code can be used as a library
-
-
+- Go 1.25 or newer
+- Echo v4
+- an application component that can register routes without starting the
+  server and implements `typed.RoutesProvider`
 
 ## Installation
 
+Add the CLI as a Go tool dependency and the library as a module dependency:
+
 ```bash
-go install github.com/d1vbyz3r0/typed/cmd/typed@latest
+go get -tool github.com/d1vbyz3r0/typed/cmd/typed@latest
 go get github.com/d1vbyz3r0/typed@latest
 ```
 
-## Demo
-You can find demo swagger [here](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/gen/example.yaml). 
-Used openapi spec was generated with typed, you can find it in [examples](./examples)
-
+The library dependency is required because the generated Go source imports
+`github.com/d1vbyz3r0/typed`.
 
 ## Usage
 
-### Basic Usage
+### 1. Expose route registration
 
-To generate OpenAPI specification for your Echo project, write yaml config and add go generate directives to your code (
-or run them manually).
-Example of config file can be found [here](./examples/typed.yaml)
+Implement `typed.RoutesProvider`:
 
-You should have somewhere an object, which will expose routes and middlewares and implement following interface:
 ```go
 type RoutesProvider interface {
-	OnRouteAdded(func(
-		host string,
-		route echo.Route,
-		handler echo.HandlerFunc,
-		middleware []echo.MiddlewareFunc,
-	))
-	ProvideRoutes()
+    OnRouteAdded(func(
+        host string,
+        route echo.Route,
+        handler echo.HandlerFunc,
+        middleware []echo.MiddlewareFunc,
+    ))
+    ProvideRoutes()
 }
 ```
 
-Then provide a package of your implementation and name of object constructor in configuration file:
+`OnRouteAdded` must install the callback used to collect routes.
+`ProvideRoutes` must register the application's routes, but must not start the
+server. The configured constructor must return the provider.
+
+The implementation used by this repository is in
+[`examples/server/builder.go`](./examples/server/builder.go).
+
+### 2. Create a configuration file
+
+Paths in the configuration are resolved relative to the directory from which
+the generator or generated program is run.
+
 ```yaml
-routes-provider-ctor: NewServerBuilder
-routes-provider-pkg: github.com/d1vbyz3r0/typed/examples/api
+input:
+  title: Example API
+  version: 0.0.1
+  servers:
+    - url: http://localhost:8080
+
+  # Optional. When set, the first path segment after this prefix becomes
+  # the operation tag.
+  api-prefix: /api/v1
+
+  routes-provider-ctor: NewBuilder
+  routes-provider-pkg: github.com/acme/service/internal/server
+
+  handlers:
+    - path: .
+      recursive: true
+
+  # Packages whose exported types and enums may be added to components.
+  models:
+    - path: ../dto
+      recursive: true
+      include:
+        - pkg: "^publicdto$"
+      exclude:
+        - name: "^Internal"
+
+output:
+  # Generated Go source.
+  path: ../gen/spec.go
+  # Generated OpenAPI document. Supported extensions: .yaml, .yml, .json.
+  spec-path: ../gen/openapi.yaml
+
+# Names of built-in typed hooks called for each matched handler.
+processing-hooks:
+  - EchoJWTMiddlewareHook
+
+# Maximum concurrent package parsing operations. Values <= 0 use the number
+# of loaded packages.
+concurrency: 0
+debug: false
 ```
+
+Handler and model entries require a `path`. Setting `recursive: true` loads
+subpackages. Model filters are regular expressions and support `path`,
+`import-path`, `pkg`, and `name`. If include filters are present, a type must
+match at least one of them. A type that subsequently matches an exclude filter
+is rejected.
+
+The complete example configuration is
+[`examples/typed.yaml`](./examples/typed.yaml).
+
+### 3. Generate the specification
 
 ```bash
-//go:generate typed -config ../typed.yaml
-//go:generate go run ../gen/spec_gen.go
+go tool typed -config typed.yaml
+go run ./path/to/generated/spec.go
 ```
 
-If you don't want to implement interface, you can use typed as library and provide options to Generate function
+The first command analyzes the configured packages and writes the generated
+Go source. The second command registers routes and writes the OpenAPI document.
 
-### Command Line Options
+The commands can also be used with `go generate`:
 
-```bash
-typed [flags]
-
-Flags:
-  -config string Path to config file
+```go
+//go:generate go tool typed -config ../typed.yaml
+//go:generate go run ../gen/spec.go
 ```
 
-### Supported Output Formats
+CLI flags:
 
-The tool automatically detects the output format based on file extension:
+```text
+-config string
+    path to config file
+-version
+    print version and exit
+```
 
-- **YAML**: `.yaml` or `.yml` extensions
-- **JSON**: `.json` extension
+## Generated Data
 
+For handlers that can be matched to registered Echo routes, `typed` currently
+generates:
 
-## Intelligent Parameter Detection
+- paths and HTTP methods from registered Echo routes;
+- operation IDs from handler function names;
+- operation descriptions from handler documentation comments;
+- optional tags derived from `input.api-prefix`;
+- path, query, header, and form parameters found in inline Echo context calls;
+- path, query, header, form, JSON, and XML inputs declared through a struct
+  passed to `echo.Context.Bind`;
+- response status codes, content types, models, and headers for supported Echo
+  response methods;
+- component schemas for discovered models and typed constants;
+- UUID and time schemas inferred from supported conversion calls;
+- YAML or JSON output, selected by `output.spec-path`.
 
-One of Typed's most powerful features is its ability to automatically detect and analyze parameter usage from your Echo
-handlers:
+Supported Echo response methods are:
 
-### Path Parameters
+```text
+JSON, JSONPretty, JSONBlob
+XML, XMLPretty, XMLBlob
+String, Blob, Stream
+Redirect, NoContent
+```
+
+Inline parameter types default to `string`. A different type is inferred when
+the context call is passed directly to one of these functions:
+
+| Package | Functions | Inferred Go type |
+| --- | --- | --- |
+| `strconv` | `Atoi` | `int` |
+| `strconv` | `ParseInt` | `int64` |
+| `strconv` | `ParseUint` | `uint` |
+| `strconv` | `ParseFloat` | `float64` |
+| `strconv` | `ParseBool` | `bool` |
+| `github.com/google/uuid` | `Parse`, `MustParse` | `uuid.UUID` |
+| `time` | `Parse` | `time.Time` |
+
+For example:
 
 ```go
 func GetUser(c echo.Context) error {
-    // Typed detects 'id' parameter and infers int type from strconv.Atoi usage. Note that for now you should pass c.Param directly as argument
-    id, err := strconv.Atoi(c.Param("id"))
+    id, err := uuid.Parse(c.Param("id"))
     if err != nil {
         return err
     }
-    // Handler logic...
-    return c.JSON(http.StatusOK, user)
+    return c.JSON(http.StatusOK, loadUser(id))
 }
-
-// Route: e.GET("/users/:id", GetUser)
-// Result: OpenAPI path parameter 'id' with integer type
 ```
 
-### Query Parameters
+## Extension Points
+
+Custom inline type inference can be registered through
+`common/typing.RegisterTypeProvider`:
 
 ```go
-func SearchUsers(c echo.Context) error {
-    // Typed detects 'limit' as integer and 'active' as boolean
-    limit, _ := strconv.Atoi(c.QueryParam("limit"))
-    active, _ := strconv.ParseBool(c.QueryParam("active"))
-    
-    // Handler logic...
-    return c.JSON(http.StatusOK, users)
-}
-
-// Result: OpenAPI query parameters with correct types
-```
-
-### Form Parameters & File Uploads
-
-```go
-func UpdateProfile(c echo.Context) error {
-    // Typed detects form fields and file uploads
-    name := c.FormValue("name")
-    email := c.FormValue("email")
-    
-    // File upload detection
-    avatar, err := c.FormFile("avatar")
-    if err != nil {
-        return err
-    }
-    
-    // Handler logic...
-    return c.JSON(http.StatusOK, response)
-}
-
-// Result: OpenAPI form schema with string fields and binary file field
-```
-
-Of course, you also can declare parameters as struct fields with
-necessary [tags](https://echo.labstack.com/docs/binding).
-When both struct tag and inline usage are found, the struct field will have priority.
-
-For more look at [examples](./examples/dto/dto.go).
-
-#### Some limitations
-For now, xml and form tags are not fully supported. You can still use them, but names should be as they occur in field names if the tag is standalone:
-```go
-type AuthForm struct {
-	Name string `form:"Name"`
-	Age  int    `xml:"Age"`
-}
-```
-
-Or same as json tag, if you for some reason need to process multiple data formats
-```go
-type AuthForm struct {
-	Name string `json:"name" form:"name" xml:"name"`
-	Age  int    `json:"age" form:"name" xml:"name"`
-}
-```
-
-It will be fixed in the nearest future, when I figure out how to properly implement that
-
-
-### Supported Type Inference
-
-Typed automatically infers parameter types from common conversion functions:
-
-| Package   | Function             | Inferred Type |
-|-----------|----------------------|---------------|
-| `strconv` | `Atoi`               | `int`         |
-| `strconv` | `ParseInt`           | `int64`       |
-| `strconv` | `ParseUint`          | `uint`        |
-| `strconv` | `ParseFloat`         | `float64`     |
-| `strconv` | `ParseBool`          | `bool`        |
-| `uuid`    | `Parse`, `MustParse` | `uuid.UUID`   |
-| `time`    | `Parse`              | `time.Time`   |
-
-
-## Enum Support
-
-Typed automatically detects and extracts Go enums (constants with custom types) and includes them in the OpenAPI
-specification as enum values. This ensures your API documentation accurately reflects the allowed values for enum
-fields.
-
-### Automatic Enum Detection
-
-Typed analyzes your Go constants and automatically generates OpenAPI enum schemas:
-
-```go
-// String-based enums
-type Role string
-
-const (
-    RoleAdmin = Role("admin")
-    RoleUser = Role("user")
-    RoleGuest = Role("guest")
-)
-
-// Integer-based enums
-type Status int
-
-const (
-    StatusNew Status = 1
-    StatusDone Status = 2
-    StatusCancelled Status = 3
-)
-
-// Usage in structs
-type User struct {
-    ID     int    `json:"id"`
-    Name   string `json:"name"`
-    Role   Role   `json:"role"`
-    Status Status `json:"status"`
-}
-```
-
-### Generated OpenAPI Schema
-
-The above Go enums are automatically converted to OpenAPI enum schemas:
-
-```yaml
-components:
-  schemas:
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        role:
-          type: string
-          enum: [ "admin", "user", "guest" ]
-        status:
-          type: integer
-          enum: [ 1, 2, 3 ]
-```
-
-### Supported Enum Types
-
-Typed supports various enum value types:
-
-| Go Type   | Example         | OpenAPI Type               |
-|-----------|-----------------|----------------------------|
-| `string`  | `Role("admin")` | `string` with enum values  |
-| `int`     | `Status(1)`     | `integer` with enum values |
-| `float64` | `Priority(1.5)` | `number` with enum values  |
-| `bool`    | `Flag(true)`    | `boolean` with enum values |
-
-
-## Extensibility
-
-### Custom Type Providers
-
-You can extend type inference by registering custom type providers:
-
-```go
-// Example from common/typing/type.go
-func RegisterTypeProvider(p Provider) {
-    providers = append(providers, p)
-}
-
-// Custom provider example
-func customProvider(pkg string, funcName string) (reflect.Type, bool) {
-    if pkg == "mypackage" && funcName == "ParseCustomType" {
-        return reflect.TypeOf(MyCustomType{}), true
+typing.RegisterTypeProvider(func(pkg, function string) (reflect.Type, bool) {
+    if pkg == "decimal" && function == "Parse" {
+        return reflect.TypeOf(decimal.Decimal{}), true
     }
     return nil, false
-}
+})
 ```
 
-### Schema Customizers
+Schema customizers can be registered with `typed.RegisterCustomizer`.
+Handler hooks can be registered with `typed.RegisterHandlerProcessingHook`.
+These registrations must run in the process that performs handler parsing or
+schema generation. Configuration-based `processing-hooks` only supports
+functions exported by the `typed` package.
 
-Customize OpenAPI schema generation with custom functions:
+The generated executable can enable the built-in `EchoJWTMiddlewareHook`
+through `processing-hooks`. It marks operations whose captured middleware
+function name contains `github.com/labstack/echo-jwt` with a bearer JWT
+security requirement.
 
-```go
-// Example from customizers.go
-func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
-    customizers = append(customizers, fn)
-}
+## Current Limitations
 
-// Built-in customizers include:
-// - Field name overrides from struct tags
-// - File upload handling
-// - UUID format specification
-// - Enum value support
+`typed` is based on static pattern matching plus runtime route inspection. It
+does not execute handler logic and does not infer arbitrary control flow.
+Important current limitations are:
+
+- only handlers found in configured handler packages and matched to a
+  registered route are included; unmatched routes are skipped with a warning;
+- handler discovery recognizes standard `func(echo.Context) error` handlers
+  and wrapper functions returning `echo.HandlerFunc`;
+- inline parameter inference expects recognizable direct calls such as
+  `strconv.Atoi(c.QueryParam("limit"))`;
+- response extraction only recognizes the Echo methods listed above;
+- response status codes must be integer literals or `net/http` status
+  constants;
+- `Blob` and `Stream` content types must be string literals or Echo MIME
+  constants;
+- request-body inference is based on `c.Bind` and binding tags; multiple bind
+  calls and complex binding flows are not represented reliably;
+- required and nullable semantics are inferred from Go types and tags and may
+  not match application validation rules;
+- XML and form field naming has incomplete edge-case support;
+- exported models in configured model packages are considered for generation,
+  so model filters may be needed;
+- generated output should be validated and reviewed as part of CI.
+
+## Library Mode
+
+Setting `generate-lib: true` and `lib-pkg: <package>` generates a package
+instead of an executable. The package exposes `Spec` and `Generate`; the
+caller is responsible for configuring `openapi3gen.Generator`, collecting
+routes, invoking `Generate`, and saving the result.
+
+Library mode is a lower-level integration path. The generated executable is
+the primary documented workflow. The generator currently still expects
+`input.routes-provider-pkg` in library mode; treat this mode as experimental.
+
+## Development
+
+Run the test suite:
+
+```bash
+go test ./...
 ```
 
+## TODO
 
-## Handler Processing Hooks
-
-Typed provides a hook system that allows you to customize OpenAPI specification generation based on handler analysis.
-This is particularly useful for automatically detecting and documenting middleware-specific behavior.
-
-### Built-in Hooks
-
-#### JWT Authentication Hook
-
-Typed includes a built-in hook that automatically detects Echo JWT middleware usage and adds appropriate security
-schemes to your OpenAPI specification:
-To enable it, add following to your config file:
-
-```yaml
-processing-hooks:
-  - "EchoJWTMiddlewareHook"
-```
-
-```go
-func GetProtectedResource(c echo.Context) error {
-    // Your protected handler logic
-    return c.JSON(http.StatusOK, data)
-}
-
-// Route with JWT middleware
-protected := e.Group("/api")
-protected.Use(echojwt.WithConfig(echojwt.Config{
-    SigningKey: []byte("secret"),
-}))
-protected.GET("/users", GetProtectedResource)
-```
-
-**Result**: Automatically adds Bearer token security scheme to the OpenAPI specification:
-
-```yaml
-components:
-  securitySchemes:
-    bearerAuthScheme:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-paths:
-  /api/users:
-    get:
-      security:
-        - bearerAuthScheme: [ ]
-```
-
-### Custom Hooks
-
-You can register custom hooks to extend the specification generation process:
-
-```go
-// Example from middlewares.go
-func RegisterHandlerProcessingHook(hook HandlerProcessingHookFn) {
-    handlerProcessingHooks = append(handlerProcessingHooks, hook)
-}
-
-// Custom hook example
-func CustomAuthHook(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler) {
-    // Analyze handler middlewares
-    for _, mw := range handler.Middlewares() {
-        middlewareName := typed.GetMiddlewareFuncName(mw)
-        
-        if strings.Contains(middlewareName, "myauth") {
-            // Add custom security scheme
-            if spec.Components.SecuritySchemes == nil {
-                spec.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
-            }
-            
-            spec.Components.SecuritySchemes["customAuth"] = &openapi3.SecuritySchemeRef{
-                Value: &openapi3.SecurityScheme{
-                    Type: "apiKey",
-                    In:   "header",
-                    Name: "X-API-Key",
-                },
-            }
-            
-            // Apply to operation
-            if operation.Security == nil {
-				operation.Security = openapi3.NewSecurityRequirements()
-            }
-            operation.Security.With(openapi3.SecurityRequirement{
-                "customAuth": []string{},
-            })
-        }
-    }
-}
-
-// Register your custom hook
-func init() {
-    typed.RegisterHandlerProcessingHook(CustomAuthHook)
-}
-```
-
-### Hook Function Signature
-
-```go
-type HandlerProcessingHookFn func (spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler)
-```
-
-**Parameters:**
-
-- `spec`: The OpenAPI specification being built
-- `operation`: The current operation being processed
-- `handler`: Handler information including middlewares, route, and metadata
-
-### Use Cases for Custom Hooks
-
-- **Authentication/Authorization**: Automatically detect auth middlewares and add security schemes
-- **Rate Limiting**: Add rate limit headers and responses based on middleware detection
-- **CORS**: Document CORS headers and preflight responses
-- **Validation**: Add validation error responses based on validation middleware
-- **Logging/Monitoring**: Add operation IDs or tags based on middleware configuration
-- **Custom Headers**: Document custom headers added by middlewares
-
-### Middleware Detection
-
-Typed provides utilities to analyze middleware functions:
-
-```go
-// Get middleware function name for analysis
-middlewareName := GetMiddlewareFuncName(middleware)
-
-// Example middleware names:
-// "github.com/labstack/echo-jwt.(*Config).ToMiddleware.func1"
-// "github.com/labstack/echo/v4/middleware.CORS.func1"
-// "myproject/middleware.CustomAuth"
-```
-
-This hook system makes Typed highly extensible and allows it to automatically document complex middleware behavior
-without manual specification.
-
-
-## How It Works
-
-Typed uses a sophisticated two-stage approach to overcome the limitations of pure AST analysis:
-
-### Stage 1: Code Generation & Type Registry
-
-1. **AST Parsing**: Analyzes your Go source code using Go's AST parser
-2. **Type Discovery**: Identifies all types used in Echo handlers and routes
-3. **Registry Generation**: Generates Go code with a type registry containing all discovered types
-4. **Standard Functions**: Includes utility functions for reflection-based analysis
-5. **Library Output**: The generated code can be used as a standalone library
-
-### Stage 2: Specification Generation
-
-1. **Registry Execution**: Runs the generated code to access `reflect.Type` information
-2. **Echo Route Analysis**: Maps Echo routes to their corresponding handlers
-3. **Schema Generation**: Uses [kin-openapi](https://github.com/getkin/kin-openapi) to create OpenAPI schemas from
-   reflection data
-4. **Specification Assembly**: Builds complete OpenAPI 3.0 specification with proper SchemaRefs
-5. **Output Generation**: Saves specification in requested format (YAML/JSON)
-
-### Why Two Stages?
-
-The two-stage approach is necessary because:
-
-- **AST Limitation**: During AST analysis, we cannot access `reflect.Type` information
-- **Runtime Reflection**: We need actual type information to generate accurate schemas
-- **Best of Both Worlds**: Combines compile-time analysis with runtime type information
-
-### Key Dependencies
-
-- **[kin-openapi](https://github.com/getkin/kin-openapi)**: Powers the OpenAPI 3.0 specification generation, schema
-  creation, and SchemaRef handling
-- **Go AST**: For source code analysis and type discovery
-- **Go Reflection**: For runtime type information access
-
-
-## Contributing
-
-Contributions are welcome! This project was created because similar tools weren't available for Echo framework projects.
-
+- define and implement consistent more reliable required and nullable semantics;
+- support `omitempty`, `omitzero`, and validation tags;
+- improve handling of forms and multiple `echo.Context.Bind` calls;
+- avoid exporting unrelated models by default;
+- apply nullability at schema usage sites instead of shared components;
+- reduce direct dependencies on Echo internals;
+- improve parser and generator performance.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-## Acknowledgments
-
-- **[kin-openapi](https://github.com/getkin/kin-openapi)** - Essential for OpenAPI 3.0 specification generation and
-  schema handling
-- **[Echo Framework](https://echo.labstack.com/)** - High performance, minimalist Go web framework
-- **Go AST & Reflection** - Powerful code analysis and runtime type inspection capabilities
-
-
-## Issues & Support
-
-If you encounter any issues or have questions:
-
-1. Check existing [Issues](https://github.com/d1vbyz3r0/typed/issues)
-2. Create a new issue with detailed description
-3. Include code examples and error messages
-
-
-## Roadmap
-- [ ] Write doc for configuration
-- [ ] Enhanced comment parsing for OpenAPI descriptions
-- [ ] Add more std hooks
+[MIT](./LICENSE)

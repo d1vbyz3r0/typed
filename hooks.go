@@ -30,7 +30,7 @@ func GetMiddlewareFuncName(mw echo.MiddlewareFunc) string {
 
 func EchoJWTMiddlewareHook(spec *openapi3.T, operation *openapi3.Operation, handler handlers.Handler) {
 	const bearerAuthScheme = "bearerAuthScheme"
-	if _, ok := spec.Components.Schemas[bearerAuthScheme]; !ok {
+	if _, ok := spec.Components.SecuritySchemes[bearerAuthScheme]; !ok {
 		spec.Components.SecuritySchemes[bearerAuthScheme] = &openapi3.SecuritySchemeRef{
 			Value: &openapi3.SecurityScheme{
 				Type:         "http",

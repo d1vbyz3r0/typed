@@ -2,41 +2,39 @@ components:
   schemas:
     AnonStruct1:
       properties:
-        Active:
+        active:
           type: boolean
-        Avatar:
+        avatar:
           $ref: '#/components/schemas/multipart.FileHeader'
-        Name:
+        name:
           type: string
-        Timestamp:
+        timestamp:
           type: string
       required:
-        - Name
-        - Active
-        - Timestamp
+        - name
+        - active
+        - timestamp
       type: object
     dto.Form:
       properties:
-        Age:
+        age:
           type: integer
-        File:
+        file:
           $ref: '#/components/schemas/multipart.FileHeader'
-        FileArray:
+        fileArray:
           items:
             format: binary
             type: string
           type: array
-        Name:
+        name:
           nullable: true
           type: string
-        Timestamp:
+        timestamp:
           format: date-time
           type: string
       required:
-        - Q
-        - PathParam
-        - Timestamp
-        - Age
+        - timestamp
+        - age
       type: object
     dto.FormUploadResp:
       properties:
@@ -80,7 +78,6 @@ components:
       type: object
     multipart.FileHeader:
       format: binary
-      nullable: true
       type: string
 info:
   title: Example api
@@ -97,8 +94,6 @@ paths:
               schema:
                 type: string
           description: OK
-        default:
-          description: ""
       tags:
         - Blobs
   /api/v1/blobs/stream:
@@ -109,8 +104,6 @@ paths:
           content:
             text/plain: {}
           description: OK
-        default:
-          description: ""
       tags:
         - Blobs
   /api/v1/blobs/string:
@@ -123,8 +116,6 @@ paths:
               schema:
                 type: string
           description: OK
-        default:
-          description: ""
       tags:
         - Blobs
   /api/v1/forms/inline:
@@ -161,8 +152,6 @@ paths:
                 additionalProperties: {}
                 type: object
           description: Internal Server Error
-        default:
-          description: ""
       tags:
         - Forms
   /api/v1/forms/struct/{pathParam}:
@@ -179,6 +168,12 @@ paths:
           name: q
           required: true
           schema:
+            type: string
+        - in: header
+          name: headerParam
+          required: true
+          schema:
+            format: uuid
             type: string
       requestBody:
         content:
@@ -207,8 +202,6 @@ paths:
                 additionalProperties: {}
                 type: object
           description: Internal Server Error
-        default:
-          description: ""
       tags:
         - Forms
   /api/v1/json/{id}:
@@ -240,8 +233,6 @@ paths:
             X-Custom-Header2:
               schema:
                 type: string
-        default:
-          description: ""
       tags:
         - Json
   /api/v1/json/blob:
@@ -252,8 +243,6 @@ paths:
           content:
             application/json: {}
           description: OK
-        default:
-          description: ""
       tags:
         - Json
   /api/v1/json/pretty:
@@ -266,8 +255,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/dto.User'
           description: OK
-        default:
-          description: ""
       tags:
         - Json
   /api/v1/nocontent/redirect:
@@ -276,8 +263,6 @@ paths:
       responses:
         "302":
           description: Found
-        default:
-          description: ""
       tags:
         - Nocontent
   /api/v1/nocontent/resource/{id}:
@@ -292,8 +277,6 @@ paths:
       responses:
         "204":
           description: No Content
-        default:
-          description: ""
       tags:
         - Nocontent
   /api/v1/xml/:
@@ -312,8 +295,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/dto.User'
           description: OK
-        default:
-          description: ""
       tags:
         - Xml
   /api/v1/xml/blob:
@@ -324,8 +305,6 @@ paths:
           content:
             application/xml: {}
           description: OK
-        default:
-          description: ""
       tags:
         - Xml
   /api/v1/xml/pretty:
@@ -336,8 +315,6 @@ paths:
           content:
             application/xml: {}
           description: OK
-        default:
-          description: ""
       tags:
         - Xml
 servers:

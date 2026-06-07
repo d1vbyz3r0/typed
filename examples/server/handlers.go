@@ -112,18 +112,18 @@ func deleteResource(c echo.Context) error {
 type FormsHandler struct{}
 
 func (h FormsHandler) inlineForm(c echo.Context) error {
-	name := c.FormValue("Name")
-	active, err := strconv.ParseBool(c.FormValue("Active"))
+	name := c.FormValue("name")
+	active, err := strconv.ParseBool(c.FormValue("active"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	timestamp, err := time.Parse(time.RFC3339, c.FormValue("Timestamp"))
+	timestamp, err := time.Parse(time.RFC3339, c.FormValue("timestamp"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	file, err := c.FormFile("Avatar")
+	file, err := c.FormFile("avatar")
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}

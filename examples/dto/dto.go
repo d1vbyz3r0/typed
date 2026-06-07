@@ -22,14 +22,14 @@ type User struct {
 }
 
 type Form struct {
-	Q         string                  `query:"q"`
-	PathParam uuid.UUID               `param:"pathParam"`
-	Timestamp time.Time               `form:"Timestamp"`
-	File      *multipart.FileHeader   `form:"File"`
-	Name      *string                 `form:"Name"`
-	Age       int                     `form:"Age"`
-	FileArray []*multipart.FileHeader `form:"FileArray"`
-	// HeaderParam uuid.UUID               `header:"headerParam"`
+	Q           string                  `query:"q"`
+	PathParam   uuid.UUID               `param:"pathParam"`
+	Timestamp   time.Time               `form:"timestamp"`
+	File        *multipart.FileHeader   `form:"file"`
+	Name        *string                 `form:"name"`
+	Age         int                     `form:"age"`
+	FileArray   []*multipart.FileHeader `form:"fileArray"`
+	HeaderParam uuid.UUID               `header:"headerParam"`
 }
 
 type FormUploadResp struct {
@@ -40,5 +40,4 @@ type FormUploadResp struct {
 	Filename  string    `json:"filename"`
 }
 
-type ShouldBeExcluded struct {
-}
+type ShouldBeExcluded struct{}

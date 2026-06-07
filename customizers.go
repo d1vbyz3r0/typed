@@ -9,6 +9,12 @@ import (
 	"github.com/getkin/kin-openapi/openapi3gen"
 )
 
+var nonBodyTags = []string{
+	"query",
+	"header",
+	"param",
+}
+
 var customizers = []openapi3gen.SchemaCustomizerFn{
 	uuidCustomizer,
 	makeFieldsRequired,
@@ -95,14 +101,12 @@ func NewEnumsCustomizer(registry *Registry) openapi3gen.SchemaCustomizerFn {
 }
 
 func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	shouldSkip := []string{
-		"query",
-		"header",
-		"param",
+	if tag == "" {
+		return nil
 	}
 
-	for _, tagName := range shouldSkip {
-		if v, ok := tag.Lookup(tagName); ok && v != "-" && v != "" {
+	for _, tagName := range nonBodyTags {
+		if v, ok := tag.Lookup(tagName); ok && v != "-" {
 			logging.Debug("removed field from final schema since it's not in body", "pkg", t.PkgPath(), "name", t.Name(), "tag", tag)
 			return new(openapi3gen.ExcludeSchemaSentinel)
 		}
@@ -119,6 +123,10 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if !f.IsExported() {
+			continue
+		}
+
+		if isNonBodyField(f) {
 			continue
 		}
 
@@ -148,4 +156,13 @@ func getFieldNameByTag(field reflect.StructField) string {
 	}
 
 	return field.Name
+}
+
+func isNonBodyField(f reflect.StructField) bool {
+	for _, tag := range nonBodyTags {
+		if f.Tag.Get(tag) != "" {
+			return true
+		}
+	}
+	return false
 }

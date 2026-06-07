@@ -117,7 +117,7 @@ func main() {
         }),
         openapi3gen.SchemaCustomizer(typed.Customizer),
         openapi3gen.CreateTypeNameGenerator(typed.NewTypeNameGenerator(registry)),
-        // openapi3gen.CreateTypeNameGenerator(typed.TypeNameGenerator),
+        openapi3gen.CreateFieldNameGenerator(typed.FieldNameGenerator),
     )
 
     err := typed.GenerateRefs(g, Spec.Components.Schemas, registry)

@@ -114,6 +114,79 @@ func TestFillType_Map(t *testing.T) {
 	assert.Equal(t, "int", got.params[1].name)
 }
 
+func TestInteracesProcessing(t *testing.T) {
+	cases := []struct {
+		name     string
+		makeType func(t *testing.T) types.Type
+		want     *Type
+		wantErr  bool
+	}{
+		{
+			name: "string map with empty interface",
+			makeType: func(t *testing.T) types.Type {
+				iface := types.NewInterfaceType(nil, nil)
+				return types.NewMap(
+					types.Typ[types.String],
+					iface.Complete(),
+				)
+			},
+			want:    Map(Basic("string"), Basic("any")),
+			wantErr: false,
+		},
+		{
+			name: "non-empty interface",
+			makeType: func(t *testing.T) types.Type {
+				stringType := types.Typ[types.String]
+				results := types.NewTuple(types.NewParam(0, nil, "", stringType))
+				signature := types.NewSignatureType(nil, nil, nil, nil, results, false)
+				stringMethod := types.NewFunc(0, nil, "String", signature)
+				methods := []*types.Func{stringMethod}
+				nonEmptyIface := types.NewInterfaceType(methods, nil)
+				return nonEmptyIface.Complete()
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "slice of empty interfaces",
+			makeType: func(t *testing.T) types.Type {
+				iface := types.NewInterfaceType(nil, nil)
+				return types.NewSlice(iface.Complete())
+			},
+			want:    Slice(Basic("any")),
+			wantErr: false,
+		},
+		{
+			name: "named type with any struct field",
+			makeType: func(t *testing.T) types.Type {
+				pkg := types.NewPackage("github.com/example/foo", "foo")
+				obj := types.NewTypeName(token.NoPos, pkg, "MyType", nil)
+				iface := types.NewInterfaceType(nil, nil)
+				st := types.NewStruct([]*types.Var{types.NewVar(token.NoPos, nil, "Field", iface.Complete())}, nil)
+				return types.NewNamed(obj, st, nil)
+			},
+			want:    Named("github.com/example/foo", "MyType"),
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var got Type
+			err := fillType(tt.makeType(t), &got)
+			if tt.wantErr {
+				t.Logf("got error = %v", err)
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tt.want.String(), got.String())
+		})
+	}
+}
+
 func TestFillType_NestedRecursive(t *testing.T) {
 	// []*[]int
 

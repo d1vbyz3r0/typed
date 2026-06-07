@@ -72,6 +72,14 @@ func fillType(t types.Type, _type *Type) error {
 		_type.size = tt.Len()
 		return fillType(tt.Elem(), _type.elem)
 
+	case *types.Interface:
+		if !tt.Empty() {
+			return fmt.Errorf("%w: %T (only empty interfaces supported)", ErrTypeUnsupported, tt)
+		}
+		_type.kind = TypeKindBasic
+		_type.name = "any"
+		return nil
+
 	case *types.Map:
 		_type.kind = TypeKindMap
 		_type.params = make([]*Type, 2)

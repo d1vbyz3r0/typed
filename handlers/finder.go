@@ -157,7 +157,10 @@ func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error)
 		if pattern.Recursive {
 			p = filepath.Join(p, "...")
 		}
-		res = append(res, filepath.Join(cwd, p))
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(cwd, p)
+		}
+		res = append(res, p)
 	}
 
 	return res, nil

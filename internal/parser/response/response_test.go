@@ -37,15 +37,14 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 						ContentType: "application/json",
 						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
 					},
-					{
-						ContentType: "application/xml",
-						ModelType:   typing.Map(typing.Basic("string"), typing.Basic("interface")),
-					},
 				},
 				http.StatusBadRequest: []Response{
 					{
 						ContentType: "application/json",
-						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
+						ModelType: typing.Slice(typing.Map(
+							typing.Basic("int"),
+							typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
+						)),
 					},
 				},
 			},
@@ -54,26 +53,12 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pkg := testsuite.LoadPackage(t, "../../../testdata/handlers/")
-			for _, file := range pkg.Syntax {
-				ast.Inspect(file, func(n ast.Node) bool {
-					funcDecl, ok := n.(*ast.FuncDecl)
-					if !ok {
-						return true
-					}
-
-					if funcDecl.Name.Name != "Handler" {
-						return true
-					}
-
-					mapping := NewStatusCodeMapping(funcDecl, cr, mr, pkg.TypesInfo)
-					for k, v := range mapping {
-						want := tt.want[k]
-						require.ElementsMatch(t, want, v)
-					}
-
-					return true
-				})
+			pkg := testsuite.LoadFixturePackage(t, "handlers")
+			fn := testsuite.Func(t, pkg, "Handler")
+			mapping := NewStatusCodeMapping(fn, cr, mr, pkg.TypesInfo)
+			require.Equal(t, len(tt.want), len(mapping))
+			for status, want := range tt.want {
+				require.ElementsMatch(t, want, mapping[status])
 			}
 		})
 	}

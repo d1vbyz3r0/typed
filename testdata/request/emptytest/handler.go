@@ -1,8 +1,9 @@
 package emptytest
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 type NoTags struct {
@@ -10,7 +11,7 @@ type NoTags struct {
 	Age  int
 }
 
-func NoTagsHandler(c echo.Context) error {
+func Handler(c echo.Context) error {
 	var dto NoTags
 	if err := c.Bind(&dto); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})

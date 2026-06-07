@@ -1,251 +1,108 @@
 package request
 
 import (
-	"go/ast"
 	"mime/multipart"
 	"reflect"
 	"testing"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/testsuite"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/packages"
 )
 
-func TestNewRequest_JSON(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/jsontest")
-	require.NoError(t, err)
+func requestFromFixture(t *testing.T, fixture string) *Request {
+	t.Helper()
 
+	pkg, fn := testsuite.LoadFixtureFunc(t, "request/"+fixture, "Handler")
+	return New(fn, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
+}
+
+func TestNewRequest_JSON(t *testing.T) {
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/jsontest", "JsonDTO"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "jsontest"))
 }
 
 func TestNewRequest_XML(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/xmltest")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/xmltest", "XMLDto"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationXML: Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "xmltest"))
 }
 
 func TestNewRequest_EmptyTags(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/emptytest")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/emptytest", "NoTags"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationJSON: Body{},
 			echo.MIMEApplicationXML:  Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "emptytest"))
 }
 
 func TestNewRequest_FormTagsNoFiles(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/formtest/nofile")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/nofile", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEApplicationForm: Body{},
 			echo.MIMEMultipartForm:   Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "formtest/nofile"))
 }
 
 func TestNewRequest_FormWithFile(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/formtest/file")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/file", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "formtest/file"))
 }
 
 func TestNewRequest_FormWithFiles(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/formtest/files")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/formtest/files", "Form"),
 		ContentTypeMapping: ContentTypeMapping{
 			echo.MIMEMultipartForm: Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "formtest/files"))
 }
 
 func TestNewRequest_NoBody(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/nobody")
-	require.NoError(t, err)
-
 	want := &Request{
 		ContentTypeMapping: ContentTypeMapping{},
-		PathParams:         nil,
-		QueryParams:        nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "nobody"))
 }
 
 func TestNewRequest_NoBinds(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/nobind")
-	require.NoError(t, err)
-
 	want := &Request{
 		ContentTypeMapping: ContentTypeMapping{},
-		PathParams:         nil,
-		QueryParams:        nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "nobind"))
 }
 
 func TestNewRequest_MultipleTags(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/multiple")
-	require.NoError(t, err)
-
 	want := &Request{
 		ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/request/multiple", "Data"),
 		ContentTypeMapping: ContentTypeMapping{
@@ -254,48 +111,22 @@ func TestNewRequest_MultipleTags(t *testing.T) {
 			echo.MIMEApplicationForm: Body{},
 			echo.MIMEApplicationXML:  Body{},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "multiple"))
 }
 
 func TestNewRequest_InlineFormNoFiles(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/formtest/inline")
-	require.NoError(t, err)
-
 	f := reflect.StructOf([]reflect.StructField{
 		{
-			Name:      "Name",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(""),
-			Tag:       `form:"name"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "Name",
+			Type: reflect.TypeFor[string](),
+			Tag:  `form:"name"`,
 		},
 		{
-			Name:      "Age",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(0),
-			Tag:       `form:"age"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "Age",
+			Type: reflect.TypeFor[int](),
+			Tag:  `form:"age"`,
 		},
 	})
 
@@ -308,48 +139,23 @@ func TestNewRequest_InlineFormNoFiles(t *testing.T) {
 				Form: f,
 			},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want, req)
-		return false
-	})
+	require.Equal(t, want, requestFromFixture(t, "formtest/inline"))
 }
 
 func TestNewRequest_InlineFormWithFiles(t *testing.T) {
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../../testdata/request/formtest/inlinefiles")
-	require.NoError(t, err)
-
 	f := reflect.StructOf([]reflect.StructField{
 		{
-			Name:      "Name",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(""),
-			Tag:       `form:"name"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "Name",
+			Type: reflect.TypeFor[string](),
+			Tag:  `form:"name"`,
 		},
 		{
-			Name:      "File",
-			PkgPath:   "",
-			Type:      reflect.TypeOf(new(multipart.FileHeader)),
-			Tag:       `form:"file"`,
-			Offset:    0,
-			Index:     nil,
-			Anonymous: false,
+			Name: "File",
+
+			Type: reflect.TypeFor[*multipart.FileHeader](),
+			Tag:  `form:"file"`,
 		},
 	})
 
@@ -359,22 +165,10 @@ func TestNewRequest_InlineFormWithFiles(t *testing.T) {
 				Form: f,
 			},
 		},
-		PathParams:  nil,
-		QueryParams: nil,
 	}
 
-	pkg := pkgs[0]
-	file := pkg.Syntax[0]
-	ast.Inspect(file, func(n ast.Node) bool {
-		decl, ok := n.(*ast.FuncDecl)
-		if !ok {
-			return true
-		}
-
-		req := New(decl, pkg.TypesInfo, ParseInlineForms(), ParseInlinePathParams(), ParseInlineQueryParams())
-		require.Equal(t, want.ModelType, req.ModelType)
-		got := req.ContentTypeMapping[echo.MIMEMultipartForm].Form
-		require.Equal(t, f, got)
-		return false
-	})
+	req := requestFromFixture(t, "formtest/inlinefiles")
+	require.Equal(t, want.ModelType, req.ModelType)
+	got := req.ContentTypeMapping[echo.MIMEMultipartForm].Form
+	require.Equal(t, f, got)
 }

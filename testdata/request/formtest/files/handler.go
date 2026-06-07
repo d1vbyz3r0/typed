@@ -1,9 +1,10 @@
 package files
 
 import (
-	"github.com/labstack/echo/v4"
 	"mime/multipart"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Form struct {
@@ -11,7 +12,7 @@ type Form struct {
 	Files []*multipart.FileHeader `form:"files[]"`
 }
 
-func FormHandler(c echo.Context) error {
+func Handler(c echo.Context) error {
 	var dto Form
 	if err := c.Bind(&dto); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})

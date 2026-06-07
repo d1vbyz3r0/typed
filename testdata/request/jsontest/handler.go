@@ -1,8 +1,9 @@
 package jsontest
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 type JsonDTO struct {
@@ -10,7 +11,7 @@ type JsonDTO struct {
 	Age  int    `json:"age"`
 }
 
-func JsonHandler(c echo.Context) error {
+func Handler(c echo.Context) error {
 	var dto JsonDTO
 	if err := c.Bind(&dto); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})

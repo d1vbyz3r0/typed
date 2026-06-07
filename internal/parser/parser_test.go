@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -126,7 +125,7 @@ func main() {
 }
 
 func TestParser(t *testing.T) {
-	pkg := testsuite.LoadPackage(t, "../../testdata/parser/c1/")
+	pkg := testsuite.LoadFixturePackage(t, "parser/c1")
 
 	p, err := New()
 	require.NoError(t, err)
@@ -152,17 +151,17 @@ func TestParser(t *testing.T) {
 					PathParams: []path.Param{
 						{
 							Name: "id",
-							Type: reflect.TypeOf(int64(0)),
+							Type: reflect.TypeFor[int64](),
 						},
 					},
 					QueryParams: []query.Param{
 						{
 							Name: "x",
-							Type: reflect.TypeOf(""),
+							Type: reflect.TypeFor[string](),
 						},
 						{
 							Name: "json",
-							Type: reflect.TypeOf(true),
+							Type: reflect.TypeFor[bool](),
 						},
 					},
 				},
@@ -235,7 +234,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestParserAllModels(t *testing.T) {
-	pkg := testsuite.LoadPackage(t, "../../testdata/parser/allmodels/")
+	pkg := testsuite.LoadFixturePackage(t, "parser/allmodels")
 
 	p, err := New()
 	require.NoError(t, err)
@@ -250,6 +249,8 @@ func TestParserAllModels(t *testing.T) {
 			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Result"),
 			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "User"),
 			typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Role"), []any{"admin", "user"}),
+			typing.Basic("string"),
+			typing.Map(typing.Basic("string"), typing.Basic("string")),
 		},
 	}
 
@@ -257,7 +258,6 @@ func TestParserAllModels(t *testing.T) {
 	for _, m := range res.AdditionalModels {
 		got[m.String()] = struct{}{}
 	}
-	fmt.Println(got)
 	want := make([]string, 0, len(models.AdditionalModels))
 	for _, m := range models.AdditionalModels {
 		want = append(want, m.String())

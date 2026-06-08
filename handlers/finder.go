@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -54,6 +54,8 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 	if err != nil {
 		return fmt.Errorf("get current working directory: %v", err)
 	}
+
+	logging.Debug("detected current working directory", cwd)
 
 	cfg := &packages.Config{
 		Dir: cwd,
@@ -156,7 +158,7 @@ func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error)
 	for _, pattern := range patterns {
 		p := pattern.Path
 		if pattern.Recursive {
-			p = filepath.Join(p, "...")
+			p = path.Join(p, "...")
 		}
 		res = append(res, p)
 	}

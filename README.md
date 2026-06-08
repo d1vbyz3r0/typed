@@ -8,9 +8,9 @@ source and registered routes.
 
 The generator parses handler source with `go/ast`, generates a Go program
 containing a runtime type registry, and runs that program to build the
-OpenAPI document with reflection. It does not require annotation comments,
-but its output is based on recognizable source-code patterns and should be
-reviewed before it is treated as an API contract.
+OpenAPI document with reflection. It does not require annotation comments. 
+The generated specification reflects the supported source-code patterns, 
+but behavior implemented through unsupported or dynamic constructs may require some tweaks on user side.
 
 See the generated [example specification](./examples/gen/example.yaml) or
 open it in [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/gen/example.yaml).

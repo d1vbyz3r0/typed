@@ -325,7 +325,7 @@ func (b *OperationBuilder) AddOperationTag(apiPrefix string) *OperationBuilder {
 }
 
 func (b *OperationBuilder) AddOperationId() *OperationBuilder {
-	b.step("add operation tag", func() error {
+	b.step("add operation id", func() error {
 		b.op.OperationID = b.handler.HandlerName()
 		return nil
 	})

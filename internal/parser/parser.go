@@ -183,6 +183,11 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 					continue
 				}
 
+				if typing.HasTypeParams(obj.Type()) {
+					logging.Debug("skipping generic type declaration, only instantiated generic type can be a model", pkg.PkgPath, "name", name)
+					continue
+				}
+
 				model, err := typing.NewType(obj.Type())
 				if err != nil {
 					logging.Error("failed to create typing.Type from type object", "err", err)

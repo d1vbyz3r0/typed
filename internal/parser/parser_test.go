@@ -265,3 +265,32 @@ func TestParserAllModels(t *testing.T) {
 
 	require.ElementsMatch(t, want, slices.Collect(maps.Keys(got)))
 }
+
+func TestParser_SkipsGenericDeclaration(t *testing.T) {
+	pkg := testsuite.LoadFixturePackage(t, "parser/generics")
+	p, err := New()
+	require.NoError(t, err)
+
+	res, err := p.Parse(pkg, ParseAllModels())
+	require.NoError(t, err)
+
+	models := Result{
+		AdditionalModels: []*typing.Type{
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "InstantiatedGeneric"),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "Page", typing.Basic("any")),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "Page", typing.Basic("string")),
+		},
+	}
+
+	got := make(map[string]struct{})
+	for _, m := range res.AdditionalModels {
+		got[m.String()] = struct{}{}
+	}
+
+	want := make([]string, 0, len(models.AdditionalModels))
+	for _, m := range models.AdditionalModels {
+		want = append(want, m.String())
+	}
+
+	require.ElementsMatch(t, want, slices.Collect(maps.Keys(got)))
+}

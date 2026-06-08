@@ -159,6 +159,9 @@ func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error)
 		p := pattern.Path
 		if pattern.Recursive {
 			p = path.Join(p, "...")
+			if p[0] != '.' {
+				p = "./" + p
+			}
 		}
 		res = append(res, p)
 	}

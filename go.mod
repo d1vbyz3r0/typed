@@ -5,7 +5,7 @@ go 1.25
 toolchain go1.26.2
 
 require (
-	github.com/getkin/kin-openapi v0.140.0
+	github.com/getkin/kin-openapi v0.140.1-0.20260607233802-e56b2a193dfd
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/stretchr/testify v1.10.0
@@ -34,5 +34,3 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 )
-
-replace github.com/getkin/kin-openapi => github.com/d1vbyz3r0/kin-openapi v0.0.0-20260607181336-cf8eca60a77a

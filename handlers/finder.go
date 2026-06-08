@@ -50,7 +50,13 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 		opt(findOpts)
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get current working directory: %v", err)
+	}
+
 	cfg := &packages.Config{
+		Dir: cwd,
 		Mode: packages.NeedTypes |
 			packages.NeedSyntax |
 			packages.NeedTypesInfo |
@@ -146,19 +152,11 @@ func (f *Finder) getHandlerName(route echo.Route) string {
 }
 
 func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("get current working directory: %v", err)
-	}
-
 	res := make([]string, 0, len(patterns))
 	for _, pattern := range patterns {
 		p := pattern.Path
 		if pattern.Recursive {
 			p = filepath.Join(p, "...")
-		}
-		if !filepath.IsAbs(p) {
-			p = filepath.Join(cwd, p)
 		}
 		res = append(res, p)
 	}

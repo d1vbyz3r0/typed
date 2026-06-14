@@ -16,7 +16,10 @@ type importMapping struct {
 	Pkg     string
 }
 
-func createImportMappings(results []parser.Result, initialImports map[string]*importMapping) ([]*importMapping, error) {
+func createImportMappings(
+	results []parser.Result,
+	initialImports map[string]*importMapping,
+) ([]*importMapping, error) {
 	imports := maps.Clone(initialImports)
 	if imports == nil {
 		imports = make(map[string]*importMapping)
@@ -105,8 +108,22 @@ func processImport(pkg string, imports map[string]*importMapping) {
 			return
 		}
 
-		imp.lastIdx++
 		alias := fmt.Sprintf("%s%d", pkgName, imp.lastIdx)
+		for {
+			prev, ok := imports[alias]
+			if !ok {
+				break
+			}
+
+			if prev.Pkg == pkg {
+				// alias already created
+				return
+			}
+
+			imp.lastIdx++
+			alias = fmt.Sprintf("%s%d", pkgName, imp.lastIdx)
+		}
+
 		imports[alias] = &importMapping{
 			Alias: alias,
 			Pkg:   pkg,
@@ -115,8 +132,9 @@ func processImport(pkg string, imports map[string]*importMapping) {
 	}
 
 	imports[pkgName] = &importMapping{
-		Alias: pkgName,
-		Pkg:   pkg,
+		Alias:   pkgName,
+		Pkg:     pkg,
+		lastIdx: 1,
 	}
 }
 

@@ -366,6 +366,32 @@ func TestCreateImportMappings(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "package with number at the end doesn't overwriting alias",
+			results: []parser.Result{
+				{
+					AdditionalModels: []*typing.Type{
+						typing.Named("github.com/acme/generated/dto", "Model"),
+						typing.Named("github.com/acme/generated/dto1", "Model"),
+						typing.Named("github.com/acme/internal/dto", "Model"),
+					},
+				},
+			},
+			want: []*importMapping{
+				{
+					Alias: "dto",
+					Pkg:   "github.com/acme/generated/dto",
+				},
+				{
+					Alias: "dto1",
+					Pkg:   "github.com/acme/generated/dto1",
+				},
+				{
+					Alias: "dto2",
+					Pkg:   "github.com/acme/internal/dto",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

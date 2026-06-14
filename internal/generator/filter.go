@@ -60,11 +60,22 @@ type filterSet struct {
 }
 
 type filterSetEntry struct {
-	basePkg string
-	filter  *typeFilter
+	basePkg   string
+	recursive bool
+	filter    *typeFilter
 }
 
-func newFilterSet(models []ModelsConfig, resolveImportPath func(path string) (string, error)) (*filterSet, error) {
+func (e *filterSetEntry) contains(pkgPath string) bool {
+	if pkgPath == e.basePkg {
+		return true
+	}
+	return e.recursive && strings.HasPrefix(pkgPath, e.basePkg+"/")
+}
+
+func newFilterSet(
+	models []ModelsConfig,
+	resolveImportPath func(path string) (string, error),
+) (*filterSet, error) {
 	entries := make([]filterSetEntry, 0, len(models))
 	for _, m := range models {
 		basePkg, err := resolveImportPath(m.Path)
@@ -77,7 +88,11 @@ func newFilterSet(models []ModelsConfig, resolveImportPath func(path string) (st
 			return nil, fmt.Errorf("model %s: %w", m.Path, err)
 		}
 
-		entries = append(entries, filterSetEntry{basePkg: basePkg, filter: f})
+		entries = append(entries, filterSetEntry{
+			basePkg:   basePkg,
+			recursive: m.Recursive,
+			filter:    f,
+		})
 	}
 
 	return &filterSet{entries: entries}, nil
@@ -115,9 +130,10 @@ func (fs *filterSet) findEntry(pkgPath string) *filterSetEntry {
 	var best *filterSetEntry
 	for i := range fs.entries {
 		e := &fs.entries[i]
-		if !strings.HasPrefix(pkgPath, e.basePkg) {
+		if !e.contains(pkgPath) {
 			continue
 		}
+
 		if best == nil || len(e.basePkg) > len(best.basePkg) {
 			best = e
 		}

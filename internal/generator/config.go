@@ -96,6 +96,19 @@ func (c ModelsConfig) Validate() error {
 	if c.Path == "" {
 		return errors.New("path is required")
 	}
+
+	for i, filter := range c.IncludeModels {
+		if err := filter.Validate(); err != nil {
+			return fmt.Errorf("validate include filter[%d]: %w", i, err)
+		}
+	}
+
+	for i, filter := range c.ExcludeModels {
+		if err := filter.Validate(); err != nil {
+			return fmt.Errorf("validate exclude filter[%d]: %w", i, err)
+		}
+	}
+
 	return nil
 }
 

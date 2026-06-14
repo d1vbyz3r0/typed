@@ -199,7 +199,7 @@ func (t *Type) format(namer NamerFunc) string {
 		return "*" + t.elem.format(namer)
 
 	case TypeKindArray:
-		return fmt.Sprintf("[%d]%s", t.size, t.elem)
+		return fmt.Sprintf("[%d]%s", t.size, t.elem.format(namer))
 
 	case TypeKindSlice:
 		return "[]" + t.elem.format(namer)

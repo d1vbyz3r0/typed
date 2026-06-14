@@ -214,6 +214,16 @@ func TestTypeTreeToString(t *testing.T) {
 			_type: Enum(Named("github.com/acme/user", "Role"), []any{"admin", "user", "guest"}),
 			want:  `t.Enum(t.Named("github.com/acme/user", "Role"), []any{"admin", "user", "guest"})`,
 		},
+		{
+			name:  "array of named types",
+			_type: Array(Named("github.com/example/foo", "Named"), 10),
+			want:  `t.Array(t.Named("github.com/example/foo", "Named"), 10)`,
+		},
+		{
+			name:  "slice of named types",
+			_type: Slice(Named("github.com/example/foo", "Named")),
+			want:  `t.Slice(t.Named("github.com/example/foo", "Named"))`,
+		},
 	}
 
 	for _, tc := range cases {

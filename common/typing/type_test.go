@@ -475,6 +475,16 @@ func TestTypeString(t *testing.T) {
 			),
 			want: "github.com/example/foo.Generic[map[int]github.com/example/bar.MapVal,*[]*string]",
 		},
+		{
+			name:  "array of named types",
+			_type: Array(Named("github.com/example/foo", "Named"), 10),
+			want:  "[10]github.com/example/foo.Named",
+		},
+		{
+			name:  "slice of named types",
+			_type: Slice(Named("github.com/example/foo", "Named")),
+			want:  "[]github.com/example/foo.Named",
+		},
 	}
 
 	for _, tc := range cases {

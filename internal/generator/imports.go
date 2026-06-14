@@ -72,29 +72,13 @@ func createImportMappings(
 	return res, nil
 }
 
-func initialMapping(initialImports ...string) map[string]*importMapping {
+func initialMapping() map[string]*importMapping {
 	// static imports, key is last pkg part, value is actual mapping
-	imports := map[string]*importMapping{
-		"typed":       {Alias: "typed", Pkg: "github.com/d1vbyz3r0/typed"},
-		"typing":      {Alias: "typing", Pkg: "github.com/d1vbyz3r0/typed/common/typing"},
-		"handlers":    {Alias: "handlers", Pkg: "github.com/d1vbyz3r0/typed/handlers"},
-		"openapi3":    {Alias: "openapi3", Pkg: "github.com/getkin/kin-openapi/openapi3"},
-		"openapi3gen": {Alias: "openapi3gen", Pkg: "github.com/getkin/kin-openapi/openapi3gen"},
-		"slog":        {Alias: "slog", Pkg: "log/slog"},
-		"os":          {Alias: "os", Pkg: "os"},
-		"fmt":         {Alias: "fmt", Pkg: "fmt"},
-		// TODO: determine dynamically when v5 support introduced
-		"v4": {Alias: "echo", Pkg: "github.com/labstack/echo/v4"},
+	return map[string]*importMapping{
+		"typed":    {Alias: "typed", Pkg: "github.com/d1vbyz3r0/typed"},
+		"typing":   {Alias: "typing", Pkg: "github.com/d1vbyz3r0/typed/common/typing"},
+		"openapi3": {Alias: "openapi3", Pkg: "github.com/getkin/kin-openapi/openapi3"},
 	}
-
-	for _, imp := range initialImports {
-		if imp == "" {
-			continue
-		}
-		processImport(imp, imports)
-	}
-
-	return imports
 }
 
 func processImport(pkg string, imports map[string]*importMapping) {

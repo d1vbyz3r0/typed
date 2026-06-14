@@ -32,8 +32,8 @@ type TemplateArgs struct {
 	HandlersPkgs           []HandlersConfig
 	RoutesProviderCtorName string
 	RoutesProviderPkgAlias string
-	GenerateLib            bool
-	LibPkg                 string
+	PackageName            string
+	IsMain                 bool
 	SpecPath               string
 	HandlerProcessingHooks []string
 	Concurrency            int
@@ -115,7 +115,18 @@ func (g *Generator) Generate() error {
 		return err
 	}
 
-	_imports, err := createImportMappings(results, initialMapping(g.cfg.Input.RoutesProviderPkg))
+	initialImports := initialMapping()
+	if g.cfg.Output.IsMain() {
+		processImport("github.com/d1vbyz3r0/typed/handlers", initialImports)
+		processImport("log/slog", initialImports)
+		processImport("os", initialImports)
+		processImport(g.cfg.Input.RoutesProviderPkg, initialImports)
+		if g.cfg.Debug {
+			processImport("github.com/d1vbyz3r0/typed/logging", initialImports)
+		}
+	}
+
+	_imports, err := createImportMappings(results, initialImports)
 	if err != nil {
 		return fmt.Errorf("create import mappings: %w", err)
 	}
@@ -149,9 +160,13 @@ func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Typ
 		Parse(scriptTemplate),
 	)
 
-	routesProviderPkgAlias, ok := lookupAlias(_imports, g.cfg.Input.RoutesProviderPkg)
-	if !ok {
-		return fmt.Errorf("alias for routes provider package not found in imports mapping")
+	var routesProviderPkgAlias string
+	if g.cfg.Output.IsMain() {
+		var ok bool
+		routesProviderPkgAlias, ok = lookupAlias(_imports, g.cfg.Input.RoutesProviderPkg)
+		if !ok {
+			return fmt.Errorf("alias for routes provider package not found in imports mapping")
+		}
 	}
 
 	var result bytes.Buffer
@@ -165,8 +180,8 @@ func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Typ
 		HandlersPkgs:           g.cfg.Input.Handlers,
 		RoutesProviderCtorName: g.cfg.Input.RoutesProviderCtor,
 		RoutesProviderPkgAlias: routesProviderPkgAlias,
-		GenerateLib:            g.cfg.GenerateLib,
-		LibPkg:                 g.cfg.LibPkg,
+		PackageName:            g.cfg.Output.Package(),
+		IsMain:                 g.cfg.Output.IsMain(),
 		SpecPath:               g.cfg.Output.SpecPath,
 		HandlerProcessingHooks: g.cfg.ProcessingHooks,
 		Concurrency:            g.cfg.Concurrency,

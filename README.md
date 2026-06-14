@@ -8,8 +8,8 @@ source and registered routes.
 
 The generator parses handler source with `go/ast`, generates a Go program
 containing a runtime type registry, and runs that program to build the
-OpenAPI document with reflection. It does not require annotation comments. 
-The generated specification reflects the supported source-code patterns, 
+OpenAPI document with reflection. It does not require annotation comments.
+The generated specification reflects the supported source-code patterns,
 but behavior implemented through unsupported or dynamic constructs may require some tweaks on user side.
 
 See the generated [example specification](./examples/gen/example.yaml) or
@@ -94,6 +94,8 @@ input:
 output:
   # Generated Go source.
   path: ../gen/spec.go
+  # Optional. Defaults to main.
+  package: main
   # Generated OpenAPI document. Supported extensions: .yaml, .yml, .json.
   spec-path: ../gen/openapi.yaml
 
@@ -112,6 +114,16 @@ subpackages. Model filters are regular expressions and support `path`,
 `import-path`, `pkg`, and `name`. If include filters are present, a type must
 match at least one of them. A type that subsequently matches an exclude filter
 is rejected.
+
+By default, the generated source is an executable in `package main`.
+`input.routes-provider-ctor`, `input.routes-provider-pkg`, and
+`output.spec-path` are required in this mode.
+
+Setting `output.package` to another package name generates only the private
+`spec` and `registry` variables. Routes provider settings and `spec-path` are
+not required. A file in the same package can use these variables to call
+`typed.Generate`, expose getters or wrappers, and save the resulting
+specification.
 
 The complete example configuration is
 [`examples/typed.yaml`](./examples/typed.yaml).
@@ -219,6 +231,25 @@ through `processing-hooks`. It marks operations whose captured middleware
 function name contains `github.com/labstack/echo-jwt` with a bearer JWT
 security requirement.
 
+## Programmatic Generation
+
+The generated executable uses the same public API that is available to library
+users:
+
+```go
+err := typed.Generate(typed.GenerateOptions{
+    Spec:           spec,
+    Registry:       registry,
+    Routes:         typed.CollectRoutes(routesProvider),
+    SearchPatterns: []handlers.SearchPattern{{Path: ".", Recursive: true}},
+    APIPrefix:      typed.MakePointer("/api/v1"),
+})
+```
+
+When `Generator` is omitted, `typed.Generate` creates the default schema
+generator. It also initializes missing component maps on the provided
+specification. A registry and specification must be provided explicitly.
+
 ## Current Limitations
 
 `typed` is based on static pattern matching plus runtime route inspection. It
@@ -244,17 +275,6 @@ Important current limitations are:
 - exported models in configured model packages are considered for generation,
   so model filters may be needed;
 - generated output should be validated and reviewed as part of CI.
-
-## Library Mode
-
-Setting `generate-lib: true` and `lib-pkg: <package>` generates a package
-instead of an executable. The package exposes `Spec` and `Generate`; the
-caller is responsible for configuring `openapi3gen.Generator`, collecting
-routes, invoking `Generate`, and saving the result.
-
-Library mode is a lower-level integration path. The generated executable is
-the primary documented workflow. The generator currently still expects
-`input.routes-provider-pkg` in library mode; treat this mode as experimental.
 
 ## TODO
 

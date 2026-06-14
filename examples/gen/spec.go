@@ -2,7 +2,6 @@
 package main
 
 import (
-	fmt "fmt"
 	slog "log/slog"
 	os "os"
 
@@ -13,8 +12,7 @@ import (
 	handlers "github.com/d1vbyz3r0/typed/handlers"
 	logging "github.com/d1vbyz3r0/typed/logging"
 	openapi3 "github.com/getkin/kin-openapi/openapi3"
-	openapi3gen "github.com/getkin/kin-openapi/openapi3gen"
-	echo "github.com/labstack/echo/v4"
+	v4 "github.com/labstack/echo/v4"
 )
 
 var registry = typed.MustNewRegistry(
@@ -22,11 +20,11 @@ var registry = typed.MustNewRegistry(
 	typed.T{Val: new(dto.FormUploadResp), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "FormUploadResp")},
 	typed.T{Val: new(dto.Status), ImportAlias: "dto", Type: typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "Status"), []any{"active", "inactive"})},
 	typed.T{Val: new(dto.User), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "User")},
-	typed.T{Val: new(echo.Map), ImportAlias: "echo", Type: typing.Named("github.com/labstack/echo/v4", "Map")},
+	typed.T{Val: new(v4.Map), ImportAlias: "v4", Type: typing.Named("github.com/labstack/echo/v4", "Map")},
 	typed.T{Val: new(string), Type: typing.Basic("string")},
 )
 
-var Spec = &openapi3.T{
+var spec = &openapi3.T{
 	OpenAPI: "3.0.0",
 	Info: &openapi3.Info{
 		Title:   "Example api",
@@ -37,124 +35,30 @@ var Spec = &openapi3.T{
 			URL: "http://localhost:8080",
 		},
 	},
-	Components: &openapi3.Components{
-		Schemas:         make(openapi3.Schemas),
-		SecuritySchemes: make(openapi3.SecuritySchemes),
-	},
-}
-
-type GenerateOpts struct {
-	Generator      *openapi3gen.Generator
-	Routes         []handlers.EchoRoute
-	UseTags        bool
-	ApiPrefix      string
-	SearchPatterns []handlers.SearchPattern
-	Concurrency    int
-}
-
-func Generate(opts GenerateOpts) error {
-	finder, err := handlers.NewFinder()
-	if err != nil {
-		return fmt.Errorf("create handlers finder: %w", err)
-	}
-
-	err = finder.Find(opts.SearchPatterns, handlers.WithConcurrency(opts.Concurrency))
-	if err != nil {
-		return fmt.Errorf("run finder: %w", err)
-	}
-
-	matchedHandlers := finder.Match(opts.Routes)
-	for _, handler := range matchedHandlers {
-		operation, err := typed.
-			NewOperationBuilder(
-				opts.Generator,
-				handler,
-				registry,
-			).
-			AddPathParams().
-			AddQueryParams().
-			AddRequestBody(Spec.Components.Schemas).
-			AddResponses(Spec.Components.Schemas).
-			AddHeaders().
-			AddOperationId().
-			AddOperationDescription().
-			AddOperationTag("/api/v1").
-			Build()
-		if err != nil {
-			return err
-		}
-
-		typed.RunHandlerHooks(Spec, operation, handler)
-		Spec.AddOperation(handler.Path(), handler.Method(), operation)
-	}
-
-	return nil
 }
 
 func main() {
-	const (
-		apiPrefix = "/api/v1"
-		useTags   = true
-	)
 	logging.SetDefault(logging.NewStdLogger(os.Stderr, logging.LevelDebug))
-
-	typed.RegisterCustomizer(typed.NewEnumsCustomizer(registry))
-
-	g := openapi3gen.NewGenerator(
-		openapi3gen.UseAllExportedFields(),
-		openapi3gen.CreateComponentSchemas(openapi3gen.ExportComponentSchemasOptions{
-			ExportComponentSchemas: true,
-			ExportTopLevelSchema:   true,
-			ExportGenerics:         false,
-		}),
-		openapi3gen.SchemaCustomizer(typed.Customizer),
-		openapi3gen.CreateTypeNameGenerator(typed.NewTypeNameGenerator(registry)),
-		openapi3gen.CreateFieldNameGenerator(typed.FieldNameGenerator),
-	)
-
-	err := typed.GenerateRefs(g, Spec.Components.Schemas, registry)
-	if err != nil {
-		slog.Error("generate refs for type registry", "error", err)
-		os.Exit(1)
-	}
-
-	var routes []handlers.EchoRoute
 	routesProvider := server.NewBuilder()
-	routesProvider.OnRouteAdded(func(
-		host string,
-		route echo.Route,
-		handler echo.HandlerFunc,
-		middleware []echo.MiddlewareFunc,
-	) {
-		routes = append(routes, handlers.EchoRoute{
-			Route:       route,
-			HandlerFunc: handler,
-			Middlewares: middleware,
-		})
-	})
-	routesProvider.ProvideRoutes()
-
-	opts := GenerateOpts{
-		Generator: g,
-		Routes:    routes,
-		UseTags:   useTags,
-		ApiPrefix: apiPrefix,
+	err := typed.Generate(typed.GenerateOptions{
+		Spec:        spec,
+		Registry:    registry,
+		Concurrency: 2,
+		APIPrefix:   typed.MakePointer("/api/v1"),
+		Routes:      typed.CollectRoutes(routesProvider),
 		SearchPatterns: []handlers.SearchPattern{
 			{
 				Path:      ".",
 				Recursive: true,
 			},
 		},
-		Concurrency: 2,
-	}
-
-	err = Generate(opts)
+	})
 	if err != nil {
 		slog.Error("generate spec", "error", err)
 		os.Exit(1)
 	}
 
-	err = typed.SaveSpec(Spec, "../gen/example.yaml")
+	err = typed.SaveSpec(spec, "../gen/example.yaml")
 	if err != nil {
 		slog.Error("save spec", "error", err)
 		os.Exit(1)

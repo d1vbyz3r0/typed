@@ -3,6 +3,7 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"os"
 	"regexp"
 
@@ -29,8 +30,6 @@ func LoadConfig(path string) (Config, error) {
 }
 
 type Config struct {
-	GenerateLib     bool         `yaml:"generate-lib"`
-	LibPkg          string       `yaml:"lib-pkg"`
 	ProcessingHooks []string     `yaml:"processing-hooks"`
 	Input           InputConfig  `yaml:"input"`
 	Output          OutputConfig `yaml:"output"`
@@ -39,11 +38,11 @@ type Config struct {
 }
 
 func (c Config) Validate() error {
-	if c.Input.RoutesProviderCtor == "" && !c.GenerateLib {
+	if c.Output.IsMain() && c.Input.RoutesProviderCtor == "" {
 		return errors.New("routes-provider-ctor is required")
 	}
 
-	if c.Input.RoutesProviderPkg == "" && !c.GenerateLib {
+	if c.Output.IsMain() && c.Input.RoutesProviderPkg == "" {
 		return errors.New("routes-provider-pkg is required")
 	}
 
@@ -61,10 +60,6 @@ func (c Config) Validate() error {
 
 	if err := c.Output.Validate(); err != nil {
 		return fmt.Errorf("invalid output config: %w", err)
-	}
-
-	if c.GenerateLib && c.LibPkg == "" {
-		return errors.New("lib-pkg is required when generate_lib is true")
 	}
 
 	return nil
@@ -146,13 +141,13 @@ func (c HandlersConfig) Validate() error {
 	if c.Path == "" {
 		return errors.New("path is required")
 	}
-
 	return nil
 }
 
 type OutputConfig struct {
-	Path     string `yaml:"path"`
-	SpecPath string `yaml:"spec-path"`
+	Path        string `yaml:"path"`
+	SpecPath    string `yaml:"spec-path"`
+	PackageName string `yaml:"package"`
 }
 
 func (c OutputConfig) Validate() error {
@@ -160,9 +155,24 @@ func (c OutputConfig) Validate() error {
 		return errors.New("path is required")
 	}
 
-	if c.SpecPath == "" {
+	if !token.IsIdentifier(c.Package()) || c.Package() == "_" {
+		return fmt.Errorf("invalid package name %q", c.Package())
+	}
+
+	if c.IsMain() && c.SpecPath == "" {
 		return errors.New("spec-path is required")
 	}
 
 	return nil
+}
+
+func (c OutputConfig) Package() string {
+	if c.PackageName == "" {
+		return "main"
+	}
+	return c.PackageName
+}
+
+func (c OutputConfig) IsMain() bool {
+	return c.Package() == "main"
 }

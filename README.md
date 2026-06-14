@@ -256,14 +256,6 @@ Library mode is a lower-level integration path. The generated executable is
 the primary documented workflow. The generator currently still expects
 `input.routes-provider-pkg` in library mode; treat this mode as experimental.
 
-## Development
-
-Run the test suite:
-
-```bash
-go test ./...
-```
-
 ## TODO
 
 - define and implement consistent more reliable required and nullable semantics;

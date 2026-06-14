@@ -37,6 +37,13 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 						ContentType: "application/json",
 						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
 					},
+					{
+						ContentType: "application/xml",
+						ModelType: typing.Map(
+							typing.Basic("string"),
+							typing.Basic("any"),
+						),
+					},
 				},
 				http.StatusBadRequest: []Response{
 					{

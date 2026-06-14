@@ -8,7 +8,7 @@ input:
   api-prefix: /api/v1
   handlers:
     - path: . # Relative to a generation package path
-      recursive: false
+      recursive: true
 
   models:
     - path: ../dto

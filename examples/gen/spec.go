@@ -142,7 +142,7 @@ func main() {
 		SearchPatterns: []handlers.SearchPattern{
 			{
 				Path:      ".",
-				Recursive: false,
+				Recursive: true,
 			},
 		},
 		Concurrency: 2,

@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,9 +13,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/d1vbyz3r0/typed/examples/dto"
+	"examples/dto"
+
+	"github.com/coder/websocket/wsjson"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+
+	coder "github.com/coder/websocket"
+	gorilla "github.com/gorilla/websocket"
+	xnet "golang.org/x/net/websocket"
+)
+
+var (
+	upgrader = gorilla.Upgrader{}
 )
 
 // You can use regular echo.HandlerFunc
@@ -198,4 +210,76 @@ func (h FormsHandler) structForm(c echo.Context) error {
 		"file_name":      req.File.Filename,
 		"file_array_len": len(req.FileArray),
 	})
+}
+
+// handler with golang.org/x/net/websocket usage
+func XNetWebsocketHandler() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		xnet.Handler(func(ws *xnet.Conn) {
+			defer ws.Close()
+			for {
+				// Write
+				if err := xnet.Message.Send(ws, "Hello, Client!"); err != nil {
+					c.Logger().Error("failed to write WS message", "error", err)
+				}
+
+				// Read
+				msg := ""
+				if err := xnet.Message.Receive(ws, &msg); err != nil {
+					c.Logger().Error("failed to write WS message", "error", err)
+				}
+				fmt.Printf("%s\n", msg)
+			}
+		}).ServeHTTP(c.Response(), c.Request())
+		return nil
+	}
+}
+
+// handler with github.com/gorilla/websocket usage
+func GorillaWebsocket(c echo.Context) error {
+	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+	defer ws.Close()
+
+	for {
+		// Write
+		err := ws.WriteMessage(gorilla.TextMessage, []byte("Hello, Client!"))
+		if err != nil {
+			c.Logger().Error("failed to write WS message", "error", err)
+		}
+
+		// Read
+		_, msg, err := ws.ReadMessage()
+		if err != nil {
+			c.Logger().Error("failed to read WS message", "error", err)
+		}
+		fmt.Printf("%s\n", msg)
+	}
+}
+
+// handler with github.com/coder/websocket usage
+func CoderWebsocket(c echo.Context) error {
+	conn, err := coder.Accept(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+	defer conn.CloseNow()
+
+	// Set the context as needed. Use of r.Context() is not recommended
+	// to avoid surprising behavior (see http.Hijacker).
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	var v any
+	err = wsjson.Read(ctx, conn, &v)
+	if err != nil {
+		return err
+	}
+
+	c.Logger().Printf("received: %v", v)
+
+	conn.Close(coder.StatusNormalClosure, "")
+	return nil
 }

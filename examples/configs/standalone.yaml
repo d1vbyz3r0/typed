@@ -4,7 +4,7 @@ input:
   servers:
     - url: http://localhost:8080
   routes-provider-ctor: NewBuilder
-  routes-provider-pkg: "github.com/d1vbyz3r0/typed/examples/server"
+  routes-provider-pkg: "examples/server"
   api-prefix: /api/v1
   handlers:
     - path: . # Relative to a generation package path
@@ -25,7 +25,7 @@ input:
         - name: ".*"
 
 output:
-  path: ../gen/spec.go
-  spec-path: ../gen/example.yaml
+  path: ../standalone-example/spec.go
+  spec-path: ../standalone-example/spec.yaml
 
 debug: true

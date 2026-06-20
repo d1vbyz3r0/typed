@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/d1vbyz3r0/typed/examples/server"
+	"examples/server"
 	"log"
 	"os"
 )

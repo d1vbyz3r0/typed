@@ -279,6 +279,66 @@ paths:
           description: No Content
       tags:
         - Nocontent
+  /api/v1/ws/coder:
+    get:
+      description: handler with github.com/coder/websocket usage
+      operationId: CoderWebsocket
+      responses:
+        "101":
+          description: Switching Protocols
+          headers:
+            Connection:
+              required: true
+              schema:
+                example: Upgrade
+                type: string
+            Upgrade:
+              required: true
+              schema:
+                example: websocket
+                type: string
+      tags:
+        - Ws
+  /api/v1/ws/gorilla:
+    get:
+      description: handler with github.com/gorilla/websocket usage
+      operationId: GorillaWebsocket
+      responses:
+        "101":
+          description: Switching Protocols
+          headers:
+            Connection:
+              required: true
+              schema:
+                example: Upgrade
+                type: string
+            Upgrade:
+              required: true
+              schema:
+                example: websocket
+                type: string
+      tags:
+        - Ws
+  /api/v1/ws/xnet:
+    get:
+      description: handler with golang.org/x/net/websocket usage
+      operationId: XNetWebsocketHandler
+      responses:
+        "101":
+          description: Switching Protocols
+          headers:
+            Connection:
+              required: true
+              schema:
+                example: Upgrade
+                type: string
+            Upgrade:
+              required: true
+              schema:
+                example: websocket
+                type: string
+      tags:
+        - Ws
   /api/v1/xml/:
     get:
       operationId: getUserXML

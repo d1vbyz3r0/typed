@@ -17,13 +17,13 @@ var providers = []Provider{
 }
 
 var (
-	IntType     = reflect.TypeOf(int(0))
-	Int64Type   = reflect.TypeOf(int64(0))
-	UintType    = reflect.TypeOf(uint(0))
-	Float64Type = reflect.TypeOf(float64(0))
-	BoolType    = reflect.TypeOf(false)
-	UuidType    = reflect.TypeOf(uuid.UUID{})
-	TimeType    = reflect.TypeOf(time.Time{})
+	IntType     = reflect.TypeFor[int]()
+	Int64Type   = reflect.TypeFor[int64]()
+	UintType    = reflect.TypeFor[uint]()
+	Float64Type = reflect.TypeFor[float64]()
+	BoolType    = reflect.TypeFor[bool]()
+	UuidType    = reflect.TypeFor[uuid.UUID]()
+	TimeType    = reflect.TypeFor[time.Time]()
 )
 
 func RegisterTypeProvider(p Provider) {

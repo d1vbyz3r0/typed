@@ -16,6 +16,7 @@ type Header struct {
 	Name     string
 	Type     reflect.Type
 	Required bool // TODO: determine if required or not
+	Value    string
 }
 
 func IsHttpHeaderMethod(call *ast.CallExpr, typesInfo *types.Info) bool {

@@ -5,6 +5,7 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"net/http"
 	"reflect"
 	"strconv"
 
@@ -85,6 +86,26 @@ func (m StatusCodeMapping) extractResponses(
 
 		return true
 	})
+
+	if hasWebSocketUsages(funcDecl, typesInfo) {
+		logging.Debug("found websocket usage, extending headers", "handler", funcDecl.Name.String())
+		m[http.StatusSwitchingProtocols] = append(m[http.StatusSwitchingProtocols], Response{
+			Headers: []headers.Header{
+				{
+					Name:     "Connection",
+					Type:     stringType,
+					Required: true,
+					Value:    "Upgrade",
+				},
+				{
+					Name:     "Upgrade",
+					Type:     stringType,
+					Required: true,
+					Value:    "websocket",
+				},
+			},
+		})
+	}
 }
 
 func findHeaders(

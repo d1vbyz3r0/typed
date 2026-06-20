@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
-	"github.com/d1vbyz3r0/typed/examples/dto"
+	"github.com/d1vbyz3r0/typed/testdata/dto"
 	"github.com/stretchr/testify/require"
 )
 

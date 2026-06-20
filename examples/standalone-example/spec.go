@@ -2,13 +2,13 @@
 package main
 
 import (
+	dto "examples/dto"
+	server "examples/server"
 	slog "log/slog"
 	os "os"
 
 	typed "github.com/d1vbyz3r0/typed"
 	typing "github.com/d1vbyz3r0/typed/common/typing"
-	dto "github.com/d1vbyz3r0/typed/examples/dto"
-	server "github.com/d1vbyz3r0/typed/examples/server"
 	handlers "github.com/d1vbyz3r0/typed/handlers"
 	logging "github.com/d1vbyz3r0/typed/logging"
 	openapi3 "github.com/getkin/kin-openapi/openapi3"
@@ -16,10 +16,10 @@ import (
 )
 
 var registry = typed.MustNewRegistry(
-	typed.T{Val: new(dto.Form), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "Form")},
-	typed.T{Val: new(dto.FormUploadResp), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "FormUploadResp")},
-	typed.T{Val: new(dto.Status), ImportAlias: "dto", Type: typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "Status"), []any{"active", "inactive"})},
-	typed.T{Val: new(dto.User), ImportAlias: "dto", Type: typing.Named("github.com/d1vbyz3r0/typed/examples/dto", "User")},
+	typed.T{Val: new(dto.Form), ImportAlias: "dto", Type: typing.Named("examples/dto", "Form")},
+	typed.T{Val: new(dto.FormUploadResp), ImportAlias: "dto", Type: typing.Named("examples/dto", "FormUploadResp")},
+	typed.T{Val: new(dto.Status), ImportAlias: "dto", Type: typing.Enum(typing.Named("examples/dto", "Status"), []any{"active", "inactive"})},
+	typed.T{Val: new(dto.User), ImportAlias: "dto", Type: typing.Named("examples/dto", "User")},
 	typed.T{Val: new(v4.Map), ImportAlias: "v4", Type: typing.Named("github.com/labstack/echo/v4", "Map")},
 	typed.T{Val: new(string), Type: typing.Basic("string")},
 )
@@ -58,7 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = typed.SaveSpec(spec, "../gen/example.yaml")
+	err = typed.SaveSpec(spec, "../standalone-example/spec.yaml")
 	if err != nil {
 		slog.Error("save spec", "error", err)
 		os.Exit(1)

@@ -12,15 +12,15 @@ OpenAPI document with reflection. It does not require annotation comments.
 The generated specification reflects the supported source-code patterns,
 but behavior implemented through unsupported or dynamic constructs may require some tweaks on user side.
 
-See the generated [example specification](./examples/gen/example.yaml) or
-open it in [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/gen/example.yaml).
+See the generated [example specification](./examples/standalone-example/spec.yaml) or
+open it in [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/d1vbyz3r0/typed/refs/heads/master/examples/standalone-example/spec.yaml).
 
 ## Requirements
 
 - Go 1.25 or newer
 - Echo v4
 - an application component that can register routes without starting the
-  server and implements `typed.RoutesProvider`
+  server and implements `typed.RoutesProvider` (or you have a script, that will collect routes and middlewares, see [lib example](./examples/lib-example/gen.go) for more details)
 
 ## Installation
 
@@ -126,7 +126,9 @@ not required. A file in the same package can use these variables to call
 specification.
 
 The complete example configuration is
-[`examples/typed.yaml`](./examples/typed.yaml).
+[`examples/configs/standalone.yaml`](./examples/configs/standalone.yaml).
+or
+[`examples/configs/lib.yaml`](./examples/configs/lib.yaml)
 
 ### 3. Generate the specification
 
@@ -170,7 +172,11 @@ generates:
   response methods;
 - component schemas for discovered models and typed constants;
 - UUID and time schemas inferred from supported conversion calls;
-- YAML or JSON output, selected by `output.spec-path`.
+- YAML or JSON output, selected by `output.spec-path`;
+- Response description for websocket usages. Supported libs are: 
+  [github.com/coder/websocket](https://github.com/coder/websocket), 
+  [github.com/gorilla/websocket](https://github.com/gorilla/websocket)
+  and [golang.org/x/net/websocket](https://pkg.go.dev/golang.org/x/net/websocket).
 
 Supported Echo response methods are:
 
@@ -273,8 +279,7 @@ Important current limitations are:
   not match application validation rules;
 - XML and form field naming has incomplete edge-case support;
 - exported models in configured model packages are considered for generation,
-  so model filters may be needed;
-- generated output should be validated and reviewed as part of CI.
+  so model filters may be needed.
 
 ## TODO
 

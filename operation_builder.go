@@ -216,9 +216,9 @@ func (b *OperationBuilder) AddResponses(schemas openapi3.Schemas) *OperationBuil
 					}
 
 					mediaType = mediaType.WithSchemaRef(ref)
-					mergedHeaders = append(mergedHeaders, resp.Headers...)
 				}
 
+				mergedHeaders = append(mergedHeaders, resp.Headers...)
 				if resp.ContentType != "" {
 					content[resp.ContentType] = mediaType
 				}
@@ -229,11 +229,18 @@ func (b *OperationBuilder) AddResponses(schemas openapi3.Schemas) *OperationBuil
 				WithContent(content).
 				WithDescription(http.StatusText(status))
 
+			logging.Debug("going to set headers for response", "handler", b.handler.HandlerName(), "status_code", status, "responses", responses)
+
 			resp.Headers = make(openapi3.Headers, len(mergedHeaders))
 			for _, header := range mergedHeaders {
 				schema, err := b.generator.GenerateSchemaRef(header.Type)
 				if err != nil {
 					return fmt.Errorf("failed to generate schema ref for response header %s: %w", header.Name, err)
+				}
+
+				if header.Value != "" {
+					schema.Value.Type = &openapi3.Types{openapi3.TypeString}
+					schema.Value.Example = header.Value
 				}
 
 				resp.Headers[header.Name] = &openapi3.HeaderRef{

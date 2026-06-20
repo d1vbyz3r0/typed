@@ -3,11 +3,12 @@ package typed
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"gopkg.in/yaml.v3"
 )
 
 type SpecFormat string
@@ -57,7 +58,7 @@ func SaveSpec(spec *openapi3.T, outPath string) error {
 			return fmt.Errorf("encode spec: %w", err)
 		}
 
-	case UndefinedFormat:
+	default:
 		return fmt.Errorf("can't define spec format basing on path, check extension: %s", outPath)
 	}
 

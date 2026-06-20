@@ -1,30 +1,29 @@
 package response
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser/headers"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
 	"go/ast"
 	"go/constant"
 	"go/token"
 	"go/types"
-	"log/slog"
+	"net/http"
 	"reflect"
 	"strconv"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/headers"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
-var stringType = reflect.TypeOf("")
+var stringType = reflect.TypeFor[string]()
 
 type StatusCodeMapping map[int][]Response
 
 type Response struct {
 	// ContentType is a content type retrieved from func usage context. It's empty for Redirect and NoContent
 	ContentType string
-	// TypeName is a type name like it's used in code, with package name as prefix (except for std types).
-	// Field is empty for responses with empty body
-	TypeName string
-	// TypePkgPath is a full pkg path for type. Field is empty for responses with empty body
-	TypePkgPath string
+	ModelType   *typing.Type
 	Headers     []headers.Header
 }
 
@@ -54,46 +53,59 @@ func (m StatusCodeMapping) extractResponses(
 
 		resp, supported := newContextResponseType(call, cr, mr, typesInfo)
 		if !supported {
-			slog.Debug("skipping function call", "call", call.Fun)
+			logging.Debug("skipping function call since it's not echo context response", "call", types.ExprString(call))
 			return true
 		}
 
 		statusCode, err := resp.StatusCode()
 		if err != nil {
-			slog.Error("failed to get status code", "error", err)
+			logging.Error("failed to get status code", "error", err)
 			return true
 		}
 
 		contentType, err := resp.ContentType()
 		if err != nil {
-			slog.Error("failed to get content type", "error", err)
+			logging.Error("failed to get content type", "error", err)
 			return true
 		}
 
-		typeName, err := resp.TypeName()
+		model, err := resp.ModelType()
 		if err != nil {
-			slog.Error("failed to get type name", "error", err)
-			return true
-		}
-
-		pkgPath, err := resp.TypePkgPath()
-		if err != nil {
-			slog.Error("failed to get type package path", "error", err)
+			logging.Error("failed to get model type info", "error", err)
 			return true
 		}
 
 		respHeaders := findHeaders(funcDecl, call.Pos(), typesInfo)
-		slog.Debug("extracted response headers", "headers", respHeaders)
+		logging.Debug("extracted response headers", "headers", respHeaders)
 
 		m[statusCode] = append(m[statusCode], Response{
 			ContentType: contentType,
-			TypeName:    typeName,
-			TypePkgPath: pkgPath,
+			ModelType:   model,
 			Headers:     respHeaders,
 		})
 
 		return true
 	})
+
+	if hasWebSocketUsages(funcDecl, typesInfo) {
+		logging.Debug("found websocket usage, extending headers", "handler", funcDecl.Name.String())
+		m[http.StatusSwitchingProtocols] = append(m[http.StatusSwitchingProtocols], Response{
+			Headers: []headers.Header{
+				{
+					Name:     "Connection",
+					Type:     stringType,
+					Required: true,
+					Value:    "Upgrade",
+				},
+				{
+					Name:     "Upgrade",
+					Type:     stringType,
+					Required: true,
+					Value:    "websocket",
+				},
+			},
+		})
+	}
 }
 
 func findHeaders(
@@ -130,7 +142,7 @@ func findHeaders(
 		case *ast.BasicLit:
 			v, err := strconv.Unquote(arg.Value)
 			if err != nil {
-				slog.Error("unquote basic lit vale", "error", err)
+				logging.Error("unquote basic lit vale", "error", err)
 				return true
 			}
 

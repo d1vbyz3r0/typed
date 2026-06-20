@@ -1,9 +1,10 @@
 package meta
 
 import (
-	"github.com/stretchr/testify/require"
 	"go/types"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetTypeName(t *testing.T) {
@@ -108,6 +109,37 @@ func TestGetPkgPath(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 			require.Equal(t, tc.Pkg, p)
+		})
+	}
+}
+
+func TestGetPkgName(t *testing.T) {
+	cases := []struct {
+		name string
+		pkg  string
+		want string
+	}{
+		{
+			name: "regular path on github",
+			pkg:  "github.com/example/foo",
+			want: "foo",
+		},
+		{
+			name: "local package path",
+			pkg:  "example/foo",
+			want: "foo",
+		},
+		{
+			name: "top-level package",
+			pkg:  "foo",
+			want: "foo",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := GetPkgName(tc.pkg)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }

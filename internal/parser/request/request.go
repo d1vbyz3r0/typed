@@ -1,18 +1,18 @@
 package request
 
 import (
-	"github.com/d1vbyz3r0/typed/common/meta"
+	"go/ast"
+	"go/types"
+	"reflect"
+
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/headers"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/binding"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/form"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
+	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/labstack/echo/v4"
-	"go/ast"
-	"go/types"
-	"log/slog"
-	"reflect"
 )
 
 var bodyBindingTags = []string{
@@ -35,11 +35,7 @@ type Body struct {
 }
 
 type Request struct {
-	// BindModel as it's used in code: pkg.TypeName
-	BindModel string
-	// Full path to BindModel package
-	BindModelPkg string
-	// ContentTypeMapping contains mapping of content-type to request body
+	ModelType          *typing.Type
 	ContentTypeMapping ContentTypeMapping
 	PathParams         []path.Param
 	QueryParams        []query.Param
@@ -100,38 +96,30 @@ func New(funcDecl *ast.FuncDecl, info *types.Info, opts ...ParseOpt) *Request {
 		argType := info.TypeOf(call.Args[0])
 		named, ok := typing.GetUnderlyingNamedType(argType)
 		if !ok {
-			slog.Error("failed to get underlying named type", "arg_type", argType)
+			logging.Error("failed to get underlying named type", "arg_type", argType)
 			return true
 		}
 
 		s, ok := typing.GetUnderlyingStruct(argType)
 		if !ok {
-			slog.Error("expected struct as bind arg", "got", argType)
+			logging.Error("expected struct as bind arg", "got", argType)
 			return true
 		}
 
 		if s.NumFields() == 0 {
-			slog.Debug("ignoring empty struct", "struct", named)
+			logging.Debug("ignoring empty struct", "struct", named)
 			return true
 		}
 
-		typeName, err := meta.GetTypeName(named)
+		modelType, err := typing.NewType(named)
 		if err != nil {
-			slog.Error("failed to get type", "type", named, "err", err)
+			logging.Error("failed to build typing.Type", "type", named, "err", err)
 			return true
 		}
 
-		pkgPath, err := meta.GetPkgPath(named)
-		if err != nil {
-			slog.Error("failed to get package path", "type", named, "err", err)
-			return true
-		}
-
-		r.BindModel = typeName
-		r.BindModelPkg = pkgPath
+		r.ModelType = modelType
 
 		hasUntagged := binding.HasAtLeastOneFieldWithoutBindingTag(s, bodyBindingTags, paramBindingTags)
-
 		if binding.HasTag(s, "form") {
 			if !binding.HasFiles(s) {
 				r.ContentTypeMapping[echo.MIMEApplicationForm] = Body{}

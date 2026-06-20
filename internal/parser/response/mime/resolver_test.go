@@ -1,12 +1,13 @@
 package mime
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"testing"
+
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolver_ResolveWithConst(t *testing.T) {
@@ -14,7 +15,7 @@ func TestResolver_ResolveWithConst(t *testing.T) {
 package test
 
 func Handler(c echo.Context) error {
-	return c.Blob(http.StatusOK, echo.MIMETextPlain, nil)	
+	return c.Blob(http.StatusOK, echo.MIMETextPlain, nil)
 }
 `
 
@@ -43,7 +44,7 @@ func TestResolver_ResolveWithString(t *testing.T) {
 package test
 
 func Handler(c echo.Context) error {
-	return c.Blob(http.StatusOK, "application/json", nil)	
+	return c.Blob(http.StatusOK, "application/json", nil)
 }
 `
 

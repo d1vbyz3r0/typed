@@ -1,18 +1,21 @@
 package handlers
 
 import (
+	"maps"
+	"reflect"
+	"slices"
+	"strings"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/exp/maps"
-	"reflect"
-	"strings"
 )
 
-var stringType = reflect.TypeOf("")
+var stringType = reflect.TypeFor[string]()
 
 type Handler struct {
 	route       echo.Route
@@ -58,7 +61,7 @@ func NewHandler(route echo.Route, middlewares []echo.MiddlewareFunc, handler par
 		middlewares: middlewares,
 		handler:     handler,
 		path:        p,
-		pathParams:  pathParams,
+		pathParams:  slices.Collect(pathParams),
 	}
 }
 
@@ -94,8 +97,8 @@ func (h Handler) Responses() response.StatusCodeMapping {
 	return h.handler.Responses
 }
 
-func (h Handler) BindModel() string {
-	return h.handler.Request.BindModel
+func (h Handler) BindModel() *typing.Type {
+	return h.handler.Request.ModelType
 }
 
 func (h Handler) Middlewares() []echo.MiddlewareFunc {

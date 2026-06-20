@@ -1,0 +1,29 @@
+input:
+  title: "Example api"
+  version: "0.0.1"
+  servers:
+    - url: http://localhost:8080
+  api-prefix: /api/v1
+  handlers:
+    - path: . # Relative to a generation package path
+      recursive: true
+
+  models:
+    - path: ../dto
+      recursive: false
+      # You can exclude models from schema generation
+      exclude:
+        - name: "^ShouldBeExcluded$" # regex by type name
+          # path: matches package path relative to the configured models.path
+          # import-path: regex for package full import path (as in code)
+          # pkg: last segment in import-path regex
+    # this is a workaround to skip types from server package
+    - path: .
+      exclude:
+        - name: ".*"
+
+output:
+  path: ../lib-example/openapi/spec.go
+  package: openapi
+
+debug: true

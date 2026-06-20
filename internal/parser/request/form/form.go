@@ -2,14 +2,15 @@ package form
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/meta"
-	"github.com/d1vbyz3r0/typed/common/typing"
 	"go/ast"
-	"log/slog"
 	"mime/multipart"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/d1vbyz3r0/typed/common/meta"
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 var multipartType = reflect.TypeOf(new(multipart.FileHeader))
@@ -32,7 +33,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 		case "FormFile":
 			lit, ok := call.Args[0].(*ast.BasicLit)
 			if !ok {
-				slog.Debug("skipping non BasicLit value")
+				logging.Debug("skipping non BasicLit value")
 				return true
 			}
 
@@ -44,7 +45,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 			})
 			hasFiles = true
 
-			slog.Debug(
+			logging.Debug(
 				"found inline form file usage",
 				"handler", funcDecl.Name.Name,
 				"param", paramName,
@@ -53,7 +54,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 		case "FormValue":
 			lit, ok := call.Args[0].(*ast.BasicLit)
 			if !ok {
-				slog.Debug("skipping non BasicLit value")
+				logging.Debug("skipping non BasicLit value")
 				return true
 			}
 
@@ -69,19 +70,19 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 				if typing.IsParamUsage(call, "FormValue", paramName) {
 					funcName, ok := meta.GetCalledFuncName(call)
 					if !ok {
-						slog.Debug("failed to get func name", "param", paramName)
+						logging.Debug("failed to get func name", "param", paramName)
 						return false
 					}
 
 					pkgName, ok := meta.GetCalledFuncPkg(call)
 					if !ok {
-						slog.Debug("failed to get func pkg", "param", paramName)
+						logging.Debug("failed to get func pkg", "param", paramName)
 						return false
 					}
 
 					t, ok := typing.GetTypeFromUsageContext(pkgName, funcName)
 					if !ok {
-						slog.Debug("failed to get func pkg", "param", paramName)
+						logging.Debug("failed to get func pkg", "param", paramName)
 						return false
 					}
 
@@ -98,7 +99,7 @@ func NewInlineForm(funcDecl *ast.FuncDecl) (form reflect.Type, hasFiles bool, fo
 				Tag:  reflect.StructTag(fmt.Sprintf(`form:"%s"`, paramName)),
 			})
 
-			slog.Debug(
+			logging.Debug(
 				"found inline form param usage",
 				"handler", funcDecl.Name.Name,
 				"param", paramName,

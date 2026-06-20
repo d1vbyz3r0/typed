@@ -1,24 +1,24 @@
 package typed
 
 import (
-	"fmt"
+	"reflect"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/logging"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"github.com/labstack/echo/v4"
-	"reflect"
 )
 
-const (
-	FieldNameOverrideFormKey = "x-typed-override-form-key"
-	FieldNameOverrideXMLKey  = "x-typed-override-xml-key"
-)
+var nonBodyTags = []string{
+	"query",
+	"header",
+	"param",
+}
 
 var customizers = []openapi3gen.SchemaCustomizerFn{
-	//overrideNames,
-	processFormFiles,
 	uuidCustomizer,
-	excludeNonBodyFieldsFromGeneration,
 	makeFieldsRequired,
+	processFormFiles,
 }
 
 func RegisterCustomizer(fn openapi3gen.SchemaCustomizerFn) {
@@ -33,78 +33,8 @@ func Customizer(name string, t reflect.Type, tag reflect.StructTag, schema *open
 			return err
 		}
 	}
-	return nil
-}
-
-// OverrideFieldNames will replace all prop names to values extracted from tags and remove key FieldNameOverrideKey from Extensions.
-func OverrideFieldNames(ref *openapi3.SchemaRef, schemas openapi3.Schemas, typeName string, contentType string) error {
-	key := ""
-	if contentType == echo.MIMEApplicationForm || contentType == echo.MIMEMultipartForm {
-		key = FieldNameOverrideFormKey
-	} else if contentType == echo.MIMEApplicationXML {
-		key = FieldNameOverrideXMLKey
-	} else {
-		return nil
-	}
-
-	var (
-		props     openapi3.Schemas
-		schemaRef *openapi3.SchemaRef
-	)
-	if schemas != nil {
-		schema, ok := schemas[typeName]
-		if !ok {
-			return fmt.Errorf("schema not found for type %s", typeName)
-		}
-
-		if schema.Value == nil {
-			return fmt.Errorf("schema value for %s is nil", typeName)
-		}
-
-		props = schema.Value.Properties
-		schemaRef = schema
-	} else {
-		if ref.Value == nil {
-			return fmt.Errorf("ref value for %s is nil", ref.RefString())
-		}
-		props = ref.Value.Properties
-		schemaRef = ref
-	}
-
-	renames := make(map[string]string, len(props))
-	for fieldName, fieldSchema := range props {
-		if override, ok := fieldSchema.Value.Extensions[key]; ok {
-			overrideStr := override.(string)
-			renames[fieldName] = overrideStr
-		}
-	}
-
-	for oldName, newName := range renames {
-		schema := schemaRef.Value.Properties[oldName]
-		delete(schema.Value.Extensions, key)
-		schemaRef.Value.Properties[newName] = schema
-		delete(schemaRef.Value.Properties, oldName)
-	}
-
-	return nil
-}
-
-func overrideNames(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	if schema.Extensions == nil {
-		schema.Extensions = make(map[string]any)
-	}
-
-	v, ok := tag.Lookup("form")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideFormKey] = v
-	}
-
-	v, ok = tag.Lookup("xml")
-	if ok && v != "-" {
-		schema.Extensions[FieldNameOverrideXMLKey] = v
-	}
-
-	return nil
+	// this one always should be called last, since other customizer may want to process these fields
+	return excludeNonBodyFieldsFromGeneration(name, t, tag, schema)
 }
 
 func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
@@ -112,6 +42,7 @@ func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema
 		schema.Type = &openapi3.Types{openapi3.TypeString}
 		schema.Format = "binary"
 		schema.Properties = make(openapi3.Schemas)
+		schema.Required = nil
 	}
 
 	if t.Kind() == reflect.Slice && isFileHeader(t.Elem()) {
@@ -128,14 +59,10 @@ func processFormFiles(name string, t reflect.Type, tag reflect.StructTag, schema
 }
 
 func isFileHeader(t reflect.Type) bool {
-	if t.Kind() != reflect.Ptr && t.Kind() != reflect.Struct {
+	t = typing.DerefReflectPtr(t)
+	if t.Kind() != reflect.Struct {
 		return false
 	}
-
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
 	return t.PkgPath() == "mime/multipart" && t.Name() == "FileHeader"
 }
 
@@ -147,27 +74,40 @@ func uuidCustomizer(name string, t reflect.Type, tag reflect.StructTag, schema *
 	return nil
 }
 
-func NewEnumsCustomizer(enums map[string][]any) openapi3gen.SchemaCustomizerFn {
+func NewEnumsCustomizer(registry *Registry) openapi3gen.SchemaCustomizerFn {
 	return func(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-		if values, ok := enums[t.String()]; ok {
-			schema.Enum = make([]interface{}, len(values))
-			for i, v := range values {
-				schema.Enum[i] = v
-			}
+		pkgPath := t.PkgPath()
+		if pkgPath == "" {
+			return nil
 		}
+
+		typeName := t.Name()
+		vals, ok := registry.LookupEnumValues(pkgPath, typeName)
+		if !ok {
+			logging.Debug(
+				"enum values not found in registry for enum customizer, skipping (not a enum?)",
+				"pkg", pkgPath,
+				"typename", typeName,
+			)
+			return nil
+		}
+
+		logging.Debug("enum values found in registry", "pkg", pkgPath, "typename", typeName)
+
+		schema.Enum = make([]any, len(vals))
+		copy(schema.Enum, vals)
 		return nil
 	}
 }
 
 func excludeNonBodyFieldsFromGeneration(name string, t reflect.Type, tag reflect.StructTag, schema *openapi3.Schema) error {
-	shouldSkip := []string{
-		"query",
-		"header",
-		"param",
+	if tag == "" {
+		return nil
 	}
 
-	for _, tagName := range shouldSkip {
-		if v, ok := tag.Lookup(tagName); ok && v != "-" && v != "" {
+	for _, tagName := range nonBodyTags {
+		if v, ok := tag.Lookup(tagName); ok && v != "-" {
+			logging.Debug("removed field from final schema since it's not in body", "pkg", t.PkgPath(), "name", t.Name(), "tag", tag)
 			return new(openapi3gen.ExcludeSchemaSentinel)
 		}
 	}
@@ -186,8 +126,14 @@ func makeFieldsRequired(name string, t reflect.Type, tag reflect.StructTag, sche
 			continue
 		}
 
+		if isNonBodyField(f) {
+			continue
+		}
+
 		fieldType := f.Type
-		if fieldType.Kind() == reflect.Ptr || fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Map {
+		if fieldType.Kind() == reflect.Pointer ||
+			fieldType.Kind() == reflect.Slice ||
+			fieldType.Kind() == reflect.Map {
 			continue
 		}
 		schema.Required = append(schema.Required, getFieldNameByTag(t.Field(i)))
@@ -210,4 +156,13 @@ func getFieldNameByTag(field reflect.StructField) string {
 	}
 
 	return field.Name
+}
+
+func isNonBodyField(f reflect.StructField) bool {
+	for _, tag := range nonBodyTags {
+		if f.Tag.Get(tag) != "" {
+			return true
+		}
+	}
+	return false
 }

@@ -1,217 +1,87 @@
 package handlers
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"github.com/d1vbyz3r0/typed/internal/parser/request"
-	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
-	"github.com/d1vbyz3r0/typed/internal/parser/response"
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/require"
-	"log/slog"
-	"net/http"
-	"os"
-	"reflect"
 	"testing"
+
+	"github.com/d1vbyz3r0/typed/internal/testsuite"
+	"github.com/stretchr/testify/require"
 )
 
-func TestFinder_getHandlerFullPath(t *testing.T) {
-	f := &Finder{}
-	_ = f
-	cases := []struct {
-		name string
-		want string
+func genericTest[I, O any]() {}
+
+type handler struct{}
+
+func (handler) method() {}
+
+func (*handler) method2() {}
+
+func closure() func() {
+	return func() {}
+}
+
+func Test_funcPackagePath(t *testing.T) {
+	tests := []struct {
+		name  string
+		_func any
+		want  string
 	}{
 		{
-			name: "github.com/d1vbyz3r0/typed/internal/api.(*Server).mapUsers.LoginUserHandler.func1",
-			want: "github.com/d1vbyz3r0/typed/internal/api.LoginUserHandler",
+			name:  "anonymous function",
+			_func: func() {},
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "project.LoginUserHandler",
-			want: "project.LoginUserHandler",
+			name:  "generic function",
+			_func: genericTest[int, string],
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "main.main.H.func2",
-			want: "main.H",
+			name:  "struct value method",
+			_func: handler{}.method,
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 		{
-			name: "github.com/d1vbyz3r0/typed/internal/api.(*Server).mapUsers.LoginUserHandler",
-			want: "github.com/d1vbyz3r0/typed/internal/api.LoginUserHandler",
+			name:  "struct pointer method",
+			_func: (&handler{}).method2,
+			want:  "github.com/d1vbyz3r0/typed/handlers",
+		},
+		{
+			name:  "closure",
+			_func: closure(),
+			want:  "github.com/d1vbyz3r0/typed/handlers",
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			got := f.getHandlerFullPath(echo.Route{
-				Name: c.name,
-			})
-			require.Equal(t, c.want, got)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := funcPackagePath(tc._func)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
 
 func TestFinder_Find(t *testing.T) {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
 	f, err := NewFinder()
 	require.NoError(t, err)
 
 	err = f.Find([]SearchPattern{
 		{
-			Path:      "../examples/api",
-			Recursive: true,
+			Path: testsuite.FixturePath(t, "parser/c1"),
 		},
 	})
 	require.NoError(t, err)
 
-	want := map[string]parser.Handler{
-		"github.com/d1vbyz3r0/typed/examples/api/handlers.GetUser": {
-			Doc:  "GetUser will return user by id",
-			Name: "GetUser",
-			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
-			Request: &request.Request{
-				BindModel:          "",
-				BindModelPkg:       "",
-				ContentTypeMapping: request.ContentTypeMapping{},
-				PathParams: []path.Param{
-					{
-						Name: "userId",
-						Type: reflect.TypeOf(int(0)),
-					},
-				},
-				QueryParams: nil,
-			},
-			Responses: response.StatusCodeMapping{
-				http.StatusBadRequest: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusInternalServerError: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusOK: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-			},
-		},
-		"github.com/d1vbyz3r0/typed/examples/api/handlers.GetUsers": {
-			Doc:  "",
-			Name: "GetUsers",
-			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
-			Request: &request.Request{
-				BindModel:          "dto.UsersFilter",
-				BindModelPkg:       "github.com/d1vbyz3r0/typed/examples/api/dto",
-				ContentTypeMapping: request.ContentTypeMapping{},
-				PathParams:         nil,
-				QueryParams:        nil,
-			},
-			Responses: response.StatusCodeMapping{
-				http.StatusBadRequest: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusInternalServerError: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusOK: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "[]dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-			},
-		},
-		"github.com/d1vbyz3r0/typed/examples/api/handlers.CreateUser": {
-			Doc:  "",
-			Name: "CreateUser",
-			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
-			Request: &request.Request{
-				BindModel:    "dto.User",
-				BindModelPkg: "github.com/d1vbyz3r0/typed/examples/api/dto",
-				ContentTypeMapping: request.ContentTypeMapping{
-					echo.MIMEApplicationJSON: {},
-				},
-				PathParams:  nil,
-				QueryParams: nil,
-			},
-			Responses: response.StatusCodeMapping{
-				http.StatusBadRequest: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusInternalServerError: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.Error",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-				http.StatusOK: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-			},
-		},
-		"github.com/d1vbyz3r0/typed/examples/api/handlers.ReturningMap": {
-			Doc:  "",
-			Name: "ReturningMap",
-			Pkg:  "github.com/d1vbyz3r0/typed/examples/api/handlers",
-			Request: &request.Request{
-				BindModel:          "",
-				BindModelPkg:       "",
-				ContentTypeMapping: request.ContentTypeMapping{},
-				PathParams:         nil,
-				QueryParams:        nil,
-			},
-			Responses: response.StatusCodeMapping{
-				http.StatusOK: {
-					{
-						ContentType: echo.MIMEApplicationJSON,
-						TypeName:    "map[string][]dto.User",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/examples/api/dto",
-					},
-				},
-			},
-		},
-	}
+	const pkg = "github.com/d1vbyz3r0/typed/testdata/parser/c1"
+	require.Len(t, f.handlers, 2)
 
-	for k, got := range f.handlers {
-		require.Equal(t, want[k].Pkg, got.Pkg)
-		require.Equal(t, want[k].Name, got.Name)
-		require.Equal(t, want[k].Responses, got.Responses)
-		require.Equal(t, want[k].Doc, got.Doc)
-		require.Equal(t, want[k].Request, got.Request)
-		require.Equal(t, want[k].Responses, got.Responses)
+	handler, ok := f.handlers[pkg+".Handler"]
+	require.True(t, ok)
+	require.Equal(t, "Handler 1", handler.Doc)
+	require.Len(t, handler.Request.PathParams, 1)
+	require.Len(t, handler.Request.QueryParams, 2)
+	require.Len(t, handler.Responses, 3)
 
-	}
+	wrapper, ok := f.handlers[pkg+".OtherHandler"]
+	require.True(t, ok)
+	require.Equal(t, "OtherHandler is other handler", wrapper.Doc)
 }

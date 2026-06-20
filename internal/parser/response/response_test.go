@@ -1,19 +1,21 @@
 package response
 
 import (
-	"github.com/d1vbyz3r0/typed/internal/parser/headers"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
-	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
-	"github.com/stretchr/testify/require"
 	"go/ast"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
+	"github.com/d1vbyz3r0/typed/internal/parser/headers"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/codes"
+	"github.com/d1vbyz3r0/typed/internal/parser/response/mime"
+	"github.com/d1vbyz3r0/typed/internal/testsuite"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStatusCodeMapping_extractResponses(t *testing.T) {
@@ -33,20 +35,23 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 				http.StatusOK: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    "handlers.Example",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
+						ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
 					},
 					{
 						ContentType: "application/xml",
-						TypeName:    "map[string]any",
-						TypePkgPath: "",
+						ModelType: typing.Map(
+							typing.Basic("string"),
+							typing.Basic("any"),
+						),
 					},
 				},
 				http.StatusBadRequest: []Response{
 					{
 						ContentType: "application/json",
-						TypeName:    "[]map[int]handlers.Example",
-						TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/handlers",
+						ModelType: typing.Slice(typing.Map(
+							typing.Basic("int"),
+							typing.Named("github.com/d1vbyz3r0/typed/testdata/handlers", "Example"),
+						)),
 					},
 				},
 			},
@@ -55,31 +60,12 @@ func TestStatusCodeMapping_extractResponses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pkgs, err := packages.Load(&packages.Config{
-				Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
-			}, "../../../testdata/handlers/")
-			require.NoError(t, err)
-
-			pkg := pkgs[0]
-			for _, file := range pkg.Syntax {
-				ast.Inspect(file, func(n ast.Node) bool {
-					funcDecl, ok := n.(*ast.FuncDecl)
-					if !ok {
-						return true
-					}
-
-					if funcDecl.Name.Name != "Handler" {
-						return true
-					}
-
-					mapping := NewStatusCodeMapping(funcDecl, cr, mr, pkg.TypesInfo)
-					for k, v := range mapping {
-						want := tt.want[k]
-						require.ElementsMatch(t, want, v)
-					}
-
-					return true
-				})
+			pkg := testsuite.LoadFixturePackage(t, "handlers")
+			fn := testsuite.Func(t, pkg, "Handler")
+			mapping := NewStatusCodeMapping(fn, cr, mr, pkg.TypesInfo)
+			require.Equal(t, len(tt.want), len(mapping))
+			for status, want := range tt.want {
+				require.ElementsMatch(t, want, mapping[status])
 			}
 		})
 	}
@@ -175,7 +161,6 @@ func Handler(c *Ctx) error {
 		t.Fatal("Handler not found")
 	}
 
-	// ищем позицию return
 	var returnPos token.Pos
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		if ret, ok := n.(*ast.ReturnStmt); ok {

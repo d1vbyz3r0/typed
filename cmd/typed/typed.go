@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/generator"
 	"log"
-	"log/slog"
 	"os"
 	"runtime/debug"
+
+	"github.com/d1vbyz3r0/typed/internal/generator"
+	"github.com/d1vbyz3r0/typed/logging"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 	version    = flag.Bool("version", false, "print version and exit")
 )
 
-func GetVersion() (version string) {
+func getVersion() (version string) {
 	if b, ok := debug.ReadBuildInfo(); ok && len(b.Main.Version) > 0 {
 		version = b.Main.Version
 	} else {
@@ -28,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println(GetVersion())
+		fmt.Println(getVersion())
 		return
 	}
 
@@ -42,13 +43,7 @@ func main() {
 	}
 
 	if cfg.Debug {
-		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			AddSource:   true,
-			Level:       slog.LevelDebug,
-			ReplaceAttr: nil,
-		})
-		logger := slog.New(handler)
-		slog.SetDefault(logger)
+		logging.SetDefault(logging.NewStdLogger(os.Stderr, logging.LevelDebug))
 	}
 
 	g, err := generator.New(cfg)

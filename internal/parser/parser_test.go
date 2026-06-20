@@ -1,22 +1,23 @@
 package parser
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"maps"
+	"net/http"
+	"reflect"
+	"slices"
+	"testing"
+
+	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/d1vbyz3r0/typed/internal/parser/request"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
 	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/d1vbyz3r0/typed/internal/parser/response"
+	"github.com/d1vbyz3r0/typed/internal/testsuite"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"golang.org/x/exp/maps"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
-	"net/http"
-	"os"
-	"reflect"
-	"testing"
 )
 
 func TestIsEchoHandler_NormalHandler(t *testing.T) {
@@ -124,23 +125,7 @@ func main() {
 }
 
 func TestParser(t *testing.T) {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../testdata/parser/c1/")
-	require.NoError(t, err)
-
-	require.Len(t, pkgs, 1)
-
-	pkg := pkgs[0]
-	require.Len(t, pkg.Errors, 0)
+	pkg := testsuite.LoadFixturePackage(t, "parser/c1")
 
 	p, err := New()
 	require.NoError(t, err)
@@ -149,9 +134,9 @@ func TestParser(t *testing.T) {
 	require.NoError(t, err)
 
 	want := Result{
-		Enums: map[string][]any{
-			"c1.Role":   {"admin", "user", "guest"},
-			"c1.Status": {1, 2},
+		AdditionalModels: []*typing.Type{
+			typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Role"), []any{"admin", "user", "guest"}),
+			typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Status"), []any{int64(1), int64(2)}),
 		},
 		Handlers: []Handler{
 			{
@@ -159,53 +144,48 @@ func TestParser(t *testing.T) {
 				Name: "Handler",
 				Pkg:  "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 				Request: &request.Request{
-					BindModel:    "c1.Form",
-					BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
+					ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Form"),
 					ContentTypeMapping: request.ContentTypeMapping{
 						echo.MIMEMultipartForm: request.Body{},
 					},
 					PathParams: []path.Param{
 						{
 							Name: "id",
-							Type: reflect.TypeOf(int64(0)),
+							Type: reflect.TypeFor[int64](),
 						},
 					},
 					QueryParams: []query.Param{
 						{
 							Name: "x",
-							Type: reflect.TypeOf(""),
+							Type: reflect.TypeFor[string](),
 						},
 						{
 							Name: "json",
-							Type: reflect.TypeOf(true),
+							Type: reflect.TypeFor[bool](),
 						},
 					},
 				},
 				Responses: response.StatusCodeMapping{
 					http.StatusInternalServerError: []response.Response{
 						{
+							ModelType:   typing.Basic("string"),
 							ContentType: echo.MIMETextPlain,
-							TypeName:    "string",
-							TypePkgPath: "",
 						},
 					},
 					http.StatusBadRequest: []response.Response{
 						{
 							ContentType: echo.MIMEApplicationXML,
-							TypeName:    "c1.Error",
-							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
+							ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Error"),
 						},
 						{
 							ContentType: echo.MIMEApplicationJSON,
-							TypeName:    "c1.Error",
-							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
+							ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Error"),
 						},
 					},
 					http.StatusOK: []response.Response{
 						{
 							ContentType: echo.MIMEApplicationJSON,
-							TypeName:    "c1.Result",
-							TypePkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
+							ModelType:   typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "Result"),
 						},
 					},
 				},
@@ -215,8 +195,7 @@ func TestParser(t *testing.T) {
 				Name: "OtherHandler",
 				Pkg:  "github.com/d1vbyz3r0/typed/testdata/parser/c1",
 				Request: &request.Request{
-					BindModel:    "c1.User",
-					BindModelPkg: "github.com/d1vbyz3r0/typed/testdata/parser/c1",
+					ModelType: typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/c1", "User"),
 					ContentTypeMapping: request.ContentTypeMapping{
 						echo.MIMEMultipartForm:   request.Body{},
 						echo.MIMEApplicationForm: request.Body{},
@@ -229,15 +208,12 @@ func TestParser(t *testing.T) {
 					http.StatusInternalServerError: []response.Response{
 						{
 							ContentType: echo.MIMEApplicationJSON,
-							TypeName:    "map[string]string",
-							TypePkgPath: "",
+							ModelType:   typing.Map(typing.Basic("string"), typing.Basic("string")),
 						},
 					},
 					http.StatusOK: []response.Response{
 						{
 							ContentType: "",
-							TypeName:    "",
-							TypePkgPath: "",
 						},
 					},
 				},
@@ -245,11 +221,11 @@ func TestParser(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, want.Enums, res.Enums)
+	require.ElementsMatch(t, want.AdditionalModels, res.AdditionalModels)
 	for i, h := range res.Handlers {
 		require.Equal(t, want.Handlers[i].Name, h.Name)
 		require.Equal(t, want.Handlers[i].Pkg, h.Pkg)
-		require.Equal(t, want.Handlers[i].Request.BindModel, h.Request.BindModel)
+		require.Equal(t, want.Handlers[i].Request.ModelType, h.Request.ModelType)
 		require.ElementsMatch(t, want.Handlers[i].Request.PathParams, h.Request.PathParams)
 		require.ElementsMatch(t, want.Handlers[i].Request.QueryParams, h.Request.QueryParams)
 		require.Equal(t, want.Handlers[i].Request.ContentTypeMapping, h.Request.ContentTypeMapping)
@@ -258,65 +234,63 @@ func TestParser(t *testing.T) {
 }
 
 func TestParserAllModels(t *testing.T) {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
+	pkg := testsuite.LoadFixturePackage(t, "parser/allmodels")
 
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo | packages.NeedName,
-	}, "../../testdata/parser/allmodels/")
+	p, err := New()
 	require.NoError(t, err)
 
-	require.Len(t, pkgs, 1)
+	res, err := p.Parse(pkg, ParseAllModels(), ParseEnums())
+	require.NoError(t, err)
 
-	pkg := pkgs[0]
-	require.Len(t, pkg.Errors, 0)
+	models := Result{
+		AdditionalModels: []*typing.Type{
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Form"),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Error"),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Result"),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "User"),
+			typing.Enum(typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/allmodels", "Role"), []any{"admin", "user"}),
+			typing.Basic("string"),
+			typing.Map(typing.Basic("string"), typing.Basic("string")),
+		},
+	}
 
+	got := make(map[string]struct{})
+	for _, m := range res.AdditionalModels {
+		got[m.String()] = struct{}{}
+	}
+	want := make([]string, 0, len(models.AdditionalModels))
+	for _, m := range models.AdditionalModels {
+		want = append(want, m.String())
+	}
+
+	require.ElementsMatch(t, want, slices.Collect(maps.Keys(got)))
+}
+
+func TestParser_SkipsGenericDeclaration(t *testing.T) {
+	pkg := testsuite.LoadFixturePackage(t, "parser/generics")
 	p, err := New()
 	require.NoError(t, err)
 
 	res, err := p.Parse(pkg, ParseAllModels())
 	require.NoError(t, err)
 
-	want := Result{
-		Enums:    nil,
-		Handlers: nil,
-		AdditionalModels: []Model{
-			{
-				Name:    "allmodels.Form",
-				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
-			},
-			{
-				Name:    "allmodels.Error",
-				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
-			},
-			{
-				Name:    "allmodels.Result",
-				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
-			},
-			{
-				Name:    "allmodels.User",
-				PkgPath: "github.com/d1vbyz3r0/typed/testdata/parser/allmodels",
-			},
-			{
-				Name:    "string",
-				PkgPath: "",
-			},
-			{
-				Name:    "map[string]string",
-				PkgPath: "",
-			},
+	models := Result{
+		AdditionalModels: []*typing.Type{
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "InstantiatedGeneric"),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "Page", typing.Basic("any")),
+			typing.Named("github.com/d1vbyz3r0/typed/testdata/parser/generics", "Page", typing.Basic("string")),
 		},
 	}
 
-	unique := make(map[Model]struct{})
+	got := make(map[string]struct{})
 	for _, m := range res.AdditionalModels {
-		unique[m] = struct{}{}
+		got[m.String()] = struct{}{}
 	}
 
-	require.ElementsMatch(t, want.AdditionalModels, maps.Keys(unique))
+	want := make([]string, 0, len(models.AdditionalModels))
+	for _, m := range models.AdditionalModels {
+		want = append(want, m.String())
+	}
+
+	require.ElementsMatch(t, want, slices.Collect(maps.Keys(got)))
 }

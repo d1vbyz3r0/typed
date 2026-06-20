@@ -1,89 +1,244 @@
 package typing
 
 import (
-	"github.com/google/uuid"
-	"reflect"
-	"time"
+	"errors"
+	"fmt"
+	"go/types"
+	"strings"
 )
 
-// TODO: add context func call arguments
-type Provider func(pkg string, funcName string) (reflect.Type, bool)
+var ErrTypeUnsupported = errors.New("unsupported type")
 
-var providers = []Provider{
-	strconvProvider,
-	uuidProvider,
-	dateTimeProvider,
+type NamerFunc func(t *Type) (string, string)
+
+// Namer describes how to name type in string representation.
+var Namer = DefaultNamer
+
+// Default namer returns <full_pkg_path>.<TypeName>
+func DefaultNamer(t *Type) (string, string) {
+	return t.pkg, t.name
 }
 
-var (
-	IntType     = reflect.TypeOf(int(0))
-	Int64Type   = reflect.TypeOf(int64(0))
-	UintType    = reflect.TypeOf(uint(0))
-	Float64Type = reflect.TypeOf(float64(0))
-	BoolType    = reflect.TypeOf(false)
-	UuidType    = reflect.TypeOf(uuid.UUID{})
-	TimeType    = reflect.TypeOf(time.Time{})
+type TypeKind int
+
+const (
+	TypeKindUndefined TypeKind = iota
+	TypeKindNamed
+	TypeKindBasic
+	TypeKindPointer
+	TypeKindSlice
+	TypeKindArray
+	TypeKindMap
+	TypeKindEnum
 )
 
-func RegisterTypeProvider(p Provider) {
-	providers = append(providers, p)
+type Type struct {
+	kind TypeKind
+	// name is a type name as it was used with type XXX ... declaration.
+	// It will be empty for TypeKindPointer, TypeKindSlice, TypeKindArray and TypeKindMap
+	name string
+	// pkg holds full package path for type.
+	// It will be empty for TypeKindBasic, TypeKindPointer, TypeKindSlice and TypeKindArray
+	pkg string
+	// elem holds type info for pointers, enums, slices and arrays recursively
+	elem *Type
+	// size holds array size for TypeKindArray, otherwise 0
+	size int64
+	// params holds type infos for generic type params.
+	// For maps it stores key type first and value type as second elem
+	params []*Type
+	// enumValues holds possible enum values for TypeKindEnum
+	enumValues []any
 }
 
-func GetTypeFromUsageContext(pkg string, funcName string) (reflect.Type, bool) {
-	for _, provider := range providers {
-		t, ok := provider(pkg, funcName)
-		if ok {
-			return t, ok
+func fillType(t types.Type, _type *Type) error {
+	switch tt := t.(type) {
+	case *types.Pointer:
+		_type.kind = TypeKindPointer
+		_type.elem = new(Type)
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Alias:
+		return fillType(types.Unalias(tt), _type)
+
+	case *types.Slice:
+		_type.kind = TypeKindSlice
+		_type.elem = new(Type)
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Array:
+		_type.kind = TypeKindArray
+		_type.elem = new(Type)
+		_type.size = tt.Len()
+		return fillType(tt.Elem(), _type.elem)
+
+	case *types.Interface:
+		if !tt.Empty() {
+			return fmt.Errorf("%w: %T (only empty interfaces supported)", ErrTypeUnsupported, tt)
 		}
+		_type.kind = TypeKindBasic
+		_type.name = "any"
+		return nil
+
+	case *types.Map:
+		_type.kind = TypeKindMap
+		_type.params = make([]*Type, 2)
+		_type.params[0] = new(Type)
+		_type.params[1] = new(Type)
+		if err := fillType(tt.Key(), _type.params[0]); err != nil {
+			return err
+		}
+		if err := fillType(tt.Elem(), _type.params[1]); err != nil {
+			return err
+		}
+		return nil
+
+	case *types.Basic:
+		_type.kind = TypeKindBasic
+		_type.name = tt.Name()
+		return nil
+
+	case *types.Named:
+		obj := tt.Obj()
+		pkgPath := ""
+		if pkg := obj.Pkg(); pkg != nil {
+			pkgPath = pkg.Path()
+		}
+
+		_type.kind = TypeKindNamed
+		_type.name = obj.Name()
+		_type.pkg = pkgPath
+
+		if params := tt.TypeArgs(); params != nil {
+			_type.params = make([]*Type, params.Len())
+			i := 0
+			for param := range params.Types() {
+				_type.params[i] = new(Type)
+				err := fillType(param, _type.params[i])
+				if err != nil {
+					return err
+				}
+				i++
+			}
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("%w: %T", ErrTypeUnsupported, tt)
 	}
-	return nil, false
 }
 
-func strconvProvider(pkg string, name string) (reflect.Type, bool) {
-	if pkg != "strconv" {
-		return nil, false
-	}
-
-	switch name {
-	case "Atoi":
-		return IntType, true
-
-	case "ParseInt":
-		return Int64Type, true
-
-	case "ParseUint":
-		return UintType, true
-
-	case "ParseFloat":
-		return Float64Type, true
-
-	case "ParseBool":
-		return BoolType, true
-	}
-
-	return nil, false
+func NewType(t types.Type) (*Type, error) {
+	_type := new(Type)
+	err := fillType(t, _type)
+	return _type, err
 }
 
-func uuidProvider(pkg string, funcName string) (reflect.Type, bool) {
-	if pkg != "uuid" {
-		return nil, false
-	}
-
-	if funcName != "MustParse" && funcName != "Parse" {
-		return nil, false
-	}
-
-	return UuidType, true
+// Name returns type name
+func (t *Type) Name() string {
+	return t.name
 }
 
-func dateTimeProvider(pkg string, funcName string) (reflect.Type, bool) {
-	if pkg != "time" {
-		return nil, false
+// Pkg returns full package path for type
+// If type is basic result will be empty string
+func (t *Type) Pkg() string {
+	return t.pkg
+}
+
+func (t *Type) Kind() TypeKind {
+	return t.kind
+}
+
+func (t *Type) IsGeneric() bool {
+	return len(t.params) > 0
+}
+
+func (t *Type) EnumValues() []any {
+	return t.enumValues
+}
+
+// KeyType returns type descriptor for key if current type is map, otherwise nil
+func (t *Type) KeyType() *Type {
+	if t.kind != TypeKindMap {
+		return nil
+	}
+	return t.params[0]
+}
+
+// ValueType returns type descriptor for value if current type is map, otherwise nil
+func (t *Type) ValueType() *Type {
+	if t.kind != TypeKindMap {
+		return nil
+	}
+	return t.params[1]
+}
+
+// ElemType returns type descriptor for elem if current type is pointer, slice or array, otherwise nil
+func (t *Type) ElemType() *Type {
+	switch t.kind {
+	case TypeKindPointer, TypeKindArray, TypeKindSlice:
+		return t.elem
+	default:
+		return nil
+	}
+}
+
+// Params returns slice of params, if type is generic, otherwise slice will be nil
+func (t *Type) Params() []*Type {
+	return t.params
+}
+
+// String formats type using Namer
+func (t *Type) String() string {
+	return t.format(Namer)
+}
+
+func (t *Type) format(namer NamerFunc) string {
+	switch t.kind {
+	case TypeKindPointer:
+		return "*" + t.elem.format(namer)
+
+	case TypeKindArray:
+		return fmt.Sprintf("[%d]%s", t.size, t.elem.format(namer))
+
+	case TypeKindSlice:
+		return "[]" + t.elem.format(namer)
+
+	case TypeKindMap:
+		return fmt.Sprintf("map[%s]%s", t.params[0].format(namer), t.params[1].format(namer))
+
+	case TypeKindBasic:
+		return t.name
+
+	case TypeKindNamed:
+		pkg, name := namer(t)
+		res := pkg + "." + name
+		if t.IsGeneric() {
+			res += "["
+			params := forEach(t.params, func(t *Type) string {
+				return t.format(namer)
+			})
+			res += strings.Join(params, ",")
+			res += "]"
+		}
+		return res
+
+	case TypeKindEnum:
+		return t.elem.format(namer)
 	}
 
-	if funcName != "Parse" {
-		return nil, false
-	}
+	return "UnsupportedType"
+}
 
-	return TimeType, true
+// ToString converts type to string repr using provided namer
+func ToString(t *Type, namer NamerFunc) string {
+	return t.format(namer)
+}
+
+func forEach(s []*Type, fn func(t *Type) string) []string {
+	res := make([]string, 0, len(s))
+	for _, v := range s {
+		res = append(res, fn(v))
+	}
+	return res
 }

@@ -1,11 +1,12 @@
 package inline
 
 import (
-	"github.com/labstack/echo/v4"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
-func FormHandler(c echo.Context) error {
+func Handler(c echo.Context) error {
 	c.FormValue("name")
 	_, _ = strconv.Atoi(c.FormValue("age"))
 	return nil

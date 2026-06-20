@@ -1,340 +1,130 @@
 package typed
 
 import (
+	"errors"
 	"fmt"
-	"github.com/d1vbyz3r0/typed/common/typing"
+	"runtime"
+	"strings"
+
 	"github.com/d1vbyz3r0/typed/handlers"
-	"github.com/d1vbyz3r0/typed/internal/parser/headers"
-	"github.com/d1vbyz3r0/typed/internal/parser/request/path"
-	"github.com/d1vbyz3r0/typed/internal/parser/request/query"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
-	"log/slog"
-	"net/http"
-	"reflect"
-	"strings"
+	"github.com/labstack/echo/v4"
 )
 
-func AddPathParams(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	registry map[string]any,
-) {
-	params := make(map[string]path.Param, len(h.PathParams()))
-
-	model := h.BindModel()
-	if model != "" {
-		obj, ok := registry[model]
-		if ok {
-			typedParams, err := path.NewStructPathParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
-			if err != nil {
-				slog.Error("get path params from bind model", "error", err)
-			}
-
-			for _, p := range typedParams {
-				param := openapi3.NewPathParameter(p.Name)
-				param.Required = true
-
-				schema, err := openapiGen.GenerateSchemaRef(p.Type)
-				if err != nil {
-					slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
-					continue
-				}
-
-				param.Schema = &openapi3.SchemaRef{
-					Value: schema.Value,
-				}
-				params[p.Name] = p
-				op.AddParameter(param)
-			}
-		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
-		}
-	}
-
-	for _, p := range h.PathParams() {
-		_, ok := params[p.Name]
-		if ok {
-			continue
-		}
-
-		param := openapi3.NewPathParameter(p.Name)
-		param.Required = true
-		schema, err := openapiGen.GenerateSchemaRef(p.Type)
-		if err != nil {
-			slog.Error("generate schema ref for path param", "param", p.Name, "error", err)
-			continue
-		}
-
-		param.Schema = &openapi3.SchemaRef{
-			Value: schema.Value,
-		}
-		op.AddParameter(param)
-	}
+// GenerateOptions configures OpenAPI generation from parsed handlers and
+// routes registered at runtime.
+type GenerateOptions struct {
+	Generator      *openapi3gen.Generator
+	Spec           *openapi3.T
+	Registry       *Registry
+	Routes         []handlers.EchoRoute
+	SearchPatterns []handlers.SearchPattern
+	APIPrefix      *string
+	Concurrency    int
 }
 
-func AddQueryParams(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	registry map[string]any,
-) {
-	params := make(map[string]query.Param, len(h.QueryParams()))
-
-	model := h.BindModel()
-	if model != "" {
-		obj, ok := registry[model]
-		if ok {
-			typedParams, err := query.NewStructQueryParams(typing.DerefReflectPtr(reflect.TypeOf(obj)))
-			if err != nil {
-				slog.Error("get query params from bind model", "error", err)
-			}
-
-			for _, p := range typedParams {
-				param := openapi3.NewQueryParameter(p.Name)
-				param.Required = p.Type.Kind() != reflect.Pointer
-
-				schema, err := openapiGen.GenerateSchemaRef(p.Type)
-				if err != nil {
-					slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
-					continue
-				}
-
-				param.Schema = &openapi3.SchemaRef{
-					Value: schema.Value,
-				}
-				params[p.Name] = p
-				op.AddParameter(param)
-			}
-		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
-		}
+func (o *GenerateOptions) setDefaults() error {
+	if o.Registry == nil {
+		return errors.New("registry is required")
 	}
 
-	for _, p := range h.QueryParams() {
-		_, ok := params[p.Name]
-		if ok {
-			continue
-		}
-
-		param := openapi3.NewQueryParameter(p.Name)
-		param.Required = true
-
-		schema, err := openapiGen.GenerateSchemaRef(p.Type)
-		if err != nil {
-			slog.Error("generate schema ref for query param", "param", p.Name, "error", err)
-			continue
-		}
-
-		param.Schema = &openapi3.SchemaRef{
-			Value: schema.Value,
-		}
-		op.AddParameter(param)
-	}
-}
-
-func AddRequestBody(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	schemas openapi3.Schemas,
-	registry map[string]any,
-) {
-	content := make(openapi3.Content)
-	request := h.Request()
-
-	for contentType, reqBody := range request.ContentTypeMapping {
-		if reqBody.Form != nil {
-			ref, err := openapiGen.GenerateSchemaRef(reqBody.Form)
-			if err != nil {
-				slog.Error("generate schema ref for request form", "form", reqBody.Form, "error", err)
-				continue
-			}
-
-			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
-		}
-
-		if request.BindModel != "" {
-			obj, ok := registry[request.BindModel]
-			if !ok {
-				slog.Warn("bind model not found in provided registry", "model", request.BindModel)
-				continue
-			}
-
-			ref, err := openapiGen.NewSchemaRefForValue(obj, schemas)
-			if err != nil {
-				slog.Error("generate schema ref for bind model", "model", request.BindModel, "error", err)
-				continue
-			}
-
-			// typeName := TypeNameGenerator(reflect.TypeOf(obj))
-			// err = OverrideFieldNames(ref, schemas, typeName, contentType)
-			// if err != nil {
-			//	slog.Error("override field names", "error", err)
-			//	continue
-			// }
-
-			content[contentType] = openapi3.NewMediaType().WithSchemaRef(ref)
-		} else {
-			slog.Debug("request contains empty bind model", "handler", h.HandlerName())
-		}
+	if o.Spec == nil {
+		return errors.New("spec is required")
 	}
 
-	if len(content) > 0 {
-		op.RequestBody = &openapi3.RequestBodyRef{
-			Value: openapi3.NewRequestBody().WithContent(content),
-		}
-	}
-}
-
-func AddResponses(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	schemas openapi3.Schemas,
-	registry map[string]any,
-) {
-	statusCodeMapping := h.Responses()
-	if len(statusCodeMapping) == 0 {
-		// TODO: better solution ?
-		op.AddResponse(0, &openapi3.Response{Description: new(string)})
-		return
+	if o.Generator == nil {
+		o.Generator = NewGenerator(o.Registry)
 	}
 
-	for status, responses := range statusCodeMapping {
-		content := make(openapi3.Content, len(responses))
-		mergedHeaders := make([]headers.Header, 0, len(responses))
-
-		for _, resp := range responses {
-			mediaType := openapi3.NewMediaType()
-			if resp.TypeName != "" {
-				val, ok := registry[resp.TypeName]
-				if !ok {
-					slog.Warn("type not found in registry", "type", resp.TypeName, "pkg", resp.TypePkgPath)
-					continue
-				}
-
-				ref, err := openapiGen.NewSchemaRefForValue(val, schemas)
-				if err != nil {
-					slog.Error("generate ref for value", "type", resp.TypeName, "error", err)
-					continue
-				}
-
-				// typeName := TypeNameGenerator(reflect.TypeOf(val))
-				// err = OverrideFieldNames(ref, schemas, typeName, resp.ContentType)
-				// if err != nil {
-				//	slog.Error("override field names", "error", err)
-				//	continue
-				// }
-
-				mediaType = mediaType.WithSchemaRef(ref)
-				mergedHeaders = append(mergedHeaders, resp.Headers...)
-			}
-
-			if resp.ContentType != "" {
-				content[resp.ContentType] = mediaType
-			}
-		}
-
-		resp := openapi3.
-			NewResponse().
-			WithContent(content).
-			WithDescription(http.StatusText(status))
-
-		resp.Headers = make(openapi3.Headers, len(mergedHeaders))
-		for _, header := range mergedHeaders {
-			schema, err := openapiGen.GenerateSchemaRef(header.Type)
-			if err != nil {
-				slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
-				continue
-			}
-
-			resp.Headers[header.Name] = &openapi3.HeaderRef{
-				Value: &openapi3.Header{
-					Parameter: openapi3.Parameter{
-						Required: header.Required,
-						Schema: &openapi3.SchemaRef{
-							Value: schema.Value,
-						},
-					},
-				},
-			}
-		}
-
-		op.AddResponse(status, resp)
-	}
-}
-
-func AddHeaders(
-	op *openapi3.Operation,
-	h handlers.Handler,
-	openapiGen *openapi3gen.Generator,
-	registry map[string]any,
-) {
-	model := h.BindModel()
-	params := make(map[string]struct{}, len(h.Request().Headers))
-
-	if model != "" {
-		obj, ok := registry[model]
-		if ok {
-			typedParams, err := headers.NewStructRequestHeaders(typing.DerefReflectPtr(reflect.TypeOf(obj)))
-			if err != nil {
-				slog.Error("get header params from bind model", "error", err)
-			}
-
-			for _, p := range typedParams {
-				param := openapi3.NewHeaderParameter(p.Name).WithRequired(p.Required)
-
-				schema, err := openapiGen.GenerateSchemaRef(p.Type)
-				if err != nil {
-					slog.Error("generate schema ref for header param", "param", p.Name, "error", err)
-					continue
-				}
-
-				param.Schema = &openapi3.SchemaRef{
-					Value: schema.Value,
-				}
-				params[p.Name] = struct{}{}
-				op.AddParameter(param)
-			}
-		} else {
-			slog.Warn("bind model not found in provided registry", "model", model)
-		}
+	if o.Spec.Components == nil {
+		o.Spec.Components = &openapi3.Components{}
 	}
 
-	for _, header := range h.Request().Headers {
-		_, ok := params[header.Name]
-		if ok {
-			continue
-		}
-
-		param := openapi3.NewHeaderParameter(header.Name).WithRequired(header.Required)
-		schema, err := openapiGen.GenerateSchemaRef(header.Type)
-		if err != nil {
-			slog.Error("generate schema ref for header param", "param", header.Name, "error", err)
-			continue
-		}
-
-		param.Schema = &openapi3.SchemaRef{
-			Value: schema.Value,
-		}
-		op.AddParameter(param)
-	}
-}
-
-func TagOperation(op *openapi3.Operation, path string, apiPrefix string) error {
-	tag, err := extractOpTag(path, apiPrefix)
-	if err != nil {
-		return fmt.Errorf("extract operation tag: %w", err)
+	if o.Spec.Components.Schemas == nil {
+		o.Spec.Components.Schemas = make(openapi3.Schemas)
 	}
 
-	op.Tags = append(op.Tags, tag)
+	if o.Spec.Components.SecuritySchemes == nil {
+		o.Spec.Components.SecuritySchemes = make(openapi3.SecuritySchemes)
+	}
+
+	if o.Concurrency <= 0 {
+		o.Concurrency = runtime.GOMAXPROCS(0)
+	}
+
 	return nil
 }
 
-func AddOperationId(op *openapi3.Operation, h handlers.Handler) {
-	op.OperationID = h.HandlerName()
+// Generate builds schemas and operations into opts.Spec.
+func Generate(opts GenerateOptions) error {
+	if err := opts.setDefaults(); err != nil {
+		return err
+	}
+
+	if err := GenerateRefs(opts.Generator, opts.Spec.Components.Schemas, opts.Registry); err != nil {
+		return fmt.Errorf("generate refs: %w", err)
+	}
+
+	finder, err := handlers.NewFinder()
+	if err != nil {
+		return fmt.Errorf("create handlers finder: %w", err)
+	}
+
+	err = finder.Find(opts.SearchPatterns, handlers.WithConcurrency(opts.Concurrency))
+	if err != nil {
+		return fmt.Errorf("run finder: %w", err)
+	}
+
+	matchedHandlers := finder.Match(opts.Routes)
+	for _, handler := range matchedHandlers {
+		b := NewOperationBuilder(
+			opts.Generator,
+			handler,
+			opts.Registry,
+		).
+			AddPathParams().
+			AddQueryParams().
+			AddRequestBody(opts.Spec.Components.Schemas).
+			AddResponses(opts.Spec.Components.Schemas).
+			AddHeaders().
+			AddOperationId().
+			AddOperationDescription()
+
+		if opts.APIPrefix != nil {
+			b = b.AddOperationTag(*opts.APIPrefix)
+		}
+
+		op, err := b.Build()
+		if err != nil {
+			return fmt.Errorf("build operation %s: %w", handler.HandlerName(), err)
+		}
+
+		// TODO: move up from global state
+		RunHandlerHooks(opts.Spec, op, handler)
+		opts.Spec.AddOperation(handler.Path(), handler.Method(), op)
+	}
+
+	return nil
+}
+
+// CollectRoutes captures routes registered by provider.
+func CollectRoutes(provider RoutesProvider) []handlers.EchoRoute {
+	var routes []handlers.EchoRoute
+	provider.OnRouteAdded(func(
+		_ string,
+		route echo.Route,
+		handler echo.HandlerFunc,
+		middleware []echo.MiddlewareFunc,
+	) {
+		routes = append(routes, handlers.EchoRoute{
+			Route:       route,
+			HandlerFunc: handler,
+			Middlewares: middleware,
+		})
+	})
+	provider.ProvideRoutes()
+	return routes
 }
 
 func extractOpTag(path string, prefix string) (string, error) {
@@ -355,8 +145,11 @@ func extractOpTag(path string, prefix string) (string, error) {
 	return parts[0], nil
 }
 
-func GenerateRefs(g *openapi3gen.Generator, schemas openapi3.Schemas, registry map[string]any) error {
-	for _, instance := range registry {
+// GenerateRefs generates schema references for all types in registry. It is
+// useful for types that are not directly used, such as a model decoded from
+// json.RawMessage.
+func GenerateRefs(g *openapi3gen.Generator, schemas openapi3.Schemas, registry *Registry) error {
+	for instance := range registry.Values() {
 		_, err := g.NewSchemaRefForValue(instance, schemas)
 		if err != nil {
 			return fmt.Errorf("new schema ref for value: %w", err)

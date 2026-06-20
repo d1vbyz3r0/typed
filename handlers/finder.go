@@ -2,15 +2,18 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/d1vbyz3r0/typed/internal/parser"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/tools/go/packages"
-	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
+	"reflect"
+	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/d1vbyz3r0/typed/internal/parser"
+	"github.com/d1vbyz3r0/typed/logging"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/tools/go/packages"
 )
 
 type SearchPattern struct {
@@ -20,6 +23,7 @@ type SearchPattern struct {
 
 type EchoRoute struct {
 	Route       echo.Route
+	HandlerFunc echo.HandlerFunc
 	Middlewares []echo.MiddlewareFunc
 }
 
@@ -50,6 +54,7 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 		Mode: packages.NeedTypes |
 			packages.NeedSyntax |
 			packages.NeedTypesInfo |
+			packages.NeedFiles |
 			packages.NeedName,
 	}
 
@@ -58,35 +63,28 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 		return fmt.Errorf("build search patterns: %w", err)
 	}
 
-	slog.Debug("loaded search patterns", "patterns", sp)
+	logging.Debug("loaded search patterns", "patterns", sp)
 
 	pkgs, err := packages.Load(cfg, sp...)
 	if err != nil {
 		return fmt.Errorf("load packages: %w", err)
 	}
 
+	if packages.PrintErrors(pkgs) > 0 {
+		return fmt.Errorf("failed to load packages")
+	}
+
+	fillCache(pkgs)
+
 	var (
 		mtx sync.Mutex
-		wg  sync.WaitGroup
-		sem = make(chan struct{}, findOpts.concurrency)
+		eg  errgroup.Group
 	)
 
+	eg.SetLimit(findOpts.concurrency)
+
 	for _, pkg := range pkgs {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(pkg *packages.Package) {
-			defer func() {
-				wg.Done()
-				<-sem
-			}()
-
-			if len(pkg.Errors) > 0 {
-				for _, err := range pkg.Errors {
-					slog.Error("failed to process package", "path", pkg.PkgPath, "error", err)
-				}
-				return
-			}
-
+		eg.Go(func() error {
 			res, err := f.parser.Parse(
 				pkg,
 				parser.ParseInlineForms(),
@@ -95,88 +93,40 @@ func (f *Finder) Find(patterns []SearchPattern, opts ...FinderOpt) error {
 				parser.ParseInlineHeaders(),
 			)
 			if err != nil {
-				slog.Error("failed to parse package", "path", pkg.PkgPath)
-				return
+				return fmt.Errorf("failed to parse pkg %s: %w", pkg.PkgPath, err)
 			}
 
 			for _, h := range res.Handlers {
-				// fullHandlerPath := h.Pkg + "." + h.Name
+				key := h.Pkg + "." + h.Name
 				mtx.Lock()
-				v, ok := f.handlers[h.Name]
-				if ok {
-					// workaround...
-					slog.Warn(
-						"handler already found in map, use unique names for your handlers",
-						"old_pkg", v.Pkg,
-						"new_pkg", h.Pkg,
-						"handler", h.Name,
-					)
+				if _, ok := f.handlers[key]; !ok {
+					f.handlers[key] = h
+					logging.Debug("saved handler to map", "pkg", h.Pkg, "name", h.Name)
 				}
-
-				f.handlers[h.Name] = h
 				mtx.Unlock()
 			}
-		}(pkg)
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return nil
+	return eg.Wait()
 }
 
 func (f *Finder) Match(routes []EchoRoute) []Handler {
 	res := make([]Handler, 0, len(routes))
 	for _, route := range routes {
-		// fullPath := f.getHandlerFullPath(route)
 		handlerName := f.getHandlerName(route.Route)
-		h, ok := f.handlers[handlerName]
+		handlerPkg := funcPackagePath(route.HandlerFunc)
+		key := handlerPkg + "." + handlerName
+		h, ok := f.handlers[key]
 		if !ok {
-			slog.Warn("matched handler not found, skipping", "handler", handlerName)
+			logging.Warn("matched handler not found, skipping", "pkg", handlerPkg, "handler", handlerName)
 			continue
 		}
-
 		res = append(res, NewHandler(route.Route, route.Middlewares, h))
 	}
 
 	return res
-}
-
-func (f *Finder) getHandlerFullPath(route echo.Route) string {
-	// TODO: not working in case of direct echo.HandlerFunc usages, last pkg skipped :)
-	closureRegexp := regexp.MustCompile(`^func\d+(\.\d+)?$`)
-	slashParts := strings.Split(route.Name, "/")
-	hasDots := strings.Contains(route.Name, ".")
-	if len(slashParts) == 1 && !hasDots {
-		return route.Name
-	}
-
-	pkgPath := strings.Join(slashParts[:len(slashParts)-1], "/")
-	last := slashParts[len(slashParts)-1]
-
-	dotIdx := strings.IndexByte(last, '.')
-	if dotIdx != -1 {
-		if pkgPath == "" {
-			pkgPath = last[:dotIdx]
-		} else {
-			pkgPath += "/" + last[:dotIdx]
-		}
-	}
-
-	dotParts := strings.Split(last, ".")
-
-	var handler string
-	if len(dotParts) >= 2 {
-		lastPart := dotParts[len(dotParts)-1]
-		secondLast := dotParts[len(dotParts)-2]
-		if closureRegexp.MatchString(lastPart) {
-			handler = secondLast
-		} else {
-			handler = lastPart
-		}
-	} else {
-		handler = dotParts[0]
-	}
-
-	return pkgPath + "." + handler
 }
 
 func (f *Finder) getHandlerName(route echo.Route) string {
@@ -205,14 +155,92 @@ func (f *Finder) buildSearchPatterns(patterns []SearchPattern) ([]string, error)
 		return nil, fmt.Errorf("get current working directory: %v", err)
 	}
 
+	logging.Debug("detected current working directory", cwd)
+
 	res := make([]string, 0, len(patterns))
 	for _, pattern := range patterns {
 		p := pattern.Path
 		if pattern.Recursive {
 			p = filepath.Join(p, "...")
 		}
-		res = append(res, filepath.Join(cwd, p))
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(cwd, p)
+		}
+		res = append(res, p)
 	}
 
 	return res, nil
+}
+
+func funcPackagePath(fn any) string {
+	v := reflect.ValueOf(fn)
+	if v.Kind() != reflect.Func {
+		panic(fmt.Sprintf("not a function: %s", v.Kind()))
+	}
+
+	pc := v.Pointer()
+	fun := runtime.FuncForPC(pc)
+	if fun == nil {
+		return ""
+	}
+
+	name := fun.Name()
+	if strings.Contains(name, ".func") ||
+		strings.Contains(name, ").") && strings.Contains(name, ".func") {
+		logging.Debug("using fallback to packagePathFromFileLine since handler is closure", "name", name)
+		if pkg := packagePathFromFileLine(fun, pc); pkg != "" {
+			logging.Debug("resolved original closure package path", "pkg", pkg)
+			return pkg
+		}
+	}
+
+	return packagePathFromFuncName(name)
+}
+
+func packagePathFromFileLine(fun *runtime.Func, pc uintptr) string {
+	file, _ := fun.FileLine(pc)
+	absFile, _ := filepath.Abs(file)
+
+	pkg, ok := lookupPkgByFile(absFile)
+	if ok {
+		logging.Debug("package cache hit", "file", absFile, "pkg", pkg.PkgPath)
+		return pkg.PkgPath
+	}
+
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedFiles,
+		Dir:  filepath.Dir(file),
+	}
+
+	pkgs, err := packages.Load(cfg, ".")
+	if packages.PrintErrors(pkgs) > 0 {
+		return ""
+	}
+
+	if err != nil || len(pkgs) == 0 {
+		return ""
+	}
+
+	for _, pkg := range pkgs {
+		for _, f := range pkg.GoFiles {
+			absGoFile, _ := filepath.Abs(f)
+			if sameFile(absFile, absGoFile) {
+				logging.Debug("package cache miss, adding", "file", absFile, "pkg", pkg.PkgPath)
+				putToCache(absGoFile, pkg)
+				return pkg.PkgPath
+			}
+		}
+	}
+
+	return ""
+}
+
+func packagePathFromFuncName(funcName string) string {
+	// ex: github.com/acme/project/pkg/service.(*Handler).Serve
+	lastSlash := strings.LastIndex(funcName, "/")
+	lastDot := strings.Index(funcName[lastSlash+1:], ".")
+	if lastDot == -1 {
+		return ""
+	}
+	return funcName[:lastSlash+1+lastDot]
 }

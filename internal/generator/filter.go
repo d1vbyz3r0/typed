@@ -2,12 +2,14 @@ package generator
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
+	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -223,11 +225,15 @@ func getFullPkgPath(dir string) (string, error) {
 
 	pkgs, err := packages.Load(cfg, ".")
 	if err != nil {
-		return "", err
+		return moduleImportPath(abs)
 	}
 
-	if packages.PrintErrors(pkgs) > 0 {
-		return "", fmt.Errorf("load package %s", abs)
+	if packagesContainErrors(pkgs) {
+		return moduleImportPath(abs)
+	}
+
+	if len(pkgs) == 0 {
+		return moduleImportPath(abs)
 	}
 
 	if len(pkgs) > 1 {
@@ -235,4 +241,52 @@ func getFullPkgPath(dir string) (string, error) {
 	}
 
 	return pkgs[0].PkgPath, nil
+}
+
+func packagesContainErrors(pkgs []*packages.Package) bool {
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func moduleImportPath(dir string) (string, error) {
+	moduleRoot, modulePath, err := findModule(dir)
+	if err != nil {
+		return "", err
+	}
+
+	rel, err := filepath.Rel(moduleRoot, dir)
+	if err != nil {
+		return "", fmt.Errorf("get path relative to module root: %w", err)
+	}
+	if rel == "." {
+		return modulePath, nil
+	}
+	return modulePath + "/" + filepath.ToSlash(rel), nil
+}
+
+func findModule(dir string) (string, string, error) {
+	for {
+		modPath := filepath.Join(dir, "go.mod")
+		data, err := os.ReadFile(modPath)
+		if err == nil {
+			modulePath := modfile.ModulePath(data)
+			if modulePath == "" {
+				return "", "", fmt.Errorf("module path not found in %s", modPath)
+			}
+			return dir, modulePath, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", "", fmt.Errorf("read %s: %w", modPath, err)
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", "", fmt.Errorf("go.mod not found for %s", dir)
+		}
+		dir = parent
+	}
 }

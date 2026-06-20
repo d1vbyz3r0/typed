@@ -178,6 +178,30 @@ func TestGenerator_filterModels(t *testing.T) {
 			},
 		},
 		{
+			name: "recursive root without go files filters child packages",
+			models: []*typing.Type{
+				typing.Named("example.com/project/internal/core/modules/users", "User"),
+				typing.Named("example.com/project/internal/dto", "User"),
+			},
+			cfg: Config{
+				Input: InputConfig{
+					Models: []ModelsConfig{
+						{
+							Path:      filepath.Join(root, "internal", "core", "modules"),
+							Recursive: true,
+							IncludeModels: []ModelFilter{
+								{Path: "^users$"},
+							},
+						},
+					},
+				},
+			},
+			want: []string{
+				"example.com/project/internal/core/modules/users.User",
+				"example.com/project/internal/dto.User",
+			},
+		},
+		{
 			name: "exclude nested relative package path",
 			models: []*typing.Type{
 				typing.Named("example.com/project/internal/dto", "User"),

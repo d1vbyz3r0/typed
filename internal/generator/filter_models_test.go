@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/d1vbyz3r0/typed/internal/testsuite"
@@ -37,7 +38,22 @@ package admin
 type Admin struct{}
 `)
 
+	module.Write(t, "internal/core/modules/users/user.go", `
+package users
+
+type User struct{}
+`)
+
 	return module.Root()
+}
+
+func TestGetFullPkgPathFallsBackToModulePathForDirectoryWithoutGoFiles(t *testing.T) {
+	root := makeTestModule(t)
+
+	got, err := getFullPkgPath(filepath.Join(root, "internal", "core", "modules"))
+
+	require.NoError(t, err)
+	require.Equal(t, "example.com/project/internal/core/modules", got)
 }
 
 func TestFilterSetEntryContains(t *testing.T) {

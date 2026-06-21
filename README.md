@@ -126,9 +126,9 @@ not required. A file in the same package can use these variables to call
 specification.
 
 The complete example configuration is
-[`examples/configs/standalone.yaml`](./examples/configs/standalone.yaml).
+[`examples/configs/standalone.yaml`](./examples/configs/standalone.yaml)
 or
-[`examples/configs/lib.yaml`](./examples/configs/lib.yaml)
+[`examples/configs/lib.yaml`](./examples/configs/lib.yaml).
 
 ### 3. Generate the specification
 
@@ -277,7 +277,7 @@ Important current limitations are:
   calls and complex binding flows are not represented reliably;
 - required and nullable semantics are inferred from Go types and tags and may
   not match application validation rules;
-- XML and form field naming has incomplete edge-case support;
+- XML and form field naming has incomplete edge-case support (form tag name have priority over xml name, when used on one struct for same field, [see](https://github.com/d1vbyz3r0/typed/blob/master/field_name_generator.go#L13C6-L13C24));
 - exported models in configured model packages are considered for generation,
   so model filters may be needed.
 
@@ -287,7 +287,6 @@ Important current limitations are:
 - support `omitempty`, `omitzero`, and validation tags;
 - improve handling of forms and multiple `echo.Context.Bind` calls;
 - avoid exporting unrelated models by default;
-- apply nullability at schema usage sites instead of shared components;
 - reduce direct dependencies on Echo internals;
 - improve parser and generator performance.
 

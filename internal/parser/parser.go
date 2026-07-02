@@ -67,6 +67,7 @@ type Handler struct {
 }
 
 type Result struct {
+	PkgPath  string
 	Handlers []Handler
 	// AdditionalModels will contain array of all type declarations and structs used in c.Bind() if ParseAllModels was provided as opt.
 	// It can contain duplicates, it's up to you to deduplicate them.
@@ -102,7 +103,7 @@ func (p *Parser) Parse(pkg *packages.Package, opts ...ParseOpt) (Result, error) 
 		opt(parseOpts)
 	}
 
-	var result Result
+	result := Result{PkgPath: pkg.PkgPath}
 	for _, file := range pkg.Syntax {
 		if parseOpts.parseEnums {
 			foundEnums, err := enums.Extract(pkg.Types, file, pkg.TypesInfo)

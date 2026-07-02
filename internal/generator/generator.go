@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"text/template"
 
@@ -115,6 +116,25 @@ func (g *Generator) Generate() error {
 		return err
 	}
 
+	_imports, _types, err := g.processParserResults(results)
+	if err != nil {
+		return fmt.Errorf("process parser results: %w", err)
+	}
+
+	return g.execTemplate(_imports, _types)
+}
+
+func (g *Generator) processParserResults(results []parser.Result) ([]*importMapping, []*typing.Type, error) {
+	// required to guarantee order of results between runs, so import mappings become stable
+	slices.SortFunc(results, func(a, b parser.Result) int {
+		if a.PkgPath < b.PkgPath {
+			return -1
+		} else if a.PkgPath > b.PkgPath {
+			return 1
+		}
+		return 0
+	})
+
 	initialImports := initialMapping()
 	if g.cfg.Output.IsMain() {
 		processImport("github.com/d1vbyz3r0/typed/handlers", initialImports)
@@ -128,20 +148,20 @@ func (g *Generator) Generate() error {
 
 	_imports, err := createImportMappings(results, initialImports)
 	if err != nil {
-		return fmt.Errorf("create import mappings: %w", err)
+		return nil, nil, fmt.Errorf("create import mappings: %w", err)
 	}
 
 	_types, err := collectTypes(results)
 	if err != nil {
-		return fmt.Errorf("collect types: %w", err)
+		return nil, nil, fmt.Errorf("collect types: %w", err)
 	}
 
 	_types, err = g.filterModels(_types)
 	if err != nil {
-		return fmt.Errorf("filter models: %w", err)
+		return nil, nil, fmt.Errorf("filter models: %w", err)
 	}
 
-	return g.execTemplate(_imports, _types)
+	return _imports, _types, nil
 }
 
 func (g *Generator) execTemplate(_imports []*importMapping, _types []*typing.Type) error {

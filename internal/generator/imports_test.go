@@ -1,7 +1,9 @@
 package generator
 
 import (
+	"maps"
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/d1vbyz3r0/typed/common/typing"
@@ -401,6 +403,73 @@ func TestCreateImportMappings(t *testing.T) {
 			require.ElementsMatch(t, stripIdx(tt.want), stripIdx(got))
 		})
 	}
+}
+
+func TestCreateImportMappingsIsDeterministic(t *testing.T) {
+	// see: https://github.com/d1vbyz3r0/typed/issues/3
+	results := []parser.Result{
+		{
+			PkgPath: "github.com/acme/app/api",
+			Handlers: []parser.Handler{
+				{
+					Name: "CreateUser",
+					Pkg:  "github.com/acme/app/api",
+					Request: &request.Request{
+						ModelType: typing.Named(
+							"github.com/acme/public/model",
+							"CreateUserRequest",
+						),
+					},
+					Responses: response.StatusCodeMapping{
+						http.StatusOK: {
+							{
+								ModelType: typing.Named(
+									"github.com/acme/internal/model",
+									"UserResponse",
+								),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			PkgPath: "github.com/acme/domain/api",
+			AdditionalModels: []*typing.Type{
+				typing.Named("github.com/acme/domain/api", "Model"),
+			},
+		},
+	}
+
+	want := append([]*importMapping{
+		{
+			Alias: "api",
+			Pkg:   "github.com/acme/app/api",
+		},
+		{
+			Alias: "model1",
+			Pkg:   "github.com/acme/internal/model",
+		},
+		{
+			Alias: "model",
+			Pkg:   "github.com/acme/public/model",
+		},
+		{
+			Alias: "api1",
+			Pkg:   "github.com/acme/domain/api",
+		},
+	},
+		slices.Collect(maps.Values(initialMapping()))...,
+	)
+
+	g := Generator{cfg: Config{Output: OutputConfig{PackageName: "test"}}}
+	got, _, err := g.processParserResults(slices.Clone(results))
+	require.NoError(t, err)
+	require.ElementsMatch(t, stripIdx(want), stripIdx(got))
+
+	got, _, err = g.processParserResults([]parser.Result{results[1], results[0]})
+	require.NoError(t, err)
+	require.ElementsMatch(t, stripIdx(want), stripIdx(got))
 }
 
 func stripIdx(items []*importMapping) []any {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/d1vbyz3r0/typed/common/typing"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func parseAndCheck(t *testing.T, src string) (*types.Package, *ast.File, *types.Info) {
@@ -102,6 +103,45 @@ type Config struct{}
 	}
 
 	assertEnum(t, enums[0], "Role", []any{"admin"})
+}
+
+func TestExtractEnums_IgnoresUnexportedTypes(t *testing.T) {
+	src := `
+	package test
+
+type role string
+
+const (
+		RoleAdmin = role("admin")
+		RoleUser  = role("user")
+		RoleGuest = role("guest")
+)
+
+type Status int
+
+const (
+		StatusNew  Status = 1
+		StatusDone Status = 2
+)
+`
+
+	pkg, file, _types := parseAndCheck(t, src)
+	enums, err := Extract(pkg, file, _types)
+	if err != nil {
+		t.Fatalf("ExtractEnums: %v", err)
+	}
+
+	if len(enums) != 1 {
+		t.Fatalf("expected 1 enum, got %d: %#v", len(enums), enums)
+	}
+
+	got := map[string]*typing.Type{}
+	for _, enum := range enums {
+		got[enum.Name()] = enum
+	}
+
+	require.NotContains(t, got, "role")
+	assertEnum(t, got["Status"], "Status", []any{int64(1), int64(2)})
 }
 
 func TestExtractEnums_SupportsImplicitConstType(t *testing.T) {

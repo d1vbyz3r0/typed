@@ -41,7 +41,9 @@ func Extract(pkg *types.Package, file *ast.File, info *types.Info) ([]*typing.Ty
 				}
 
 				obj := named.Obj()
-				if obj == nil || obj.Pkg() == nil || obj.Pkg().Path() != pkg.Path() {
+				if obj == nil ||
+					!obj.Exported() ||
+					obj.Pkg() == nil || obj.Pkg().Path() != pkg.Path() {
 					continue
 				}
 

@@ -1,6 +1,6 @@
 module github.com/d1vbyz3r0/typed
 
-go 1.25
+go 1.25.0
 
 toolchain go1.26.2
 
@@ -10,7 +10,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/mod v0.25.0
-	golang.org/x/sync v0.15.0
+	golang.org/x/sync v0.22.0
 	golang.org/x/tools v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
 )

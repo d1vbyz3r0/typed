@@ -8,7 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.140.1-0.20260607233802-e56b2a193dfd
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.4
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/mod v0.25.0
 	golang.org/x/sync v0.15.0
 	golang.org/x/tools v0.34.0

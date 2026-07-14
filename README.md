@@ -1,5 +1,6 @@
 # typed
 
+[![Go](https://github.com/d1vbyz3r0/typed/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/d1vbyz3r0/typed/actions/workflows/go.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/d1vbyz3r0/typed.svg)](https://pkg.go.dev/github.com/d1vbyz3r0/typed)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
